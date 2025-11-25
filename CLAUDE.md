@@ -501,14 +501,24 @@ See `/develop` command for detailed TDD workflow.
 
 ## CI/CD Pipeline
 
-See `docs/cicd.md` for complete CI/CD configuration.
+The project uses GitHub Actions for Continuous Integration and Deployment, split into two workflows:
+
+1. **CI Pipeline (`ci.yml`)**
+   - Runs on: Pull Requests to `main`
+   - Checks: Tests, Build, Supabase Migration/Type checks
+   - Must pass before merging
+
+2. **CD Pipeline (`cd.yml`)**
+   - Runs on: Push to `main`
+   - Actions: Deploys to Supabase (database migrations)
+
+See `docs/cicd.md` for complete CI/CD configuration details.
 
 **Required checks before merge**:
 - Type checking passes
 - All tests pass
 - Production build succeeds
-- E2E tests pass
-- Code coverage meets threshold
+- Supabase types are up to date
 
 ## Performance Optimization
 
@@ -570,3 +580,4 @@ For implementing new features, use the `/develop` command which enforces:
 ✅ **Accessibility** - Semantic HTML, WCAG AA, keyboard navigation
 ✅ **Error Handling** - Graceful degradation, user-friendly messages
 ✅ **Performance After Functionality** - Optimize only after tests pass
+✅ **CI/CD** - When updating the project workflow or other configurations always update the claude.md file and the readme.md file
