@@ -1,4 +1,3 @@
-/// <reference types="../test-types" />
 import { render } from '@testing-library/react';
 
 describe('Application Tests', () => {
