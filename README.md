@@ -45,7 +45,39 @@ brew install supabase/tap/supabase
 
 ---
 
-## ⚡️ Supabase Local Development
+## 🔄 CI/CD & Git Workflow
+
+This project follows a strict Git workflow integrated with GitHub Actions.
+
+### Git Workflow
+
+- **Main Branch (`main`)**: Production-ready code. Protected branch.
+- **Feature Branches**: Create a new branch for each feature/fix (e.g., `feature/user-auth`, `fix/login-bug`).
+- **Pull Requests**: Open a PR to `main` to merge changes. CI checks must pass before merging.
+
+### CI/CD Pipelines
+
+We use GitHub Actions to automate testing and deployment:
+
+1. **CI Pipeline (`ci.yml`)**
+   - **Triggers**: On Pull Requests to `main`.
+   - **Jobs**:
+     - Runs unit and integration tests (`npm test`).
+     - Builds the application (`npm run build`) to ensure no build errors.
+     - Checks Supabase migrations and generated types.
+     - Uploads coverage reports to Codecov.
+
+2. **CD Pipeline (`cd.yml`)**
+   - **Triggers**: On Pushes to `main` (after PR merge).
+   - **Jobs**:
+     - Re-runs tests and build to ensure stability.
+     - **Deploys to Supabase**:
+       - Links the project.
+       - Pushes database migrations (`supabase db push`).
+
+---
+
+## ⚡️ Supabase Local Development Workflow
 
 This project uses Supabase for the backend (Database, Auth, Storage, etc.). To develop locally, you need to start the local Supabase instance.
 
