@@ -1,87 +1,178 @@
-# Welcome to React Router!
+# Social Killers X Kerastase
 
-A modern, production-ready template for building full-stack React applications using React Router.
+This project is a web application built with **React 19**, **React Router 7**, and **Supabase**. It follows a modern development workflow with local Supabase instances running via Docker.
 
-[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/remix-run/react-router-templates/tree/main/default)
+## 📋 Prerequisites
 
-## Features
+Before you begin, ensure you have the following installed on your machine:
 
-- 🚀 Server-side rendering
-- ⚡️ Hot Module Replacement (HMR)
-- 📦 Asset bundling and optimization
-- 🔄 Data loading and mutations
-- 🔒 TypeScript by default
-- 🎉 TailwindCSS for styling
-- 📖 [React Router docs](https://reactrouter.com/)
+- **Node.js** (v20 or higher recommended)
+- **npm** or **yarn** (package manager)
+- **Docker Desktop** (Required for local Supabase)
+- **Git**
+- **Supabase CLI** (Required for managing the local database)
 
-## Getting Started
+### Installing Supabase CLI
 
-### Installation
-
-Install the dependencies:
+If you don't have the Supabase CLI installed, you can install it via npm (macOS/Linux/Windows):
 
 ```bash
-npm install
+npm install -g supabase
 ```
 
-### Development
+Or via Homebrew (macOS):
 
-Start the development server with HMR:
+```bash
+brew install supabase/tap/supabase
+```
+
+---
+
+## 🚀 Installation
+
+1. **Clone the repository:**
+
+   ```bash
+   git clone <your-repo-url>
+   cd social-killers-x-kerastase
+   ```
+
+2. **Install dependencies:**
+
+   ```bash
+   npm install
+   ```
+
+---
+
+## ⚡️ Supabase Local Development
+
+This project uses Supabase for the backend (Database, Auth, Storage, etc.). To develop locally, you need to start the local Supabase instance.
+
+1. **Make sure Docker is running.**
+
+2. **Start Supabase:**
+
+   This command spins up all necessary Supabase services in Docker containers.
+
+   ```bash
+   supabase start
+   ```
+
+   _After a successful start, you will see the API URL, Anon Key, and other credentials in the terminal. Keep these handy._
+
+3. **Stop Supabase:**
+
+   When you are done working, you can stop the containers to save resources.
+
+   ```bash
+   supabase stop
+   ```
+
+4. **Reset Database (Optional):**
+
+   If you need to wipe the database and start fresh (applying current migrations):
+
+   ```bash
+   supabase db reset
+   ```
+
+---
+
+## 🛠 Environment Variables
+
+Create a `.env` file in the root of your project to store your environment variables. You can copy the provided example file and fill in your credentials (found after running `supabase start`).
+
+```bash
+cp .env.example .env
+```
+
+The `.env` file should contain:
+
+```env
+VITE_SUPABASE_URL=http://127.0.0.1:54321
+VITE_SUPABASE_ANON_KEY=<your-local-anon-key>
+```
+
+> **Note:** Variables prefixed with `VITE_` are exposed to the client-side code in Vite.
+
+---
+
+## 🏃‍♂️ Running the Application
+
+### Development Server
+
+To start the React development server with HMR (Hot Module Replacement):
 
 ```bash
 npm run dev
 ```
 
-Your application will be available at `http://localhost:5173`.
+Open [http://localhost:5173](http://localhost:5173) to view it in the browser.
 
-## Building for Production
+### Production Build
 
-Create a production build:
+To build the application for production:
 
 ```bash
 npm run build
 ```
 
-## Deployment
-
-### Docker Deployment
-
-To build and run using Docker:
+To preview the production build locally:
 
 ```bash
-docker build -t my-app .
-
-# Run the container
-docker run -p 3000:3000 my-app
+npm run start
 ```
-
-The containerized application can be deployed to any platform that supports Docker, including:
-
-- AWS ECS
-- Google Cloud Run
-- Azure Container Apps
-- Digital Ocean App Platform
-- Fly.io
-- Railway
-
-### DIY Deployment
-
-If you're familiar with deploying Node applications, the built-in app server is production-ready.
-
-Make sure to deploy the output of `npm run build`
-
-```
-├── package.json
-├── package-lock.json (or pnpm-lock.yaml, or bun.lockb)
-├── build/
-│   ├── client/    # Static assets
-│   └── server/    # Server-side code
-```
-
-## Styling
-
-This template comes with [Tailwind CSS](https://tailwindcss.com/) already configured for a simple default starting experience. You can use whatever CSS framework you prefer.
 
 ---
 
-Built with ❤️ using React Router.
+## 🧪 Testing
+
+This project uses **Jest** for unit and integration testing.
+
+- **Run all tests:**
+  ```bash
+  npm test
+  ```
+
+- **Run tests in watch mode:**
+  ```bash
+  npm run test:watch
+  ```
+
+- **Generate coverage report:**
+  ```bash
+  npm run test:coverage
+  ```
+
+---
+
+## 🐳 Docker
+
+The project includes a `Dockerfile` for containerizing the frontend application.
+
+### Build the Docker Image
+
+```bash
+docker build -t social-killers-app .
+```
+
+### Run the Container
+
+```bash
+docker run -p 3000:3000 social-killers-app
+```
+
+---
+
+## 📂 Useful Commands Summary
+
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Starts the development server |
+| `npm run build` | Builds the app for production |
+| `npm test` | Runs the test suite |
+| `supabase start` | Starts local Supabase services (requires Docker) |
+| `supabase stop` | Stops local Supabase services |
+| `supabase status` | Shows the status and credentials of the local instance |
+| `supabase db diff -f <name>` | Creates a new migration based on schema changes |
