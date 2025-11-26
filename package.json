@@ -9,7 +9,12 @@
     "typecheck": "react-router typegen && tsc",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "db:reset": "supabase db reset",
+    "db:types": "supabase gen types typescript --local > app/shared/types/database.types.ts",
+    "db:start": "supabase start",
+    "db:stop": "supabase stop",
+    "db:status": "supabase status"
   },
   "dependencies": {
     "@react-router/node": "^7.9.2",

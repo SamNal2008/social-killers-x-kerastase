@@ -4,6 +4,10 @@
 
 This command enforces the Test-Driven Development workflow for implementing new features. For codebase standards and best practices, see `CLAUDE.md`.
 
+When queried, ask me to provided the feature to implement
+
+Select if you should respect all plan depending on if the feature need frontend development or only supabase development
+
 ---
 
 ## Pre-Development Checklist

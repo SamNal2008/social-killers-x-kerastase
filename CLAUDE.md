@@ -382,6 +382,8 @@ const createUser = async (input: any) => {
 
 ### API Call Structure
 
+All request and response bodies on the web part should be in camelCase
+
 ```typescript
 // features/content-generation/services/llmService.ts
 interface GenerateImageRequest {
@@ -519,6 +521,7 @@ See `docs/cicd.md` for complete CI/CD configuration details.
 - All tests pass
 - Production build succeeds
 - Supabase types are up to date
+- When checking the database, use supabase cli commands like `supabase db remote commit`
 
 ## Performance Optimization
 
@@ -570,7 +573,8 @@ For implementing new features, use the `/develop` command which enforces:
 - No regressions policy
 
 ## Summary of Non-Negotiable Rules
-
+✅ **Local development** When developing locally, always apply the change locally for supabase updates
+✅ **Plan** Always generate a plan that is validated before going to changes
 ✅ **Screaming Architecture** - Feature-based organization
 ✅ **Mobile-First Design** - Always design for mobile first
 ✅ **Type Safety** - Strict TypeScript, no `any`
@@ -580,4 +584,4 @@ For implementing new features, use the `/develop` command which enforces:
 ✅ **Accessibility** - Semantic HTML, WCAG AA, keyboard navigation
 ✅ **Error Handling** - Graceful degradation, user-friendly messages
 ✅ **Performance After Functionality** - Optimize only after tests pass
-✅ **CI/CD** - When updating the project workflow or other configurations always update the claude.md file and the readme.md file
+✅ **Documentation** - When updating the project workflow or other configurations always update the claude.md file and the readme.md file
