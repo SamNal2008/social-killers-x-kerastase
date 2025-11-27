@@ -1,4 +1,4 @@
-import type { GeminiAnalysisResult, UserAnswerData } from './types.ts';
+import type { GeminiAnalysisResult, UserAnswerData } from './types';
 
 interface GeminiResponse {
   candidates: Array<{

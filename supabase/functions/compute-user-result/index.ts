@@ -1,11 +1,12 @@
-import { createClient } from 'jsr:@supabase/supabase-js@2';
-import type { Database } from '../../../app/shared/types/database.types.ts';
-import { GeminiService } from './gemini-service.ts';
+import "jsr:@supabase/functions-js/edge-runtime.d.ts"
+import type { Database } from '../../../app/shared/types/database.types';
+import { GeminiService } from './gemini-service';
 import type {
   ComputeUserResultRequest,
   ComputeUserResultResponse,
   UserAnswerData,
-} from './types.ts';
+} from './types';
+import { createClient } from "@supabase/supabase-js";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
