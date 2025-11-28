@@ -40,6 +40,7 @@ export type Database = {
           id: string
           logo_url: string
           name: string
+          tribe_id: string | null
           updated_at: string | null
         }
         Insert: {
@@ -47,6 +48,7 @@ export type Database = {
           id?: string
           logo_url: string
           name: string
+          tribe_id?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -54,38 +56,47 @@ export type Database = {
           id?: string
           logo_url?: string
           name?: string
+          tribe_id?: string | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "brands_tribe_id_fkey"
+            columns: ["tribe_id"]
+            isOneToOne: false
+            referencedRelation: "tribes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       keywords: {
         Row: {
           created_at: string | null
           id: string
           name: string
-          subculture_id: string
+          tribe_id: string | null
           updated_at: string | null
         }
         Insert: {
           created_at?: string | null
           id?: string
           name: string
-          subculture_id: string
+          tribe_id?: string | null
           updated_at?: string | null
         }
         Update: {
           created_at?: string | null
           id?: string
           name?: string
-          subculture_id?: string
+          tribe_id?: string | null
           updated_at?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "keywords_subculture_id_fkey"
-            columns: ["subculture_id"]
+            foreignKeyName: "keywords_tribe_id_fkey"
+            columns: ["tribe_id"]
             isOneToOne: false
-            referencedRelation: "subcultures"
+            referencedRelation: "tribes"
             referencedColumns: ["id"]
           },
         ]
@@ -132,6 +143,7 @@ export type Database = {
           description: string
           id: string
           name: string
+          subculture_id: string | null
           updated_at: string | null
         }
         Insert: {
@@ -139,6 +151,7 @@ export type Database = {
           description: string
           id?: string
           name: string
+          subculture_id?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -146,9 +159,18 @@ export type Database = {
           description?: string
           id?: string
           name?: string
+          subculture_id?: string | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "moodboards_subculture_id_fkey"
+            columns: ["subculture_id"]
+            isOneToOne: false
+            referencedRelation: "subcultures"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       subcultures: {
         Row: {
@@ -173,6 +195,42 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      tribe_subcultures: {
+        Row: {
+          created_at: string | null
+          id: string
+          subculture_id: string
+          tribe_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          subculture_id: string
+          tribe_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          subculture_id?: string
+          tribe_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tribe_subcultures_subculture_id_fkey"
+            columns: ["subculture_id"]
+            isOneToOne: false
+            referencedRelation: "subcultures"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tribe_subcultures_tribe_id_fkey"
+            columns: ["tribe_id"]
+            isOneToOne: false
+            referencedRelation: "tribes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tribes: {
         Row: {
@@ -243,41 +301,41 @@ export type Database = {
           },
         ]
       }
-      user_result_subcultures: {
+      user_result_tribes: {
         Row: {
           created_at: string | null
           id: string
           percentage: number
-          subculture_id: string
+          tribe_id: string | null
           user_result_id: string
         }
         Insert: {
           created_at?: string | null
           id?: string
           percentage: number
-          subculture_id: string
+          tribe_id?: string | null
           user_result_id: string
         }
         Update: {
           created_at?: string | null
           id?: string
           percentage?: number
-          subculture_id?: string
+          tribe_id?: string | null
           user_result_id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "user_result_subcultures_subculture_id_fkey"
-            columns: ["subculture_id"]
-            isOneToOne: false
-            referencedRelation: "subcultures"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "user_result_subcultures_user_result_id_fkey"
             columns: ["user_result_id"]
             isOneToOne: false
             referencedRelation: "user_results"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_result_tribes_tribe_id_fkey"
+            columns: ["tribe_id"]
+            isOneToOne: false
+            referencedRelation: "tribes"
             referencedColumns: ["id"]
           },
         ]

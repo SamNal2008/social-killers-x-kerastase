@@ -5,9 +5,9 @@ export interface ComputeUserResultRequest {
   userAnswerId: string;
 }
 
-export interface SubcultureMatch {
-  subcultureId: string;
-  subcultureName: string;
+export interface TribeMatch {
+  tribeId: string;
+  tribeName: string;
   percentage: number;
 }
 
@@ -15,24 +15,16 @@ export interface ComputeUserResultResponse {
   success: boolean;
   data?: {
     userResultId: string;
-    tribeId: string;
-    tribeName: string;
-    subcultures: SubcultureMatch[];
+    subcultureId: string;
+    subcultureName: string;
+    dominantTribeId: string;
+    dominantTribeName: string;
+    tribes: TribeMatch[];
   };
   error?: {
     code: string;
     message: string;
   };
-}
-
-export interface GeminiAnalysisResult {
-  tribe_id: string;
-  tribe_name: string;
-  subcultures: Array<{
-    subculture_id: string;
-    subculture_name: string;
-    percentage: number;
-  }>;
 }
 
 export interface UserAnswerData {
@@ -44,5 +36,11 @@ export interface UserAnswerData {
   moodboard: {
     name: string;
     description: string;
+    subculture_id: string;
+    subculture: {
+      id: string;
+      name: string;
+      description: string;
+    };
   };
 }

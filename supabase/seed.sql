@@ -68,7 +68,49 @@ BEGIN
     (moodboard_romantic_id, brand_dior_id);
 END $$;
 
--- Insert test keywords for each subculture
+-- Assign tribes to brands
+DO $$
+DECLARE
+  heritage_heiress_id UUID;
+  quiet_luxury_id UUID;
+  sensorialist_id UUID;
+
+  brand_chanel_id UUID;
+  brand_dior_id UUID;
+  brand_guerlain_id UUID;
+  brand_hermes_id UUID;
+  brand_tomford_id UUID;
+  brand_lelabo_id UUID;
+  brand_byredo_id UUID;
+  brand_diptyque_id UUID;
+BEGIN
+  -- Get tribe IDs
+  SELECT id INTO heritage_heiress_id FROM tribes WHERE name = 'HERITAGE HEIRESS';
+  SELECT id INTO quiet_luxury_id FROM tribes WHERE name = 'QUIET LUXURY';
+  SELECT id INTO sensorialist_id FROM tribes WHERE name = 'SENSORIALIST';
+
+  -- Get brand IDs
+  SELECT id INTO brand_chanel_id FROM brands WHERE name = 'Chanel';
+  SELECT id INTO brand_dior_id FROM brands WHERE name = 'Dior';
+  SELECT id INTO brand_guerlain_id FROM brands WHERE name = 'Guerlain';
+  SELECT id INTO brand_hermes_id FROM brands WHERE name = 'Hermès';
+  SELECT id INTO brand_tomford_id FROM brands WHERE name = 'Tom Ford';
+  SELECT id INTO brand_lelabo_id FROM brands WHERE name = 'Le Labo';
+  SELECT id INTO brand_byredo_id FROM brands WHERE name = 'Byredo';
+  SELECT id INTO brand_diptyque_id FROM brands WHERE name = 'Diptyque';
+
+  -- Assign tribes to brands
+  UPDATE brands SET tribe_id = heritage_heiress_id WHERE id = brand_chanel_id;
+  UPDATE brands SET tribe_id = heritage_heiress_id WHERE id = brand_dior_id;
+  UPDATE brands SET tribe_id = heritage_heiress_id WHERE id = brand_guerlain_id;
+  UPDATE brands SET tribe_id = quiet_luxury_id WHERE id = brand_hermes_id;
+  UPDATE brands SET tribe_id = quiet_luxury_id WHERE id = brand_tomford_id;
+  UPDATE brands SET tribe_id = sensorialist_id WHERE id = brand_lelabo_id;
+  UPDATE brands SET tribe_id = sensorialist_id WHERE id = brand_byredo_id;
+  UPDATE brands SET tribe_id = sensorialist_id WHERE id = brand_diptyque_id;
+END $$;
+
+-- Link moodboards to subcultures and setup tribe-subculture relationships
 DO $$
 DECLARE
   legacists_id UUID;
@@ -77,6 +119,20 @@ DECLARE
   curators_id UUID;
   mystics_id UUID;
   unapologetics_id UUID;
+
+  heritage_heiress_id UUID;
+  quiet_luxury_id UUID;
+  clean_ritualist_id UUID;
+  sensorialist_id UUID;
+  culture_guru_id UUID;
+  soul_healer_id UUID;
+  misfit_id UUID;
+
+  moodboard_timeless_id UUID;
+  moodboard_minimalist_id UUID;
+  moodboard_romantic_id UUID;
+  moodboard_urban_id UUID;
+  moodboard_spiritual_id UUID;
 BEGIN
   -- Get subculture IDs
   SELECT id INTO legacists_id FROM subcultures WHERE name = 'LEGACISTS';
@@ -86,53 +142,79 @@ BEGIN
   SELECT id INTO mystics_id FROM subcultures WHERE name = 'MYSTICS';
   SELECT id INTO unapologetics_id FROM subcultures WHERE name = 'UNAPOLOGETICS';
 
-  -- Insert keywords for LEGACISTS
-  INSERT INTO keywords (name, subculture_id) VALUES
-    ('heritage', legacists_id),
-    ('classic', legacists_id),
-    ('timeless', legacists_id),
-    ('luxury', legacists_id),
-    ('traditional', legacists_id);
+  -- Get some tribe IDs for examples
+  SELECT id INTO heritage_heiress_id FROM tribes WHERE name = 'HERITAGE HEIRESS';
+  SELECT id INTO quiet_luxury_id FROM tribes WHERE name = 'QUIET LUXURY';
+  SELECT id INTO clean_ritualist_id FROM tribes WHERE name = 'CLEAN RITUALIST';
+  SELECT id INTO sensorialist_id FROM tribes WHERE name = 'SENSORIALIST';
+  SELECT id INTO culture_guru_id FROM tribes WHERE name = 'CULTURE GURU';
+  SELECT id INTO soul_healer_id FROM tribes WHERE name = 'SOUL HEALER';
+  SELECT id INTO misfit_id FROM tribes WHERE name = 'MISFIT';
 
-  -- Insert keywords for FUNCTIONALS
-  INSERT INTO keywords (name, subculture_id) VALUES
-    ('minimalist', functionals_id),
-    ('clean', functionals_id),
-    ('efficient', functionals_id),
-    ('practical', functionals_id),
-    ('simple', functionals_id);
+  -- Get moodboard IDs
+  SELECT id INTO moodboard_timeless_id FROM moodboards WHERE name = 'Timeless Elegance';
+  SELECT id INTO moodboard_minimalist_id FROM moodboards WHERE name = 'Modern Minimalism';
+  SELECT id INTO moodboard_romantic_id FROM moodboards WHERE name = 'Romantic Nostalgia';
+  SELECT id INTO moodboard_urban_id FROM moodboards WHERE name = 'Urban Edge';
+  SELECT id INTO moodboard_spiritual_id FROM moodboards WHERE name = 'Spiritual Sanctuary';
 
-  -- Insert keywords for ROMANTICS
-  INSERT INTO keywords (name, subculture_id) VALUES
-    ('romantic', romantics_id),
-    ('vintage', romantics_id),
-    ('emotional', romantics_id),
-    ('storytelling', romantics_id),
-    ('nostalgic', romantics_id);
+  -- Link moodboards to subcultures (1:1)
+  UPDATE moodboards SET subculture_id = legacists_id WHERE id = moodboard_timeless_id;
+  UPDATE moodboards SET subculture_id = functionals_id WHERE id = moodboard_minimalist_id;
+  UPDATE moodboards SET subculture_id = romantics_id WHERE id = moodboard_romantic_id;
+  UPDATE moodboards SET subculture_id = curators_id WHERE id = moodboard_urban_id;
+  UPDATE moodboards SET subculture_id = mystics_id WHERE id = moodboard_spiritual_id;
 
-  -- Insert keywords for CURATORS
-  INSERT INTO keywords (name, subculture_id) VALUES
-    ('trendy', curators_id),
-    ('urban', curators_id),
-    ('curator', curators_id),
-    ('cultural', curators_id),
-    ('exclusive', curators_id);
+  -- Create tribe-subculture relationships (many-to-many)
+  -- LEGACISTS subculture contains these tribes
+  INSERT INTO tribe_subcultures (tribe_id, subculture_id) VALUES
+    (heritage_heiress_id, legacists_id),
+    (quiet_luxury_id, legacists_id);
 
-  -- Insert keywords for MYSTICS
-  INSERT INTO keywords (name, subculture_id) VALUES
-    ('spiritual', mystics_id),
-    ('wellness', mystics_id),
-    ('holistic', mystics_id),
-    ('mindful', mystics_id),
-    ('natural', mystics_id);
+  -- FUNCTIONALS subculture contains these tribes
+  INSERT INTO tribe_subcultures (tribe_id, subculture_id) VALUES
+    (clean_ritualist_id, functionals_id),
+    (quiet_luxury_id, functionals_id);
 
-  -- Insert keywords for UNAPOLOGETICS
-  INSERT INTO keywords (name, subculture_id) VALUES
-    ('bold', unapologetics_id),
-    ('edgy', unapologetics_id),
-    ('trendsetter', unapologetics_id),
-    ('statement', unapologetics_id),
-    ('confident', unapologetics_id);
+  -- ROMANTICS subculture contains these tribes
+  INSERT INTO tribe_subcultures (tribe_id, subculture_id) VALUES
+    (sensorialist_id, romantics_id);
+
+  -- CURATORS subculture contains these tribes
+  INSERT INTO tribe_subcultures (tribe_id, subculture_id) VALUES
+    (culture_guru_id, curators_id),
+    (misfit_id, curators_id);
+
+  -- MYSTICS subculture contains these tribes
+  INSERT INTO tribe_subcultures (tribe_id, subculture_id) VALUES
+    (soul_healer_id, mystics_id);
+
+  -- UNAPOLOGETICS subculture contains these tribes
+  INSERT INTO tribe_subcultures (tribe_id, subculture_id) VALUES
+    (misfit_id, unapologetics_id);
+
+  -- Insert keywords linked to tribes (not subcultures)
+  INSERT INTO keywords (name, tribe_id) VALUES
+    ('heritage', heritage_heiress_id),
+    ('classic', heritage_heiress_id),
+    ('timeless', heritage_heiress_id),
+    ('luxury', quiet_luxury_id),
+    ('traditional', quiet_luxury_id),
+    ('minimalist', clean_ritualist_id),
+    ('clean', clean_ritualist_id),
+    ('efficient', clean_ritualist_id),
+    ('romantic', sensorialist_id),
+    ('vintage', sensorialist_id),
+    ('emotional', sensorialist_id),
+    ('trendy', culture_guru_id),
+    ('urban', culture_guru_id),
+    ('curator', culture_guru_id),
+    ('spiritual', soul_healer_id),
+    ('wellness', soul_healer_id),
+    ('holistic', soul_healer_id),
+    ('bold', misfit_id),
+    ('edgy', misfit_id),
+    ('trendsetter', misfit_id);
 END $$;
 
 -- Insert test user

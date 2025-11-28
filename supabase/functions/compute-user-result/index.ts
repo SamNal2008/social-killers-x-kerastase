@@ -1,16 +1,103 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
-import type { Database } from '../../../app/shared/types/database.types';
-import { GeminiService } from './gemini-service';
+import type { Database } from '../../../app/shared/types/database.types.ts';
 import type {
   ComputeUserResultRequest,
   ComputeUserResultResponse,
   UserAnswerData,
-} from './types';
-import { createClient } from "@supabase/supabase-js";
+} from './types.ts';
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+interface TribeCount {
+  count: number;
+  name: string;
+}
+
+interface TribeCounts {
+  [tribeId: string]: TribeCount;
+}
+
+interface DominantTribe {
+  id: string;
+  name: string;
+}
+
+const extractMoodboardSubculture = (userAnswer: any) => {
+  const moodboard = Array.isArray(userAnswer.moodboard)
+    ? userAnswer.moodboard[0]
+    : userAnswer.moodboard;
+
+  const subculture = Array.isArray(moodboard.subculture)
+    ? moodboard.subculture[0]
+    : moodboard.subculture;
+
+  if (!subculture) {
+    throw new Error('Moodboard has no associated subculture');
+  }
+
+  return subculture;
+};
+
+const fetchTribesByIds = async (
+  supabase: SupabaseClient<Database>,
+  tableName: 'keywords' | 'brands',
+  ids: string[]
+) => {
+  const { data } = await supabase
+    .from(tableName)
+    .select('tribe_id, tribe:tribes(id, name)')
+    .in('id', ids);
+
+  return data || [];
+};
+
+const countTribes = (keywordTribes: any[], brandTribes: any[]): TribeCounts => {
+  const tribeCounts: TribeCounts = {};
+
+  const processTribes = (items: any[]) => {
+    items.forEach(item => {
+      const tribe = Array.isArray(item.tribe) ? item.tribe[0] : item.tribe;
+      if (tribe) {
+        if (!tribeCounts[tribe.id]) {
+          tribeCounts[tribe.id] = { count: 0, name: tribe.name };
+        }
+        tribeCounts[tribe.id].count++;
+      }
+    });
+  };
+
+  processTribes(keywordTribes);
+  processTribes(brandTribes);
+
+  return tribeCounts;
+};
+
+const findDominantTribe = (tribeCounts: TribeCounts): DominantTribe => {
+  let dominantTribeId = '';
+  let dominantTribeName = '';
+  let maxCount = 0;
+
+  Object.entries(tribeCounts).forEach(([tribeId, data]) => {
+    if (data.count > maxCount) {
+      maxCount = data.count;
+      dominantTribeId = tribeId;
+      dominantTribeName = data.name;
+    }
+  });
+
+  return { id: dominantTribeId, name: dominantTribeName };
+};
+
+const calculateTotalSelections = (tribeCounts: TribeCounts): number => {
+  return Object.values(tribeCounts).reduce((sum, t) => sum + t.count, 0);
+};
+
+const calculateTribePercentage = (count: number, total: number): number => {
+  return total > 0 ? Math.round((count / total) * 10000) / 100 : 0;
 };
 
 Deno.serve(async (req) => {
@@ -97,7 +184,7 @@ Deno.serve(async (req) => {
 
     const supabase = createClient<Database>(supabaseUrl, supabaseServiceKey);
 
-    // Fetch user answer with moodboard details
+    // Fetch user answer with moodboard and subculture details
     const { data: userAnswer, error: fetchError } = await supabase
       .from('user_answers')
       .select(`
@@ -108,189 +195,63 @@ Deno.serve(async (req) => {
         keywords,
         moodboard:moodboards (
           name,
-          description
+          description,
+          subculture_id,
+          subculture:subcultures (
+            id,
+            name,
+            description
+          )
         )
       `)
       .eq('id', requestBody.userAnswerId)
       .single();
 
     if (fetchError || !userAnswer) {
-      console.error('Failed to fetch user answer:', fetchError);
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: {
-            code: 'USER_ANSWER_NOT_FOUND',
-            message: 'User answer not found',
-          },
-        } satisfies ComputeUserResultResponse),
-        {
-          status: 404,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
+      throw new Error('User answer not found');
     }
 
-    // Fetch all available subcultures
-    const { data: subcultures, error: subculturesError } = await supabase
-      .from('subcultures')
-      .select('id, name, description');
+    // Extract moodboard and subculture
+    const subculture = extractMoodboardSubculture(userAnswer);
 
-    if (subculturesError || !subcultures || subcultures.length === 0) {
-      console.error('Failed to fetch subcultures:', subculturesError);
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: {
-            code: 'DATA_ERROR',
-            message: 'Failed to fetch subcultures data',
-          },
-        } satisfies ComputeUserResultResponse),
-        {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
-    }
+    // Fetch tribes for selected keywords and brands
+    const keywordTribes = await fetchTribesByIds(supabase, 'keywords', userAnswer.keywords);
+    const brandTribes = await fetchTribesByIds(supabase, 'brands', userAnswer.brands);
 
-    // Fetch all available tribes
-    const { data: tribes, error: tribesError } = await supabase
-      .from('tribes')
-      .select('id, name, description');
+    // Count tribe occurrences
+    const tribeCounts = countTribes(keywordTribes, brandTribes);
 
-    if (tribesError || !tribes || tribes.length === 0) {
-      console.error('Failed to fetch tribes:', tribesError);
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: {
-            code: 'DATA_ERROR',
-            message: 'Failed to fetch tribes data',
-          },
-        } satisfies ComputeUserResultResponse),
-        {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
-    }
+    // Find dominant tribe
+    const dominantTribe = findDominantTribe(tribeCounts);
 
-    // Initialize Gemini service
-    const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
-    if (!geminiApiKey) {
-      console.error('Missing GEMINI_API_KEY');
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: {
-            code: 'CONFIGURATION_ERROR',
-            message: 'Gemini API key not configured',
-          },
-        } satisfies ComputeUserResultResponse),
-        {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
-    }
-
-    const geminiService = new GeminiService(geminiApiKey);
-
-    // Prepare user answer data
-    const userAnswerData: UserAnswerData = {
-      id: userAnswer.id,
-      user_id: userAnswer.user_id,
-      moodboard_id: userAnswer.moodboard_id,
-      brands: userAnswer.brands,
-      keywords: userAnswer.keywords,
-      moodboard: Array.isArray(userAnswer.moodboard)
-        ? userAnswer.moodboard[0]
-        : userAnswer.moodboard,
-    };
-
-    // Call Gemini to analyze user preferences
-    let analysisResult;
-    try {
-      analysisResult = await geminiService.analyzeUserPreferences(
-        userAnswerData,
-        subcultures,
-        tribes
-      );
-    } catch (error) {
-      console.error('Gemini analysis failed:', error);
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: {
-            code: 'GEMINI_ERROR',
-            message: error instanceof Error ? error.message : 'Failed to analyze user preferences',
-          },
-        } satisfies ComputeUserResultResponse),
-        {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
-    }
+    // Calculate total selections
+    const totalSelections = calculateTotalSelections(tribeCounts);
 
     // Create user result
-    const { data: userResult, error: resultError } = await supabase
+    const { data: userResult } = await supabase
       .from('user_results')
       .insert({
         user_id: userAnswer.user_id,
         user_answer_id: userAnswer.id,
-        tribe_id: analysisResult.tribe_id,
+        tribe_id: dominantTribe.id,
       })
       .select()
       .single();
 
-    if (resultError || !userResult) {
-      console.error('Failed to create user result:', resultError);
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: {
-            code: 'DATABASE_ERROR',
-            message: 'Failed to save user result',
-          },
-        } satisfies ComputeUserResultResponse),
-        {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
+    if (!userResult) {
+      throw new Error('Failed to create user result');
     }
 
-    // Create subculture associations
-    const subcultureInserts = analysisResult.subcultures.map(s => ({
+    // Create tribe percentage associations
+    const tribeInserts = Object.entries(tribeCounts).map(([tribeId, data]) => ({
       user_result_id: userResult.id,
-      subculture_id: s.subculture_id,
-      percentage: s.percentage,
+      tribe_id: tribeId,
+      percentage: calculateTribePercentage(data.count, totalSelections),
     }));
 
-    const { error: subcultureError } = await supabase
-      .from('user_result_subcultures')
-      .insert(subcultureInserts);
-
-    if (subcultureError) {
-      console.error('Failed to create subculture associations:', subcultureError);
-      // Rollback: delete the user result
-      await supabase.from('user_results').delete().eq('id', userResult.id);
-
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: {
-            code: 'DATABASE_ERROR',
-            message: 'Failed to save subculture associations',
-          },
-        } satisfies ComputeUserResultResponse),
-        {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
-    }
+    await supabase
+      .from('user_result_tribes')
+      .insert(tribeInserts);
 
     // Return success response with camelCase
     return new Response(
@@ -298,12 +259,14 @@ Deno.serve(async (req) => {
         success: true,
         data: {
           userResultId: userResult.id,
-          tribeId: analysisResult.tribe_id,
-          tribeName: analysisResult.tribe_name,
-          subcultures: analysisResult.subcultures.map(s => ({
-            subcultureId: s.subculture_id,
-            subcultureName: s.subculture_name,
-            percentage: s.percentage,
+          subcultureId: subculture.id,
+          subcultureName: subculture.name,
+          dominantTribeId: dominantTribe.id,
+          dominantTribeName: dominantTribe.name,
+          tribes: Object.entries(tribeCounts).map(([tribeId, data]) => ({
+            tribeId,
+            tribeName: data.name,
+            percentage: calculateTribePercentage(data.count, totalSelections),
           })),
         },
       } satisfies ComputeUserResultResponse),

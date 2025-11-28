@@ -421,6 +421,7 @@ export const llmService = {
 ```
 
 ### Best Practices
+- Use small functions (less than 30 lines) to make code more readable and maintainable
 - Always show loading indicators for LLM operations
 - Implement timeouts for long-running operations
 - Allow users to cancel operations
