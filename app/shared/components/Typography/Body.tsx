@@ -2,8 +2,8 @@ import type { FC } from "react";
 import type { BodyProps } from "~/shared/types/typography";
 
 const variantStyles: Record<BodyProps["variant"], string> = {
-  "1": "font-inter text-body-1",
-  "2": "font-inter text-body-2",
+  "1": "font-['Inter'] font-normal text-[16px] leading-[100%]",
+  "2": "font-['Inter'] font-normal text-[14px] leading-[100%]",
 };
 
 export const Body: FC<BodyProps> = ({
