@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { Welcome } from './welcome';
 
 describe('Welcome Component', () => {
@@ -51,5 +52,17 @@ describe('Welcome Component', () => {
     // The container should have mobile-first padding
     const mainContainer = container.querySelector('main');
     expect(mainContainer).toBeInTheDocument();
+  });
+
+  it('should call onBeginExperience when CTA button is clicked', async () => {
+    const user = userEvent.setup();
+    const mockOnBeginExperience = jest.fn();
+
+    render(<Welcome onBeginExperience={mockOnBeginExperience} />);
+
+    const ctaButton = screen.getByRole('button', { name: /begin the experience/i });
+    await user.click(ctaButton);
+
+    expect(mockOnBeginExperience).toHaveBeenCalledTimes(1);
   });
 });

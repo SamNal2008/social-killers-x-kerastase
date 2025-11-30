@@ -5,7 +5,11 @@ import { Caption } from '~/shared/components/Typography/Caption';
 import { Title } from '~/shared/components/Typography/Title';
 import heroImage from './hero-image.png';
 
-export const Welcome: FC = () => {
+export interface WelcomeProps {
+  onBeginExperience?: () => void;
+}
+
+export const Welcome: FC<WelcomeProps> = ({ onBeginExperience }) => {
   return (
     <main className="bg-[var(--color-surface-light)] flex items-center justify-center min-h-screen p-6 md:p-8 lg:p-12">
       <div className="flex flex-col gap-10 md:gap-12 lg:gap-14 items-center w-full max-w-[344.914px] md:max-w-md lg:max-w-lg">
@@ -48,6 +52,7 @@ export const Welcome: FC = () => {
           className="w-full h-[52px] md:h-[56px] flex items-center justify-center"
           type="button"
           aria-label="Begin the experience"
+          onClick={onBeginExperience}
         >
           Begin the experience
         </Button>
