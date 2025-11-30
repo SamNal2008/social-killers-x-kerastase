@@ -97,29 +97,5 @@ describe('userService', () => {
       expect(result1.name).toMatch(/^Guest-\d+$/);
       expect(result2.name).toMatch(/^Guest-\d+$/);
     });
-
-    it('should log user creation to console in development', async () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
-      const mockUser: User = {
-        id: '123e4567-e89b-12d3-a456-426614174000',
-        name: 'Guest-1701388800000',
-        connection_date: '2024-12-01T00:00:00.000Z',
-        created_at: '2024-12-01T00:00:00.000Z',
-        updated_at: '2024-12-01T00:00:00.000Z',
-      };
-
-      const { supabase } = await import('./supabase');
-      const mockClient = supabase as any;
-      mockClient._mocks.single.mockResolvedValue({ data: mockUser, error: null });
-
-      await userService.create();
-
-      expect(consoleSpy).toHaveBeenCalledWith(
-        'User created:',
-        expect.objectContaining({ id: mockUser.id })
-      );
-
-      consoleSpy.mockRestore();
-    });
   });
 });

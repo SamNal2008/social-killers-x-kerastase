@@ -25,8 +25,3 @@ jest.mock('~/shared/services/supabase', () => {
     supabase: mockSupabase.supabase,
   };
 });
-
-jest.mock('~/shared/utils/env', () => {
-  const mockEnv = require('./__mocks__/env');
-  return mockEnv;
-});
