@@ -10,6 +10,7 @@ import { useStepStore } from '~/shared/stores/stepStore';
 import { pageTransitionVariants } from '~/shared/animations/transitions';
 import { KeywordsScreen } from '~/onboarding/components/KeywordsScreen';
 import { TinderScreen } from '../onboarding/components/TinderScreen';
+import type { FormData } from '~/onboarding/types';
 
 export function meta({ }: Route.MetaArgs) {
   return [
@@ -134,7 +135,7 @@ export default function Home() {
             onContinue={handleTinderContinue}
           />
         </motion.div>
-      ) : currentPage === 'Step2Page' ? (
+      ) : currentPage === 'KeywordPage' ? (
         <motion.div
           key="keywords"
           custom={direction}
