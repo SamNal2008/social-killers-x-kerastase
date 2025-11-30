@@ -29,7 +29,7 @@ export const ProgressIndicator: FC<ProgressIndicatorProps> = ({
 
       <div className="w-full bg-neutral-gray-200 h-0.5 rounded-full overflow-hidden">
         <div
-          className="h-full bg-primary transition-all duration-300 ease-out"
+          className="h-full bg-primary transition-all duration-500 ease-out"
           style={{ width: `${progressPercentage}%` }}
         />
       </div>
