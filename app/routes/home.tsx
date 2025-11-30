@@ -106,28 +106,13 @@ export default function Home() {
     }
   };
 
-  const pageVariants = {
-    initial: (direction: 'forward' | 'backward') => ({
-      opacity: 0,
-      x: direction === 'forward' ? 30 : -30,
-    }),
-    animate: {
-      opacity: 1,
-      x: 0,
-    },
-    exit: (direction: 'forward' | 'backward') => ({
-      opacity: 0,
-      x: direction === 'forward' ? -30 : 30,
-    }),
-  };
-
   return (
     <AnimatePresence mode="wait" custom={direction}>
       {currentPage === 'NamePage' ? (
         <motion.div
           key="name"
           custom={direction}
-          variants={pageVariants}
+          variants={pageTransitionVariants}
           initial="initial"
           animate="animate"
           exit="exit"
@@ -142,7 +127,7 @@ export default function Home() {
         <motion.div
           key="welcome"
           custom={direction}
-          variants={pageVariants}
+          variants={pageTransitionVariants}
           initial="initial"
           animate="animate"
           exit="exit"
