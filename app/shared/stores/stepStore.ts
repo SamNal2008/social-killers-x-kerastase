@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 const CURRENT_PAGE_KEY = 'kerastase_current_page';
 
 // Define page order for navigation logic
-const PAGE_ORDER: PageType[] = ['WelcomePage', 'NamePage', 'Step3Page', 'Step4Page'];
+const PAGE_ORDER: PageType[] = ['WelcomePage', 'NamePage', 'Step2Page', 'Step3Page', 'Step4Page'];
 
 export const useStepStore = () => {
     const [currentPage, setCurrentPage] = useState<PageType>('WelcomePage');
@@ -23,8 +23,20 @@ export const useStepStore = () => {
         currentPage,
         getCurrentPage: () => currentPage,
         setCurrentPage: (page: PageType) => setCurrentPage(page),
-        goToNextPage: () => setCurrentPage(PAGE_ORDER[PAGE_ORDER.indexOf(currentPage) + 1]),
-        goToPreviousPage: () => setCurrentPage(PAGE_ORDER[PAGE_ORDER.indexOf(currentPage) - 1]),
+        goToNextPage: () => {
+            const currentIndex = PAGE_ORDER.indexOf(currentPage);
+            const nextIndex = currentIndex + 1;
+            if (nextIndex < PAGE_ORDER.length) {
+                setCurrentPage(PAGE_ORDER[nextIndex]);
+            }
+        },
+        goToPreviousPage: () => {
+            const currentIndex = PAGE_ORDER.indexOf(currentPage);
+            const prevIndex = currentIndex - 1;
+            if (prevIndex >= 0) {
+                setCurrentPage(PAGE_ORDER[prevIndex]);
+            }
+        },
         goToPage: (page: PageType) => setCurrentPage(page),
         reset: () => setCurrentPage('WelcomePage'),
         getPageNumber: (page: PageType) => PAGE_ORDER.indexOf(page) + 1,

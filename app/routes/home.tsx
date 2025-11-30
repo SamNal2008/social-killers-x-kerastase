@@ -96,7 +96,7 @@ export default function Home() {
 
   return (
     <AnimatePresence mode="wait" custom={direction}>
-      {currentPage === 'Step3Page' ? (
+      {currentPage === 'Step2Page' ? (
         <motion.div
           key="keywords"
           custom={direction}
