@@ -31,6 +31,7 @@ Select if you should respect all plan depending on if the feature need frontend 
 - [ ] Add error handling
 - [ ] Add loading states
 - [ ] Refactor for code quality
+- [ ] Use best agents depending on the task needed to implement the feature 
 
 ### Validation Phase
 - [ ] All tests pass (`npm test`)
@@ -264,7 +265,7 @@ export const UserProfile: FC<Props> = ({ userId }) => {
 npm run dev
 ```
 
-Navigate to `http://localhost:5173`
+Navigate to `http://localhost:<PORT>`
 
 ### Testing Checklist
 
@@ -309,6 +310,11 @@ Navigate to `http://localhost:5173`
 - [ ] **Loading Path**: Check loading states
   - [ ] Loading indicators appear
   - [ ] No flash of content
+
+#### Design testing
+
+- [ ]Run the app by using playwright mcp to run the app
+- [ ] And then check the figma design to ensure it matches
 
 #### Keyboard Navigation
 
