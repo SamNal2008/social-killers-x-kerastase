@@ -69,3 +69,55 @@ export const fadeInVariants = {
     },
   },
 };
+
+/**
+ * Swipe card animations for Tinder-style interactions
+ * Cards exit with rotation based on swipe direction
+ */
+export const swipeCardVariants = {
+  enter: {
+    x: 0,
+    y: 0,
+    opacity: 1,
+    rotate: 0,
+    scale: 1,
+  },
+  exitRight: {
+    x: 500,
+    opacity: 0,
+    rotate: 20,
+    transition: {
+      duration: 0.4,
+      ease: PREMIUM_EASE,
+    },
+  },
+  exitLeft: {
+    x: -500,
+    opacity: 0,
+    rotate: -20,
+    transition: {
+      duration: 0.4,
+      ease: PREMIUM_EASE,
+    },
+  },
+};
+
+/**
+ * Drag constraints and spring configuration for swipe cards
+ */
+export const swipeDragConfig = {
+  drag: 'x' as const,
+  dragConstraints: { left: 0, right: 0 },
+  dragElastic: 0.7,
+  dragTransition: { bounceStiffness: 600, bounceDamping: 20 },
+};
+
+/**
+ * Calculate rotation based on drag position
+ * @param x - Current x position of drag
+ * @param maxRotation - Maximum rotation in degrees
+ */
+export const calculateDragRotation = (x: number, maxRotation: number = 15): number => {
+  const rotation = (x / 100) * maxRotation;
+  return Math.max(-maxRotation, Math.min(maxRotation, rotation));
+};

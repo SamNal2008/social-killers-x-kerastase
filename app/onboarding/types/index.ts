@@ -1,8 +1,12 @@
-export type PageType = 'WelcomePage' | 'NamePage' | 'Step2Page' | 'Step3Page' | 'Step4Page';
+export type PageType = 'WelcomePage' | 'NamePage' | 'KeywordPage' | 'TinderPage' | 'Step4Page';
 
 export interface FormData {
   name: string;
-  // More fields will be added for future steps
+  keywords: string[];
+  brands?: {
+    liked: string[];
+    passed: string[];
+  };
 }
 
 export interface FormHeaderProps {
@@ -20,3 +24,10 @@ export interface KeywordsScreenProps {
   onBack: () => void;
   onContinue: (keywords: string[]) => void;
 }
+
+export interface TinderScreenProps {
+  onBack: () => void;
+  onContinue: (liked: string[], passed: string[]) => void;
+}
+
+export type Brand = string;

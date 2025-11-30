@@ -9,6 +9,7 @@ import { localStorageUtils } from '~/shared/utils/localStorage';
 import { useStepStore } from '~/shared/stores/stepStore';
 import { pageTransitionVariants } from '~/shared/animations/transitions';
 import { KeywordsScreen } from '~/onboarding/components/KeywordsScreen';
+import { TinderScreen } from '../onboarding/components/TinderScreen';
 
 export function meta({ }: Route.MetaArgs) {
   return [
@@ -29,7 +30,11 @@ export default function Home() {
   const { currentPage, goToPreviousPage, goToNextPage } = useStepStore();
   const [direction, setDirection] = useState<'forward' | 'backward'>('forward');
   const [loadingState, setLoadingState] = useState<LoadingState>({ status: 'idle' });
-  const [formData, setFormData] = useState({ name: '', keywords: [] as string[] });
+  const [formData, setFormData] = useState<FormData>({
+    name: '',
+    keywords: [],
+    brands: { liked: [], passed: [] }
+  });
 
   const isLoading = loadingState.status === 'loading';
   const isError = loadingState.status === 'error';
@@ -89,14 +94,47 @@ export default function Home() {
 
   const handleKeywordsContinue = (keywords: string[]) => {
     setFormData((prev) => ({ ...prev, keywords }));
-    // For now, Continue button doesn't navigate anywhere
-    // This will be implemented when we add the next step
-    console.log('Selected keywords:', keywords);
+    setDirection('forward');
+    goToNextPage();
+  };
+
+  const handleBackToKeywords = () => {
+    setDirection('backward');
+    goToPreviousPage();
+    // Reset brands when going back
+    setFormData((prev) => ({
+      ...prev,
+      brands: { liked: [], passed: [] }
+    }));
+  };
+
+  const handleTinderContinue = (liked: string[], passed: string[]) => {
+    setFormData((prev) => ({
+      ...prev,
+      brands: { liked, passed }
+    }));
+    // Next step implementation coming soon
+    console.log('Finished onboarding:', { ...formData, brands: { liked, passed } });
   };
 
   return (
     <AnimatePresence mode="wait" custom={direction}>
-      {currentPage === 'Step2Page' ? (
+      {currentPage === 'TinderPage' ? (
+        <motion.div
+          key="tinder"
+          custom={direction}
+          variants={pageTransitionVariants}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          transition={pageTransitionVariants}
+        >
+          <TinderScreen
+            onBack={handleBackToKeywords}
+            onContinue={handleTinderContinue}
+          />
+        </motion.div>
+      ) : currentPage === 'Step2Page' ? (
         <motion.div
           key="keywords"
           custom={direction}

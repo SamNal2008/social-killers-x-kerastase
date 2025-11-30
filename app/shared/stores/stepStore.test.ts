@@ -130,7 +130,7 @@ describe('stepStore', () => {
         it('should go to specific page', () => {
             const { result } = renderHook(() => useStepStore());
             act(() => {
-                result.current.goToPage('Step2Page');
+                result.current.goToPage('KeywordPage');
             });
 
             expect(result.current.getCurrentPage()).toBe('Step2Page');
@@ -142,8 +142,8 @@ describe('stepStore', () => {
             const { result } = renderHook(() => useStepStore());
             expect(result.current.getPageNumber('WelcomePage')).toBe(1);
             expect(result.current.getPageNumber('NamePage')).toBe(2);
-            expect(result.current.getPageNumber('Step2Page')).toBe(3);
-            expect(result.current.getPageNumber('Step3Page')).toBe(4);
+            expect(result.current.getPageNumber('KeywordPage')).toBe(3);
+            expect(result.current.getPageNumber('TinderPage')).toBe(4);
             expect(result.current.getPageNumber('Step4Page')).toBe(5);
         });
     });
