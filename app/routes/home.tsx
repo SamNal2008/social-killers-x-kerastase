@@ -6,8 +6,9 @@ import { NameScreen } from '../onboarding/components/NameScreen';
 import type { FormStep } from '../onboarding/types';
 import type { Tables } from '~/shared/types/database.types';
 import { userService } from '~/shared/services/userService';
+import { pageTransitionVariants, pageTransitionConfig } from '~/shared/animations/transitions';
 
-export function meta({}: Route.MetaArgs) {
+export function meta({ }: Route.MetaArgs) {
   return [
     { title: "Kérastase Experience" },
     { name: "description", content: "Discover your subculture with Kérastase" },
@@ -63,37 +64,17 @@ export default function Home() {
     // This will be implemented when we add the next step
   };
 
-  const pageVariants = {
-    initial: (direction: 'forward' | 'backward') => ({
-      opacity: 0,
-      x: direction === 'forward' ? 30 : -30,
-    }),
-    animate: {
-      opacity: 1,
-      x: 0,
-    },
-    exit: (direction: 'forward' | 'backward') => ({
-      opacity: 0,
-      x: direction === 'forward' ? -30 : 30,
-    }),
-  };
-
-  const pageTransition = {
-    duration: 0.35,
-    ease: [0.22, 1, 0.36, 1] as [number, number, number, number], // Custom easing for premium feel
-  };
-
   return (
     <AnimatePresence mode="wait" custom={direction}>
       {currentStep === 'name' ? (
         <motion.div
           key="name"
           custom={direction}
-          variants={pageVariants}
+          variants={pageTransitionVariants}
           initial="initial"
           animate="animate"
           exit="exit"
-          transition={pageTransition}
+          transition={pageTransitionConfig}
         >
           <NameScreen
             onBack={handleBack}
@@ -104,18 +85,18 @@ export default function Home() {
         <motion.div
           key="welcome"
           custom={direction}
-          variants={pageVariants}
+          variants={pageTransitionVariants}
           initial="initial"
           animate="animate"
           exit="exit"
-          transition={pageTransition}
+          transition={pageTransitionConfig}
         >
           <Welcome
-    onBeginExperience={handleBeginExperience}
-    isLoading={isLoading}
-    isError={isError}
-    error={isError ? loadingState.error : undefined}
-  />
+            onBeginExperience={handleBeginExperience}
+            isLoading={isLoading}
+            isError={isError}
+            error={isError ? loadingState.error : undefined}
+          />
         </motion.div>
       )}
     </AnimatePresence>
