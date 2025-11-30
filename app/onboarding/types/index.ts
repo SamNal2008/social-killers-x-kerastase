@@ -1,4 +1,4 @@
-export type FormStep = 'welcome' | 'name' | 'step2' | 'step3' | 'step4';
+export type PageType = 'WelcomePage' | 'NamePage' | 'Step2Page' | 'Step3Page' | 'Step4Page';
 
 export interface FormData {
   name: string;

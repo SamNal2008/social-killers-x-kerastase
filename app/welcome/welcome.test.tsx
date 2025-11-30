@@ -66,93 +66,47 @@ describe('Welcome Component', () => {
       jest.clearAllMocks();
     });
 
-    it('should call userService.create when Begin button is clicked', async () => {
-      const mockUser: User = {
-        id: '123e4567-e89b-12d3-a456-426614174000',
-        name: 'Guest-1701388800000',
-        connection_date: '2024-12-01T00:00:00.000Z',
-        created_at: '2024-12-01T00:00:00.000Z',
-        updated_at: '2024-12-01T00:00:00.000Z',
-      };
+    describe('User Interaction', () => {
+      it('should call onBeginExperience when button is clicked', async () => {
+        const mockOnBeginExperience = jest.fn();
 
-      (userService.create as jest.Mock).mockResolvedValue(mockUser);
+        render(<Welcome onBeginExperience={mockOnBeginExperience} />);
+        const button = screen.getByRole('button', { name: /begin the experience/i });
 
-      render(<Welcome />);
-      const button = screen.getByRole('button', { name: /begin the experience/i });
+        await userEvent.click(button);
 
-      await userEvent.click(button);
-
-      await waitFor(() => {
-        expect(userService.create).toHaveBeenCalledTimes(1);
+        expect(mockOnBeginExperience).toHaveBeenCalledTimes(1);
       });
-    });
 
-    it('should show loading state when creating user', async () => {
-      (userService.create as jest.Mock).mockImplementation(
-        () => new Promise((resolve) => setTimeout(resolve, 1000))
-      );
+      it('should show loading state when isLoading is true', () => {
+        render(<Welcome isLoading={true} />);
+        const button = screen.getByRole('button', { name: /begin the experience/i });
 
-      render(<Welcome />);
-      const button = screen.getByRole('button', { name: /begin the experience/i });
-
-      await userEvent.click(button);
-
-      // Button should be disabled during loading
-      expect(button).toBeDisabled();
-    });
-
-    it('should not create duplicate users on multiple clicks', async () => {
-      const mockUser: User = {
-        id: '123e4567-e89b-12d3-a456-426614174000',
-        name: 'Guest-1701388800000',
-        connection_date: '2024-12-01T00:00:00.000Z',
-        created_at: '2024-12-01T00:00:00.000Z',
-        updated_at: '2024-12-01T00:00:00.000Z',
-      };
-
-      (userService.create as jest.Mock).mockResolvedValue(mockUser);
-
-      render(<Welcome />);
-      const button = screen.getByRole('button', { name: /begin the experience/i });
-
-      // Click multiple times rapidly
-      const clickPromise = userEvent.click(button);
-      userEvent.click(button); // These should be ignored
-      userEvent.click(button); // These should be ignored
-
-      await clickPromise;
-
-      await waitFor(() => {
-        expect(userService.create).toHaveBeenCalledTimes(1);
+        expect(screen.getByText('Creating your profile...')).toBeInTheDocument();
+        expect(button).toBeDisabled();
       });
-    });
 
-    it('should handle error when user creation fails', async () => {
-      (userService.create as jest.Mock).mockRejectedValue(
-        new Error('Failed to create user: Database connection failed')
-      );
+      it('should show error message when isError is true', () => {
+        const error = new Error('Failed to create user: Database connection failed');
 
-      render(<Welcome />);
-      const button = screen.getByRole('button', { name: /begin the experience/i });
+        render(<Welcome isError={true} error={error} />);
 
-      await userEvent.click(button);
-
-      await waitFor(() => {
-        // Error message should be displayed
         expect(screen.getByText(/failed to create user/i)).toBeInTheDocument();
+        expect(screen.getByRole('alert')).toBeInTheDocument();
+      });
+
+      it('should not call onBeginExperience when button is disabled', async () => {
+        const mockOnBeginExperience = jest.fn();
+
+        render(<Welcome onBeginExperience={mockOnBeginExperience} isLoading={true} />);
+        const button = screen.getByRole('button', { name: /begin the experience/i });
+
+        await userEvent.click(button);
+
+        expect(mockOnBeginExperience).not.toHaveBeenCalled();
       });
     });
 
-    it('should call onBeginExperience when CTA button is clicked', async () => {
-      const user = userEvent.setup();
-      const mockOnBeginExperience = jest.fn();
 
-      render(<Welcome onBeginExperience={mockOnBeginExperience} />);
-
-      const ctaButton = screen.getByRole('button', { name: /begin the experience/i });
-      await user.click(ctaButton);
-
-      expect(mockOnBeginExperience).toHaveBeenCalledTimes(1);
-    });
   });
 });

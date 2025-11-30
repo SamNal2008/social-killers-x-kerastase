@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Route } from "./+types/home";
 import { Welcome } from "../welcome/welcome";
 import { NameScreen } from '../onboarding/components/NameScreen';
-import type { FormStep } from '../onboarding/types';
 import type { Tables } from '~/shared/types/database.types';
 import { userService } from '~/shared/services/userService';
+import { localStorageUtils } from '~/shared/utils/localStorage';
+import { useStepStore } from '~/shared/stores/stepStore';
 import { pageTransitionVariants, pageTransitionConfig } from '~/shared/animations/transitions';
 
 export function meta({ }: Route.MetaArgs) {
@@ -24,13 +25,30 @@ type LoadingState =
   | { status: 'error'; error: Error };
 
 export default function Home() {
-  const [currentStep, setCurrentStep] = useState<FormStep>('welcome');
+  const { currentPage, goToPreviousPage, goToNextPage } = useStepStore();
   const [direction, setDirection] = useState<'forward' | 'backward'>('forward');
   const [formData, setFormData] = useState({ name: '' });
   const [loadingState, setLoadingState] = useState<LoadingState>({ status: 'idle' });
 
   const isLoading = loadingState.status === 'loading';
   const isError = loadingState.status === 'error';
+
+
+  const createUser = async (): Promise<void> => {
+    setLoadingState({ status: 'loading' });
+
+    try {
+      const user = await userService.create();
+      localStorageUtils.setUserId(user.id);
+      setLoadingState({ status: 'success', user });
+    } catch (error) {
+      const appError = error instanceof Error
+        ? error
+        : new Error('An unexpected error occurred');
+
+      setLoadingState({ status: 'error', error: appError });
+    }
+  };
 
   const handleBeginExperience = async (): Promise<void> => {
     // Prevent multiple clicks using ref for immediate check
@@ -40,10 +58,9 @@ export default function Home() {
     setLoadingState({ status: 'loading' });
 
     try {
-      const user = await userService.create();
-      setLoadingState({ status: 'success', user });
+      await createUser();
       setDirection('forward');
-      setCurrentStep('name');
+      goToNextPage();
     } catch (error) {
       const appError = error instanceof Error
         ? error
@@ -54,19 +71,45 @@ export default function Home() {
   };
 
   const handleBack = () => {
+    goToPreviousPage();
     setDirection('backward');
-    setCurrentStep('welcome');
+
   };
 
-  const handleNameContinue = (name: string) => {
-    setFormData({ name });
-    // For now, Continue button doesn't navigate anywhere
-    // This will be implemented when we add the next step
+  const handleNameContinue = async (name: string) => {
+    const userId = localStorageUtils.getUserId();
+
+    if (!userId) {
+      console.error('No user ID found in localStorage');
+      return;
+    }
+
+    setLoadingState({ status: 'loading' });
+
+    try {
+      const updatedUser = await userService.update(userId, name);
+
+      // Save user name to localStorage
+      localStorageUtils.setUserName(name);
+
+      // Update step progress
+      goToNextPage();
+
+      setFormData({ name });
+      setLoadingState({ status: 'success', user: updatedUser });
+      setDirection('forward');
+    } catch (error) {
+      const appError = error instanceof Error
+        ? error
+        : new Error('Failed to update user name');
+
+      setLoadingState({ status: 'error', error: appError });
+    }
   };
 
   return (
     <AnimatePresence mode="wait" custom={direction}>
-      {currentStep === 'name' ? (
+      {currentPage === 'NamePage' ? (
         <motion.div
           key="name"
           custom={direction}
