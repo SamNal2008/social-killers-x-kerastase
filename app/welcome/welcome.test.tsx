@@ -142,5 +142,16 @@ describe('Welcome Component', () => {
         expect(screen.getByText(/failed to create user/i)).toBeInTheDocument();
       });
     });
+
+  it('should call onBeginExperience when CTA button is clicked', async () => {
+    const user = userEvent.setup();
+    const mockOnBeginExperience = jest.fn();
+
+    render(<Welcome onBeginExperience={mockOnBeginExperience} />);
+
+    const ctaButton = screen.getByRole('button', { name: /begin the experience/i });
+    await user.click(ctaButton);
+
+    expect(mockOnBeginExperience).toHaveBeenCalledTimes(1);
   });
 });
