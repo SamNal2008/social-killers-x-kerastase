@@ -24,4 +24,19 @@ export const userService = {
 
     return data;
   },
+
+  async update(userId: string, name: string): Promise<User> {
+    const { data, error } = await supabase
+      .from('users')
+      .update({ name })
+      .eq('id', userId)
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to update user: ${error.message}`);
+    }
+
+    return data;
+  },
 };

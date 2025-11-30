@@ -21,11 +21,11 @@ export const Input: FC<InputProps> = ({
           font-inter text-body-1
           text-neutral-dark
           placeholder:text-neutral-gray-200
-          border-0 border-b border-solid border-neutral-gray-200
+          border-0 border-b-[1.5px] border-solid border-neutral-gray-200
           bg-transparent
           px-0 py-4
-          transition-colors duration-200
-          focus:outline-none focus:border-primary
+          transition-all duration-300 ease-out
+          focus:outline-none focus:border-primary focus:border-b-2
           disabled:text-neutral-gray disabled:cursor-not-allowed
           ${hasError ? "border-feedback-error" : ""}
           ${className}

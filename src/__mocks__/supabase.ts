@@ -7,11 +7,11 @@ export const createMockSupabaseResponse = (data: any = null, error: any = null) 
 export const createMockSupabaseClient = () => {
   const mockSingle = jest.fn();
   const mockSelect = jest.fn(() => ({ single: mockSingle }));
+  const mockEq = jest.fn(() => ({ select: mockSelect, single: mockSingle }));
   const mockInsert = jest.fn(() => ({ select: mockSelect }));
-  const mockUpdate = jest.fn(() => ({ select: mockSelect }));
+  const mockUpdate = jest.fn(() => ({ eq: mockEq, select: mockSelect }));
   const mockDelete = jest.fn(() => ({ select: mockSelect }));
   const mockUpsert = jest.fn(() => ({ select: mockSelect }));
-  const mockEq = jest.fn(() => ({ select: mockSelect, single: mockSingle }));
   const mockNeq = jest.fn(() => ({ select: mockSelect, single: mockSingle }));
   const mockGt = jest.fn(() => ({ select: mockSelect, single: mockSingle }));
   const mockLt = jest.fn(() => ({ select: mockSelect, single: mockSingle }));

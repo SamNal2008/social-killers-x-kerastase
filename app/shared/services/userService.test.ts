@@ -98,4 +98,64 @@ describe('userService', () => {
       expect(result2.name).toMatch(/^Guest-\d+$/);
     });
   });
+
+  describe('update', () => {
+    it('should update user name successfully', async () => {
+      const userId = '123e4567-e89b-12d3-a456-426614174000';
+      const newName = 'John Doe';
+      const mockUpdatedUser: User = {
+        id: userId,
+        name: newName,
+        connection_date: '2024-12-01T00:00:00.000Z',
+        created_at: '2024-12-01T00:00:00.000Z',
+        updated_at: '2024-12-01T00:01:00.000Z',
+      };
+
+      const { supabase } = await import('./supabase');
+      const mockClient = supabase as any;
+      mockClient._mocks.single.mockResolvedValue({ data: mockUpdatedUser, error: null });
+
+      const result = await userService.update(userId, newName);
+
+      expect(result).toEqual(mockUpdatedUser);
+      expect(mockClient.from).toHaveBeenCalledWith('users');
+      expect(mockClient._mocks.update).toHaveBeenCalledWith({ name: newName });
+      expect(mockClient._mocks.eq).toHaveBeenCalledWith('id', userId);
+    });
+
+    it('should throw error when database update fails', async () => {
+      const userId = '123e4567-e89b-12d3-a456-426614174000';
+      const newName = 'John Doe';
+
+      const { supabase } = await import('./supabase');
+      const mockClient = supabase as any;
+      mockClient._mocks.single.mockResolvedValue({
+        data: null,
+        error: { message: 'User not found' },
+      });
+
+      await expect(userService.update(userId, newName)).rejects.toThrow('Failed to update user: User not found');
+    });
+
+    it('should return updated user with correct name', async () => {
+      const userId = '123e4567-e89b-12d3-a456-426614174000';
+      const newName = 'Jane Smith';
+      const mockUpdatedUser: User = {
+        id: userId,
+        name: newName,
+        connection_date: '2024-12-01T00:00:00.000Z',
+        created_at: '2024-12-01T00:00:00.000Z',
+        updated_at: '2024-12-01T00:01:00.000Z',
+      };
+
+      const { supabase } = await import('./supabase');
+      const mockClient = supabase as any;
+      mockClient._mocks.single.mockResolvedValue({ data: mockUpdatedUser, error: null });
+
+      const result = await userService.update(userId, newName);
+
+      expect(result.name).toBe(newName);
+      expect(result.id).toBe(userId);
+    });
+  });
 });
