@@ -14,7 +14,7 @@ export const ProgressIndicator: FC<ProgressIndicatorProps> = ({
   label = "Kérastase Experience",
   className = "",
 }) => {
-  const progressPercentage = (currentStep / totalSteps) * 100;
+  const progressPercentage = Math.floor((currentStep / totalSteps) * 100);
 
   return (
     <div className={`flex flex-col gap-3 w-full ${className}`}>

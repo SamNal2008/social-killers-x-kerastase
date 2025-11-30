@@ -11,6 +11,7 @@ export const Input: FC<InputProps> = ({
   className = "",
   ...props
 }) => {
+  const hasError = error !== null && error !== undefined;
   return (
     <div className="w-full">
       <input
@@ -26,14 +27,14 @@ export const Input: FC<InputProps> = ({
           transition-colors duration-200
           focus:outline-none focus:border-primary
           disabled:text-neutral-gray disabled:cursor-not-allowed
-          ${error ? "border-feedback-error" : ""}
+          ${hasError ? "border-feedback-error" : ""}
           ${className}
         `}
         {...props}
       />
-      {error && (
+      {hasError ? (
         <p className="text-feedback-error text-body-2 mt-1">{error}</p>
-      )}
+      ) : null}
     </div>
   );
 };

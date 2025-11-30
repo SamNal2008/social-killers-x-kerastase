@@ -269,6 +269,8 @@ export default function ComponentShowcase() {
             </Title>
             <div className="bg-neutral-white p-8 rounded-lg">
               <Polaroid
+                imageSrc="https://images.unsplash.com/photo-1522338242992-e1a54906a8da?w=312&h=300&fit=crop"
+                imageAlt="Aesop product"
                 title="Aesop"
                 subtitle="Swipe to decide"
                 currentItem={2}
