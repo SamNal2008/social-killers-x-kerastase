@@ -8,6 +8,14 @@ When queried, ask me to provided the feature to implement
 
 Select if you should respect all plan depending on if the feature need frontend development or only supabase development
 
+## Before everything
+
+- Checkout on main : `gco main`
+- Pull latest changes : `gl`
+- Create a git worktree to develop your own feature : `git worktree add ../feature-name`
+- Checkout on your feature branch : `gcb feature-name`
+- The feature name should always be : `feature/ticket-number` so ask the ticket if needed
+
 ---
 
 ## Pre-Development Checklist
