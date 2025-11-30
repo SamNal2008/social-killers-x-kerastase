@@ -53,3 +53,8 @@ Configure these in GitHub Settings → Secrets and Variables → Actions:
 - `SUPABASE_ACCESS_TOKEN`: Personal Access Token for Supabase CLI (starts with `sbp_`).
 - `SUPABASE_DB_PASSWORD`: Password for the remote Supabase database.
 - `SUPABASE_PROJECT_ID`: Reference ID of the Supabase project.
+
+
+## Environment variables
+
+- All environment variables needed by the frontend are set on netlify console directly
