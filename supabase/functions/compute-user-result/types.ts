@@ -11,21 +11,25 @@ export interface TribeMatch {
   percentage: number;
 }
 
-export interface ComputeUserResultResponse {
-  success: boolean;
-  data?: {
-    userResultId: string;
-    subcultureId: string;
-    subcultureName: string;
-    dominantTribeId: string;
-    dominantTribeName: string;
-    tribes: TribeMatch[];
-  };
-  error?: {
-    code: string;
-    message: string;
-  };
-}
+export type ComputeUserResultResponse =
+  | {
+      success: true;
+      data: {
+        userResultId: string;
+        subcultureId: string;
+        subcultureName: string;
+        dominantTribeId: string;
+        dominantTribeName: string;
+        tribes: TribeMatch[];
+      };
+    }
+  | {
+      success: false;
+      error: {
+        code: string;
+        message: string;
+      };
+    };
 
 export interface UserAnswerData {
   id: string;

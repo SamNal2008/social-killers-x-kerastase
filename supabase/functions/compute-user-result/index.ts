@@ -26,46 +26,45 @@ interface DominantTribe {
   name: string;
 }
 
-const extractMoodboardSubculture = (userAnswer: any) => {
-  const moodboard = Array.isArray(userAnswer.moodboard)
-    ? userAnswer.moodboard[0]
-    : userAnswer.moodboard;
+interface TribeData {
+  tribe_id: string;
+  tribe: {
+    id: string;
+    name: string;
+  };
+}
 
-  const subculture = Array.isArray(moodboard.subculture)
-    ? moodboard.subculture[0]
-    : moodboard.subculture;
-
-  if (!subculture) {
+const extractMoodboardSubculture = (userAnswer: UserAnswerData) => {
+  if (!userAnswer.moodboard?.subculture) {
     throw new Error('Moodboard has no associated subculture');
   }
 
-  return subculture;
+  return userAnswer.moodboard.subculture;
 };
 
 const fetchTribesByIds = async (
   supabase: SupabaseClient<Database>,
   tableName: 'keywords' | 'brands',
   ids: string[]
-) => {
+): Promise<TribeData[]> => {
   const { data } = await supabase
     .from(tableName)
     .select('tribe_id, tribe:tribes(id, name)')
     .in('id', ids);
 
-  return data || [];
+  return (data as TribeData[]) || [];
 };
 
-const countTribes = (keywordTribes: any[], brandTribes: any[]): TribeCounts => {
+const countTribes = (keywordTribes: TribeData[], brandTribes: TribeData[]): TribeCounts => {
   const tribeCounts: TribeCounts = {};
 
-  const processTribes = (items: any[]) => {
+  const processTribes = (items: TribeData[]) => {
     items.forEach(item => {
-      const tribe = Array.isArray(item.tribe) ? item.tribe[0] : item.tribe;
-      if (tribe) {
-        if (!tribeCounts[tribe.id]) {
-          tribeCounts[tribe.id] = { count: 0, name: tribe.name };
+      if (item.tribe) {
+        if (!tribeCounts[item.tribe.id]) {
+          tribeCounts[item.tribe.id] = { count: 0, name: item.tribe.name };
         }
-        tribeCounts[tribe.id].count++;
+        tribeCounts[item.tribe.id].count++;
       }
     });
   };
@@ -100,6 +99,26 @@ const calculateTribePercentage = (count: number, total: number): number => {
   return total > 0 ? Math.round((count / total) * 10000) / 100 : 0;
 };
 
+const buildErrorResponse = (
+  code: string,
+  message: string,
+  status: number
+): Response => {
+  return new Response(
+    JSON.stringify({
+      success: false,
+      error: {
+        code,
+        message,
+      },
+    } satisfies ComputeUserResultResponse),
+    {
+      status,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    }
+  );
+};
+
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -109,19 +128,7 @@ Deno.serve(async (req) => {
   try {
     // Validate request method
     if (req.method !== 'POST') {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: {
-            code: 'METHOD_NOT_ALLOWED',
-            message: 'Only POST method is allowed',
-          },
-        } satisfies ComputeUserResultResponse),
-        {
-          status: 405,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
+      return buildErrorResponse('METHOD_NOT_ALLOWED', 'Only POST method is allowed', 405);
     }
 
     // Parse and validate request body
@@ -129,36 +136,12 @@ Deno.serve(async (req) => {
     try {
       requestBody = await req.json();
     } catch {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: {
-            code: 'INVALID_JSON',
-            message: 'Request body must be valid JSON',
-          },
-        } satisfies ComputeUserResultResponse),
-        {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
+      return buildErrorResponse('INVALID_JSON', 'Request body must be valid JSON', 400);
     }
 
     // Validate userAnswerId
     if (!requestBody.userAnswerId || typeof requestBody.userAnswerId !== 'string') {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: {
-            code: 'INVALID_REQUEST',
-            message: 'userAnswerId is required and must be a string',
-          },
-        } satisfies ComputeUserResultResponse),
-        {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
+      return buildErrorResponse('INVALID_REQUEST', 'userAnswerId is required and must be a string', 400);
     }
 
     // Initialize Supabase client
@@ -167,19 +150,7 @@ Deno.serve(async (req) => {
 
     if (!supabaseUrl || !supabaseServiceKey) {
       console.error('Missing Supabase configuration');
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: {
-            code: 'CONFIGURATION_ERROR',
-            message: 'Server configuration error',
-          },
-        } satisfies ComputeUserResultResponse),
-        {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
+      return buildErrorResponse('CONFIGURATION_ERROR', 'Server configuration error', 500);
     }
 
     const supabase = createClient<Database>(supabaseUrl, supabaseServiceKey);
@@ -277,18 +248,6 @@ Deno.serve(async (req) => {
     );
   } catch (error) {
     console.error('Unexpected error:', error);
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: {
-          code: 'INTERNAL_ERROR',
-          message: 'An unexpected error occurred',
-        },
-      } satisfies ComputeUserResultResponse),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    );
+    return buildErrorResponse('INTERNAL_ERROR', 'An unexpected error occurred', 500);
   }
 });
