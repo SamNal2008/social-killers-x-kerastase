@@ -8,6 +8,7 @@ import { userService } from '~/shared/services/userService';
 import { localStorageUtils } from '~/shared/utils/localStorage';
 import { useStepStore } from '~/shared/stores/stepStore';
 import { pageTransitionVariants } from '~/shared/animations/transitions';
+import { KeywordsScreen } from '~/onboarding/components/KeywordsScreen';
 
 export function meta({ }: Route.MetaArgs) {
   return [
@@ -27,8 +28,8 @@ type LoadingState =
 export default function Home() {
   const { currentPage, goToPreviousPage, goToNextPage } = useStepStore();
   const [direction, setDirection] = useState<'forward' | 'backward'>('forward');
-  const [formData, setFormData] = useState({ name: '' });
   const [loadingState, setLoadingState] = useState<LoadingState>({ status: 'idle' });
+  const [formData, setFormData] = useState({ name: '', keywords: [] as string[] });
 
   const isLoading = loadingState.status === 'loading';
   const isError = loadingState.status === 'error';
@@ -70,45 +71,47 @@ export default function Home() {
     }
   };
 
-  const handleBack = () => {
-    goToPreviousPage();
+  const handleBackToWelcome = () => {
     setDirection('backward');
+    goToPreviousPage();
   };
 
-  const handleNameContinue = async (name: string) => {
-    const userId = localStorageUtils.getUserId();
+  const handleNameContinue = (name: string) => {
+    setFormData((prev) => ({ ...prev, name }));
+    setDirection('forward');
+    goToNextPage();
+  };
 
-    if (!userId) {
-      console.error('No user ID found in localStorage');
-      return;
-    }
+  const handleBackToName = () => {
+    setDirection('backward');
+    goToPreviousPage();
+  };
 
-    setLoadingState({ status: 'loading' });
-
-    try {
-      const updatedUser = await userService.update(userId, name);
-
-      // Save user name to localStorage
-      localStorageUtils.setUserName(name);
-
-      // Update step progress
-      goToNextPage();
-
-      setFormData({ name });
-      setLoadingState({ status: 'success', user: updatedUser });
-      setDirection('forward');
-    } catch (error) {
-      const appError = error instanceof Error
-        ? error
-        : new Error('Failed to update user name');
-
-      setLoadingState({ status: 'error', error: appError });
-    }
+  const handleKeywordsContinue = (keywords: string[]) => {
+    setFormData((prev) => ({ ...prev, keywords }));
+    // For now, Continue button doesn't navigate anywhere
+    // This will be implemented when we add the next step
+    console.log('Selected keywords:', keywords);
   };
 
   return (
     <AnimatePresence mode="wait" custom={direction}>
-      {currentPage === 'NamePage' ? (
+      {currentPage === 'Step3Page' ? (
+        <motion.div
+          key="keywords"
+          custom={direction}
+          variants={pageTransitionVariants}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          transition={pageTransitionVariants}
+        >
+          <KeywordsScreen
+            onBack={handleBackToName}
+            onContinue={handleKeywordsContinue}
+          />
+        </motion.div>
+      ) : currentPage === 'NamePage' ? (
         <motion.div
           key="name"
           custom={direction}
@@ -119,7 +122,7 @@ export default function Home() {
           transition={pageTransitionVariants}
         >
           <NameScreen
-            onBack={handleBack}
+            onBack={handleBackToWelcome}
             onContinue={handleNameContinue}
           />
         </motion.div>
@@ -140,7 +143,8 @@ export default function Home() {
             error={isError ? loadingState.error : undefined}
           />
         </motion.div>
-      )}
-    </AnimatePresence>
+      )
+      }
+    </AnimatePresence >
   );
 }

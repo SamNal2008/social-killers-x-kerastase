@@ -15,3 +15,8 @@ export interface NameScreenProps {
   onBack: () => void;
   onContinue: (name: string) => void;
 }
+
+export interface KeywordsScreenProps {
+  onBack: () => void;
+  onContinue: (keywords: string[]) => void;
+}
