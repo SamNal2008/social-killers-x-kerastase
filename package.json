@@ -17,6 +17,7 @@
     "db:status": "supabase status"
   },
   "dependencies": {
+    "@netlify/vite-plugin-react-router": "^2.1.2",
     "@react-router/node": "^7.9.2",
     "@react-router/serve": "^7.9.2",
     "@supabase/supabase-js": "^2.84.0",
