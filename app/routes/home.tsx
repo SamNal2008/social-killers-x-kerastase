@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Route } from "./+types/home";
 import { Welcome } from "../welcome/welcome";
@@ -7,7 +7,7 @@ import type { Tables } from '~/shared/types/database.types';
 import { userService } from '~/shared/services/userService';
 import { localStorageUtils } from '~/shared/utils/localStorage';
 import { useStepStore } from '~/shared/stores/stepStore';
-import { pageTransitionVariants, pageTransitionConfig } from '~/shared/animations/transitions';
+import { pageTransitionVariants } from '~/shared/animations/transitions';
 
 export function meta({ }: Route.MetaArgs) {
   return [
@@ -73,7 +73,6 @@ export default function Home() {
   const handleBack = () => {
     goToPreviousPage();
     setDirection('backward');
-
   };
 
   const handleNameContinue = async (name: string) => {
@@ -107,17 +106,32 @@ export default function Home() {
     }
   };
 
+  const pageVariants = {
+    initial: (direction: 'forward' | 'backward') => ({
+      opacity: 0,
+      x: direction === 'forward' ? 30 : -30,
+    }),
+    animate: {
+      opacity: 1,
+      x: 0,
+    },
+    exit: (direction: 'forward' | 'backward') => ({
+      opacity: 0,
+      x: direction === 'forward' ? -30 : 30,
+    }),
+  };
+
   return (
     <AnimatePresence mode="wait" custom={direction}>
       {currentPage === 'NamePage' ? (
         <motion.div
           key="name"
           custom={direction}
-          variants={pageTransitionVariants}
+          variants={pageVariants}
           initial="initial"
           animate="animate"
           exit="exit"
-          transition={pageTransitionConfig}
+          transition={pageTransitionVariants}
         >
           <NameScreen
             onBack={handleBack}
@@ -128,11 +142,11 @@ export default function Home() {
         <motion.div
           key="welcome"
           custom={direction}
-          variants={pageTransitionVariants}
+          variants={pageVariants}
           initial="initial"
           animate="animate"
           exit="exit"
-          transition={pageTransitionConfig}
+          transition={pageTransitionVariants}
         >
           <Welcome
             onBeginExperience={handleBeginExperience}
