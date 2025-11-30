@@ -1,5 +1,7 @@
 # Development Workflow Command
 
+IMPORTANT : EVERY TIME WRITE YOUR PLAN AND CONTEXT IN A MD FILE SO I CAN CONTINUE IF NEEDED
+
 ## Overview
 
 This command enforces the Test-Driven Development workflow for implementing new features. For codebase standards and best practices, see `CLAUDE.md`.
@@ -12,8 +14,7 @@ Select if you should respect all plan depending on if the feature need frontend 
 
 - Checkout on main : `gco main`
 - Pull latest changes : `gl`
-- Create a git worktree to develop your own feature : `git worktree add ../feature-name`
-- Checkout on your feature branch : `gcb feature-name`
+- Create a git worktree to develop your own feature : `git worktree add .developments/feature-name`
 - The feature name should always be : `feature/ticket-number` so ask the ticket if needed
 
 ---
