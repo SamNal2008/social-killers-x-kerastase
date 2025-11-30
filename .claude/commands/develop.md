@@ -31,6 +31,7 @@ Select if you should respect all plan depending on if the feature need frontend 
 - [ ] Add error handling
 - [ ] Add loading states
 - [ ] Refactor for code quality
+- [ ] Use best agents depending on the task needed to implement the feature 
 
 ### Validation Phase
 - [ ] All tests pass (`npm test`)
