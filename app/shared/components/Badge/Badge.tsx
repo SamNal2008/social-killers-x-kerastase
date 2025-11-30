@@ -5,6 +5,7 @@ export interface BadgeProps {
   className?: string;
   onClick?: () => void;
   selected?: boolean;
+  icon?: React.ReactNode;
 }
 
 export const Badge: FC<BadgeProps> = ({
@@ -12,6 +13,7 @@ export const Badge: FC<BadgeProps> = ({
   className = "",
   onClick,
   selected = false,
+  icon,
 }) => {
   const isInteractive = !!onClick;
 
@@ -26,19 +28,21 @@ export const Badge: FC<BadgeProps> = ({
         rounded-full
         border border-solid
         transition-all duration-200
+        flex items-center gap-2
         ${
           selected
-            ? "bg-primary text-neutral-white border-primary"
+            ? "bg-neutral-dark text-neutral-white border-neutral-dark"
             : "bg-transparent text-neutral-dark border-neutral-gray-200"
         }
         ${
           isInteractive
-            ? "cursor-pointer hover:border-primary hover:bg-primary/10 active:bg-primary/20"
+            ? "cursor-pointer hover:border-neutral-dark hover:bg-neutral-dark/10 active:bg-neutral-dark/20"
             : "cursor-default"
         }
         ${className}
       `}
     >
+      {selected && icon}
       {children}
     </button>
   );
