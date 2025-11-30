@@ -578,7 +578,7 @@ For implementing new features, use the `/develop` command which enforces:
 ✅ **Plan** Always generate a plan that is validated before going to changes
 ✅ **Screaming Architecture** - Feature-based organization
 ✅ **Mobile-First Design** - Always design for mobile first
-✅ **Type Safety** - Strict TypeScript, no `any`
+✅ **Type Safety** - Strict TypeScript, NEVER USE `any` as type
 ✅ **Self-Documenting Code** - No method docs, clear names/types
 ✅ **Security** - Environment variables, input validation, RLS
 ✅ **Testing** - TDD approach, comprehensive coverage
