@@ -11,6 +11,10 @@ export default {
                 jsx: 'react-jsx',
                 esModuleInterop: true,
                 verbatimModuleSyntax: false,
+                module: 'ES2022',
+                target: 'ES2022',
+                lib: ['DOM', 'DOM.Iterable', 'ES2022'],
+                moduleResolution: 'bundler',
             }
         }],
     },
