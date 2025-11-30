@@ -1,4 +1,8 @@
 import type { FC } from 'react';
+import { Button } from '~/shared/components/Button/Button';
+import { Body } from '~/shared/components/Typography/Body';
+import { Caption } from '~/shared/components/Typography/Caption';
+import { Title } from '~/shared/components/Typography/Title';
 import heroImage from './hero-image.png';
 
 export const Welcome: FC = () => {
@@ -7,9 +11,9 @@ export const Welcome: FC = () => {
       <div className="flex flex-col gap-10 md:gap-12 lg:gap-14 items-center w-full max-w-[344.914px] md:max-w-md lg:max-w-lg">
         {/* Caption */}
         <div className="flex items-center justify-center w-full">
-          <p className="font-[family-name:var(--font-inter)] font-semibold text-[length:var(--font-size-caption-1)] md:text-xs text-[var(--color-neutral-dark)] text-center uppercase tracking-[length:var(--letter-spacing-caption-wide)] leading-normal">
+          <Caption variant="1" className="text-[var(--color-neutral-dark)] text-center md:text-xs">
             Kérastase Paris
-          </p>
+          </Caption>
         </div>
 
         {/* Hero Image */}
@@ -25,42 +29,28 @@ export const Welcome: FC = () => {
         <div className="flex flex-col gap-6 md:gap-7 items-start w-full">
           {/* Heading */}
           <div className="flex flex-col items-center justify-center w-full">
-            <h1 className="font-[family-name:var(--font-crimson)] font-normal text-[length:var(--font-size-title-h1)] md:text-[40px] lg:text-[44px] text-[var(--color-neutral-dark)] text-center leading-normal px-8 md:px-12">
+            <Title variant="h1" className="text-[var(--color-neutral-dark)] text-center md:text-[40px] lg:text-[44px] px-8 md:px-12">
               Discover your subculture
-            </h1>
+            </Title>
           </div>
 
           {/* Subtitle */}
           <div className="flex flex-col items-center justify-center w-full">
-            <p className="font-[family-name:var(--font-inter)] font-normal text-[length:var(--font-size-body-1)] md:text-[17px] text-[var(--color-neutral-gray)] text-center leading-normal px-1 md:px-4">
+            <Body variant="1" className="text-[var(--color-neutral-gray)] text-center md:text-[17px] px-1 md:px-4">
               A curated journey to reveal the aesthetic you naturally resonate with.
-            </p>
+            </Body>
           </div>
         </div>
 
         {/* CTA Button */}
-        <button
-          className="
-            bg-[var(--color-neutral-dark)]
-            hover:bg-opacity-90
-            active:bg-opacity-80
-            flex items-center justify-center
-            h-[52px] md:h-[56px]
-            w-full
-            px-5 py-4
-            rounded-lg
-            overflow-hidden
-            transition-all duration-200 ease-in-out
-            focus:outline-none focus:ring-2 focus:ring-[var(--color-neutral-dark)] focus:ring-offset-2
-            disabled:opacity-50 disabled:cursor-not-allowed
-          "
+        <Button
+          variant="primary"
+          className="w-full h-[52px] md:h-[56px] flex items-center justify-center"
           type="button"
           aria-label="Begin the experience"
         >
-          <span className="font-[family-name:var(--font-inter)] font-normal text-[length:var(--font-size-body-2)] md:text-base text-white text-center whitespace-nowrap">
-            Begin the experience
-          </span>
-        </button>
+          Begin the experience
+        </Button>
       </div>
     </main>
   );
