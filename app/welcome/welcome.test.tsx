@@ -119,7 +119,7 @@ describe('Welcome Component', () => {
       const clickPromise = userEvent.click(button);
       userEvent.click(button); // These should be ignored
       userEvent.click(button); // These should be ignored
-      
+
       await clickPromise;
 
       await waitFor(() => {
@@ -143,15 +143,16 @@ describe('Welcome Component', () => {
       });
     });
 
-  it('should call onBeginExperience when CTA button is clicked', async () => {
-    const user = userEvent.setup();
-    const mockOnBeginExperience = jest.fn();
+    it('should call onBeginExperience when CTA button is clicked', async () => {
+      const user = userEvent.setup();
+      const mockOnBeginExperience = jest.fn();
 
-    render(<Welcome onBeginExperience={mockOnBeginExperience} />);
+      render(<Welcome onBeginExperience={mockOnBeginExperience} />);
 
-    const ctaButton = screen.getByRole('button', { name: /begin the experience/i });
-    await user.click(ctaButton);
+      const ctaButton = screen.getByRole('button', { name: /begin the experience/i });
+      await user.click(ctaButton);
 
-    expect(mockOnBeginExperience).toHaveBeenCalledTimes(1);
+      expect(mockOnBeginExperience).toHaveBeenCalledTimes(1);
+    });
   });
 });
