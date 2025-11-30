@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import type { Route } from "./+types/home";
 import { Welcome } from "../welcome/welcome";
 import { NameScreen } from '../onboarding/components/NameScreen';
@@ -23,6 +24,7 @@ type LoadingState =
 
 export default function Home() {
   const [currentStep, setCurrentStep] = useState<FormStep>('welcome');
+  const [direction, setDirection] = useState<'forward' | 'backward'>('forward');
   const [formData, setFormData] = useState({ name: '' });
   const [loadingState, setLoadingState] = useState<LoadingState>({ status: 'idle' });
 
@@ -39,6 +41,7 @@ export default function Home() {
     try {
       const user = await userService.create();
       setLoadingState({ status: 'success', user });
+      setDirection('forward');
       setCurrentStep('name');
     } catch (error) {
       const appError = error instanceof Error
@@ -50,6 +53,7 @@ export default function Home() {
   };
 
   const handleBack = () => {
+    setDirection('backward');
     setCurrentStep('welcome');
   };
 
@@ -59,19 +63,61 @@ export default function Home() {
     // This will be implemented when we add the next step
   };
 
-  if (currentStep === 'name') {
-    return (
-      <NameScreen
-        onBack={handleBack}
-        onContinue={handleNameContinue}
-      />
-    );
-  }
+  const pageVariants = {
+    initial: (direction: 'forward' | 'backward') => ({
+      opacity: 0,
+      x: direction === 'forward' ? 30 : -30,
+    }),
+    animate: {
+      opacity: 1,
+      x: 0,
+    },
+    exit: (direction: 'forward' | 'backward') => ({
+      opacity: 0,
+      x: direction === 'forward' ? -30 : 30,
+    }),
+  };
 
-  return <Welcome
+  const pageTransition = {
+    duration: 0.35,
+    ease: [0.22, 1, 0.36, 1] as [number, number, number, number], // Custom easing for premium feel
+  };
+
+  return (
+    <AnimatePresence mode="wait" custom={direction}>
+      {currentStep === 'name' ? (
+        <motion.div
+          key="name"
+          custom={direction}
+          variants={pageVariants}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          transition={pageTransition}
+        >
+          <NameScreen
+            onBack={handleBack}
+            onContinue={handleNameContinue}
+          />
+        </motion.div>
+      ) : (
+        <motion.div
+          key="welcome"
+          custom={direction}
+          variants={pageVariants}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          transition={pageTransition}
+        >
+          <Welcome
     onBeginExperience={handleBeginExperience}
     isLoading={isLoading}
     isError={isError}
     error={isError ? loadingState.error : undefined}
-  />;
+  />
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
 }
