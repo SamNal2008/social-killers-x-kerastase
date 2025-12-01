@@ -39,6 +39,10 @@ export const DetailsScreen: FC<DetailsScreenProps> = ({ userResultId }) => {
     navigate(`/results?userResultId=${userResultId}`);
   };
 
+  const handleGenerateMoodboard = () => {
+    navigate('/camera');
+  };
+
   if (loadingState === 'loading') {
     return (
       <div className="bg-surface-light min-h-screen p-6 md:p-8 flex items-center justify-center">
@@ -204,6 +208,7 @@ export const DetailsScreen: FC<DetailsScreenProps> = ({ userResultId }) => {
             <Button
               variant="primary"
               className="w-full h-[52px] flex items-center justify-center"
+              onClick={handleGenerateMoodboard}
             >
               Generate my AI moodboard
             </Button>

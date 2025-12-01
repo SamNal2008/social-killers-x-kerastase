@@ -5,4 +5,5 @@ export default [
   route("components", "routes/components.tsx"),
   route("results", "routes/results.tsx"),
   route("details", "routes/details.tsx"),
+  route("camera", "routes/camera.tsx"),
 ] satisfies RouteConfig;
