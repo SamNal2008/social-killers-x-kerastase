@@ -12,6 +12,18 @@ export interface GenerateImageResponse {
     userResultId: string;
 }
 
+interface EdgeFunctionResponse {
+    success: boolean;
+    data?: {
+        imageUrl: string;
+        userResultId: string;
+    };
+    error?: {
+        code: string;
+        message: string;
+    };
+}
+
 export const imageGenerationService = {
     /**
      * Generates a personalized image using the Edge Function
@@ -26,7 +38,7 @@ export const imageGenerationService = {
         }
 
         try {
-            const { data, error } = await supabase.functions.invoke('generate-image', {
+            const { data, error } = await supabase.functions.invoke<EdgeFunctionResponse>('generate-image', {
                 body: {
                     userResultId: request.userResultId,
                     userPhoto: request.userPhoto,
@@ -38,11 +50,16 @@ export const imageGenerationService = {
                 throw new Error(`Failed to generate image: ${error.message}`);
             }
 
-            if (!data || !data.imageUrl) {
-                throw new Error('Invalid response from image generation service');
+            if (!data) {
+                throw new Error('No response from image generation service');
             }
 
-            return data as GenerateImageResponse;
+            if (!data.success || !data.data) {
+                const errorMessage = data.error?.message || 'Unknown error';
+                throw new Error(`Image generation failed: ${errorMessage}`);
+            }
+
+            return data.data;
         } catch (error) {
             console.error('Error generating image:', error);
             throw error instanceof Error ? error : new Error('Failed to generate image');
