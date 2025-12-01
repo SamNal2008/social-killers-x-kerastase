@@ -2,12 +2,13 @@ import type { FC } from 'react';
 import { useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
-import { ArrowLeft } from 'lucide-react';
-import { Button } from '~/shared/components/Button/Button';
 import { Title } from '~/shared/components/Typography/Title';
 import { Body } from '~/shared/components/Typography/Body';
 import { useCamera } from '../hooks/useCamera';
 import { staggerContainerVariants, staggerItemVariants } from '~/shared/animations/transitions';
+import { CameraErrorScreen } from './CameraErrorScreen';
+import { CameraResultSelfie } from './CameraResultSelfie';
+import { CameraBackButton } from './CameraBackButton';
 
 export const CameraScreen: FC = () => {
   const navigate = useNavigate();
@@ -44,135 +45,33 @@ export const CameraScreen: FC = () => {
   // Browser doesn't support camera
   if (state.status === 'unsupported') {
     return (
-      <div className="bg-surface-light min-h-screen p-6 md:p-8">
-        <motion.div
-          className="flex flex-col gap-10 md:gap-12 w-full max-w-[345px] md:max-w-4xl mx-auto"
-          variants={staggerContainerVariants}
-          initial="hidden"
-          animate="show"
-        >
-          <motion.div variants={staggerItemVariants}>
-            <Button
-              variant="tertiary"
-              onClick={handleBack}
-              type="button"
-              aria-label="Back"
-            >
-              <ArrowLeft size={14} />
-              Back
-            </Button>
-          </motion.div>
-
-          <div className="flex flex-col gap-6 items-center justify-center min-h-[400px]">
-            <motion.div variants={staggerItemVariants}>
-              <Title variant="h2" className="text-neutral-dark text-center">
-                Camera not supported
-              </Title>
-            </motion.div>
-            <motion.div variants={staggerItemVariants}>
-              <Body variant="1" className="text-neutral-gray text-center max-w-[322px]">
-                Your browser does not support camera access. Please try using a different browser like Chrome, Safari, or Firefox.
-              </Body>
-            </motion.div>
-          </div>
-        </motion.div>
-      </div>
+      <CameraErrorScreen
+        variant="unsupported"
+        onBack={handleBack}
+      />
     );
   }
 
   // Permission denied
   if (state.status === 'denied') {
     return (
-      <div className="bg-surface-light min-h-screen p-6 md:p-8">
-        <motion.div
-          className="flex flex-col gap-10 md:gap-12 w-full max-w-[345px] md:max-w-4xl mx-auto"
-          variants={staggerContainerVariants}
-          initial="hidden"
-          animate="show"
-        >
-          <motion.div variants={staggerItemVariants}>
-            <Button
-              variant="tertiary"
-              onClick={handleBack}
-              type="button"
-              aria-label="Back"
-            >
-              <ArrowLeft size={14} />
-              Back
-            </Button>
-          </motion.div>
-
-          <div className="flex flex-col gap-6 items-center justify-center min-h-[400px]">
-            <motion.div variants={staggerItemVariants}>
-              <Title variant="h2" className="text-neutral-dark text-center">
-                Camera access denied
-              </Title>
-            </motion.div>
-            <motion.div variants={staggerItemVariants}>
-              <Body variant="1" className="text-neutral-gray text-center max-w-[322px]">
-                We need camera access to take your selfie. Please enable camera permissions in your browser settings and try again.
-              </Body>
-            </motion.div>
-            <motion.div variants={staggerItemVariants} className="w-full">
-              <Button
-                variant="primary"
-                onClick={requestCameraAccess}
-                className="w-full h-[52px]"
-              >
-                Try again
-              </Button>
-            </motion.div>
-          </div>
-        </motion.div>
-      </div>
+      <CameraErrorScreen
+        variant="denied"
+        onBack={handleBack}
+        onRetry={requestCameraAccess}
+      />
     );
   }
 
   // Error state
   if (state.status === 'error') {
     return (
-      <div className="bg-surface-light min-h-screen p-6 md:p-8">
-        <motion.div
-          className="flex flex-col gap-10 md:gap-12 w-full max-w-[345px] md:max-w-4xl mx-auto"
-          variants={staggerContainerVariants}
-          initial="hidden"
-          animate="show"
-        >
-          <motion.div variants={staggerItemVariants}>
-            <Button
-              variant="tertiary"
-              onClick={handleBack}
-              type="button"
-              aria-label="Back"
-            >
-              <ArrowLeft size={14} />
-              Back
-            </Button>
-          </motion.div>
-
-          <div className="flex flex-col gap-6 items-center justify-center min-h-[400px]">
-            <motion.div variants={staggerItemVariants}>
-              <Title variant="h2" className="text-neutral-dark text-center">
-                Camera error
-              </Title>
-            </motion.div>
-            <motion.div variants={staggerItemVariants}>
-              <Body variant="1" className="text-neutral-gray text-center max-w-[322px]">
-                {state.error.message}
-              </Body>
-            </motion.div>
-            <motion.div variants={staggerItemVariants} className="w-full">
-              <Button
-                variant="primary"
-                onClick={requestCameraAccess}
-                className="w-full h-[52px]"
-              >
-                Try again
-              </Button>
-            </motion.div>
-          </div>
-        </motion.div>
-      </div>
+      <CameraErrorScreen
+        variant="error"
+        message={state.error.message}
+        onBack={handleBack}
+        onRetry={requestCameraAccess}
+      />
     );
   }
 
@@ -190,52 +89,11 @@ export const CameraScreen: FC = () => {
   // Show captured photo
   if (capturedPhoto) {
     return (
-      <div className="bg-surface-light min-h-screen p-6 md:p-8">
-        <motion.div
-          className="flex flex-col gap-10 md:gap-12 w-full max-w-[345px] md:max-w-4xl mx-auto"
-          variants={staggerContainerVariants}
-          initial="hidden"
-          animate="show"
-        >
-          <motion.div variants={staggerItemVariants}>
-            <Button
-              variant="tertiary"
-              onClick={handleBack}
-              type="button"
-              aria-label="Back"
-            >
-              <ArrowLeft size={14} />
-              Back
-            </Button>
-          </motion.div>
-
-          <div className="flex flex-col gap-6 w-full">
-            <motion.div variants={staggerItemVariants}>
-              <Title variant="h2" className="text-neutral-dark text-center">
-                Your selfie
-              </Title>
-            </motion.div>
-
-            <motion.div variants={staggerItemVariants} className="w-full">
-              <img
-                src={capturedPhoto.dataUrl}
-                alt="Captured selfie"
-                className="w-full h-auto rounded-lg"
-              />
-            </motion.div>
-
-            <motion.div variants={staggerItemVariants} className="w-full">
-              <Button
-                variant="primary"
-                onClick={handleRetake}
-                className="w-full h-[52px]"
-              >
-                Retake photo
-              </Button>
-            </motion.div>
-          </div>
-        </motion.div>
-      </div>
+      <CameraResultSelfie
+        photo={capturedPhoto}
+        onBack={handleBack}
+        onRetake={handleRetake}
+      />
     );
   }
 
@@ -249,17 +107,7 @@ export const CameraScreen: FC = () => {
         animate="show"
       >
         {/* Back Button */}
-        <motion.div variants={staggerItemVariants}>
-          <Button
-            variant="tertiary"
-            onClick={handleBack}
-            type="button"
-            aria-label="Back"
-          >
-            <ArrowLeft size={14} />
-            Back
-          </Button>
-        </motion.div>
+        <CameraBackButton onClick={handleBack} />
 
         {/* Content */}
         <div className="flex flex-col gap-12 w-full">
