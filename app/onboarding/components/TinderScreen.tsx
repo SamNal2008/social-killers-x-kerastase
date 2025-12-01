@@ -15,9 +15,6 @@ import {
     staggerItemVariants,
 } from '~/shared/animations/transitions';
 
-import { brandService } from '../services/brandService';
-import type { Tables } from '~/shared/types/database.types';
-
 const SWIPE_THRESHOLD = 100;
 
 interface SwipeableCardProps {
@@ -148,26 +145,7 @@ const ActiveCard: FC<{
     );
 };
 
-export const TinderScreen: FC<TinderScreenProps> = ({ onBack, onContinue }) => {
-    const [brands, setBrands] = useState<Tables<'brands'>[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<Error | null>(null);
-
-    useEffect(() => {
-        const fetchBrands = async () => {
-            try {
-                const data = await brandService.getAll();
-                setBrands(data);
-            } catch (err) {
-                setError(err instanceof Error ? err : new Error('Failed to load brands'));
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchBrands();
-    }, []);
-
+export const TinderScreen: FC<TinderScreenProps> = ({ onBack, onContinue, brands }) => {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [likedBrands, setLikedBrands] = useState<string[]>([]);
     const [passedBrands, setPassedBrands] = useState<string[]>([]);
@@ -221,26 +199,6 @@ export const TinderScreen: FC<TinderScreenProps> = ({ onBack, onContinue }) => {
             onContinue(likedBrands, passedBrands);
         }
     }, [currentIndex, brands.length, isSubmitting]); // Removed onContinue, likedBrands, passedBrands from deps to prevent re-triggers
-
-    if (isLoading) {
-        return (
-            <div className="bg-surface-light min-h-screen p-6 md:p-8 flex items-center justify-center">
-                <Body variant="1" className="text-neutral-gray">
-                    Loading brands...
-                </Body>
-            </div>
-        );
-    }
-
-    if (error) {
-        return (
-            <div className="bg-surface-light min-h-screen p-6 md:p-8 flex items-center justify-center">
-                <Body variant="1" className="text-red-600">
-                    Error loading brands
-                </Body>
-            </div>
-        );
-    }
 
     return (
         <div className="bg-surface-light min-h-screen p-6 md:p-8">

@@ -1,7 +1,7 @@
 import type { FC } from 'react';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Check } from 'lucide-react';
+import { Check, LoaderCircle } from 'lucide-react';
 import { FormHeader } from './FormHeader';
 import { Badge } from '~/shared/components/Badge/Badge';
 import { Button } from '~/shared/components/Button/Button';
@@ -13,7 +13,7 @@ import { staggerContainerVariants, staggerItemVariants } from '~/shared/animatio
 const MIN_KEYWORDS = 3;
 const MAX_KEYWORDS = 10;
 
-export const KeywordsScreen: FC<KeywordsScreenProps> = ({ onBack, onContinue, keywords }) => {
+export const KeywordsScreen: FC<KeywordsScreenProps> = ({ onBack, onContinue, keywords, isLoading, isError, error }) => {
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
 
   const isValidSelection = selectedKeywords.length >= MIN_KEYWORDS && selectedKeywords.length <= MAX_KEYWORDS;
@@ -100,16 +100,28 @@ export const KeywordsScreen: FC<KeywordsScreenProps> = ({ onBack, onContinue, ke
             })}
           </motion.div>
 
+          {/* Error Message (if any) */}
+          {isError && (
+            <motion.div variants={staggerItemVariants}>
+              <div className="w-full bg-red-50 border border-red-200 rounded-lg p-4" role="alert">
+                <p className="text-red-800 text-sm text-center">
+                  {error?.message}
+                </p>
+              </div>
+            </motion.div>
+          )}
+
           {/* Continue Button */}
           <motion.div variants={staggerItemVariants}>
             <Button
               variant={isValidSelection ? 'primary' : 'disabled'}
-              disabled={!isValidSelection}
+              disabled={!isValidSelection || isLoading}
               onClick={handleContinue}
               type="button"
-              className="w-full h-[52px] flex items-center justify-center"
+              className="w-full h-[52px] flex items-center justify-center gap-2"
               aria-label="Continue"
             >
+              {isLoading && <LoaderCircle className="w-5 h-5 animate-spin" />}
               Continue
             </Button>
           </motion.div>

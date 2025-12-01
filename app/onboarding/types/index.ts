@@ -37,11 +37,15 @@ export interface KeywordsScreenProps {
   onBack: () => void;
   onContinue: (keywords: string[]) => void;
   keywords: Tables<'keywords'>[];
+  isLoading?: boolean;
+  isError?: boolean;
+  error?: Error;
 }
 
 export interface TinderScreenProps {
   onBack: () => void;
   onContinue: (liked: string[], passed: string[]) => void;
+  brands: Tables<'brands'>[];
 }
 
 export type Brand = string;

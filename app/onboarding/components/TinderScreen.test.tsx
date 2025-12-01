@@ -1,9 +1,6 @@
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { TinderScreen } from './TinderScreen';
-import { brandService } from '../services/brandService';
-
-jest.mock('../services/brandService');
 
 const mockBrands = [
     { id: 'brand-1', name: 'Hermès', logo_url: 'url1', created_at: null, updated_at: null, tribe_id: null },
@@ -17,147 +14,172 @@ describe('TinderScreen', () => {
     const defaultProps = {
         onBack: mockOnBack,
         onContinue: mockOnContinue,
+        brands: mockBrands,
     };
 
     beforeEach(() => {
         jest.clearAllMocks();
-        (brandService.getAll as jest.Mock).mockResolvedValue(mockBrands);
     });
 
     describe('Rendering', () => {
-        it('should render loading state initially', () => {
-            (brandService.getAll as jest.Mock).mockImplementation(() => new Promise(() => { }));
+        it('should render the component with FormHeader showing step 4 of 4', () => {
             render(<TinderScreen {...defaultProps} />);
-            expect(screen.getByText(/loading/i)).toBeInTheDocument();
-        });
-
-        it('should render the component with FormHeader showing step 4 of 4', async () => {
-            render(<TinderScreen {...defaultProps} />);
-            await waitFor(() => {
-                expect(screen.getByRole('button', { name: /back/i })).toBeInTheDocument();
-            });
+            expect(screen.getByRole('button', { name: /back/i })).toBeInTheDocument();
             // Note: We might need to check the text content for "Step 4" if exposed
         });
 
-        it('should render the first brand card (Hermès)', async () => {
+        it('should render the first brand card (Hermès)', () => {
             render(<TinderScreen {...defaultProps} />);
-            await waitFor(() => {
-                expect(screen.getByText('Hermès')).toBeInTheDocument();
-            });
+            expect(screen.getByText('Hermès')).toBeInTheDocument();
         });
 
-        it('should show progress indicator 1/2', async () => {
+        it('should show progress indicator 1/2', () => {
             render(<TinderScreen {...defaultProps} />);
-            await waitFor(() => {
-                expect(screen.getByText('1/2')).toBeInTheDocument();
-            });
+            expect(screen.getByText('1/2')).toBeInTheDocument();
         });
 
-        it('should render Like and Pass buttons', async () => {
+        it('should render Like and Pass buttons', () => {
             render(<TinderScreen {...defaultProps} />);
-            await waitFor(() => {
-                expect(screen.getByRole('button', { name: /like/i })).toBeInTheDocument();
-                expect(screen.getByRole('button', { name: /pass/i })).toBeInTheDocument();
-            });
+            expect(screen.getByRole('button', { name: /like/i })).toBeInTheDocument();
+            expect(screen.getByRole('button', { name: /pass/i })).toBeInTheDocument();
         });
     });
 
     describe('Button Interactions', () => {
         it('should swipe card right when Like button is clicked', async () => {
-            render(<TinderScreen {...defaultProps} />);
-            await waitFor(() => expect(screen.getByText('Hermès')).toBeInTheDocument());
+            jest.useFakeTimers();
+            try {
+                render(<TinderScreen {...defaultProps} />);
 
-            const likeButton = screen.getByRole('button', { name: /like/i });
-            fireEvent.click(likeButton);
+                const likeButton = screen.getByRole('button', { name: /like/i });
+                fireEvent.click(likeButton);
 
-            // First card should disappear
-            await waitFor(() => {
+                // Advance timers to complete animation
+                await act(async () => {
+                    jest.advanceTimersByTime(450);
+                });
+
+                // First card should disappear
                 expect(screen.queryByText('Hermès')).not.toBeInTheDocument();
-            });
 
-            // Second card should appear
-            expect(screen.getByText('Cartier')).toBeInTheDocument();
-            expect(screen.getByText('2/2')).toBeInTheDocument();
+                // Second card should appear
+                expect(screen.getByText('Cartier')).toBeInTheDocument();
+                expect(screen.getByText('2/2')).toBeInTheDocument();
+            } finally {
+                jest.useRealTimers();
+            }
         });
 
         it('should swipe card left when Pass button is clicked', async () => {
-            render(<TinderScreen {...defaultProps} />);
-            await waitFor(() => expect(screen.getByText('Hermès')).toBeInTheDocument());
+            jest.useFakeTimers();
+            try {
+                render(<TinderScreen {...defaultProps} />);
 
-            const passButton = screen.getByRole('button', { name: /pass/i });
-            fireEvent.click(passButton);
+                const passButton = screen.getByRole('button', { name: /pass/i });
+                fireEvent.click(passButton);
 
-            // First card should disappear
-            await waitFor(() => {
+                // Advance timers to complete animation
+                await act(async () => {
+                    jest.advanceTimersByTime(450);
+                });
+
+                // First card should disappear
                 expect(screen.queryByText('Hermès')).not.toBeInTheDocument();
-            });
 
-            // Second card should appear
-            expect(screen.getByText('Cartier')).toBeInTheDocument();
+                // Second card should appear
+                expect(screen.getByText('Cartier')).toBeInTheDocument();
+            } finally {
+                jest.useRealTimers();
+            }
         });
 
         it('should track liked brands when Like button is clicked', async () => {
-            render(<TinderScreen {...defaultProps} />);
-            await waitFor(() => expect(screen.getByText('Hermès')).toBeInTheDocument());
+            jest.useFakeTimers();
+            try {
+                render(<TinderScreen {...defaultProps} />);
 
-            const likeButton = screen.getByRole('button', { name: /like/i });
+                const likeButton = screen.getByRole('button', { name: /like/i });
 
-            // Like first brand
-            fireEvent.click(likeButton);
+                // Like first brand
+                fireEvent.click(likeButton);
 
-            await waitFor(() => {
+                // Advance timers to complete animation
+                await act(async () => {
+                    jest.advanceTimersByTime(450);
+                });
+
                 expect(screen.getByText('Cartier')).toBeInTheDocument();
-            });
+            } finally {
+                jest.useRealTimers();
+            }
         });
 
         it('should track passed brands when Pass button is clicked', async () => {
-            render(<TinderScreen {...defaultProps} />);
-            await waitFor(() => expect(screen.getByText('Hermès')).toBeInTheDocument());
+            jest.useFakeTimers();
+            try {
+                render(<TinderScreen {...defaultProps} />);
 
-            const passButton = screen.getByRole('button', { name: /pass/i });
+                const passButton = screen.getByRole('button', { name: /pass/i });
 
-            // Pass first brand
-            fireEvent.click(passButton);
+                // Pass first brand
+                fireEvent.click(passButton);
 
-            await waitFor(() => {
+                // Advance timers to complete animation
+                await act(async () => {
+                    jest.advanceTimersByTime(450);
+                });
+
                 expect(screen.getByText('Cartier')).toBeInTheDocument();
-            });
+            } finally {
+                jest.useRealTimers();
+            }
         });
     });
 
     describe('Progress Tracking', () => {
         it('should update progress counter after each swipe', async () => {
-            render(<TinderScreen {...defaultProps} />);
-            await waitFor(() => expect(screen.getByText('1/2')).toBeInTheDocument());
+            jest.useFakeTimers();
+            try {
+                render(<TinderScreen {...defaultProps} />);
 
-            const likeButton = screen.getByRole('button', { name: /like/i });
+                const likeButton = screen.getByRole('button', { name: /like/i });
 
-            fireEvent.click(likeButton);
+                fireEvent.click(likeButton);
 
-            await waitFor(() => {
+                // Advance timers to complete animation
+                await act(async () => {
+                    jest.advanceTimersByTime(450);
+                });
+
                 expect(screen.getByText('2/2')).toBeInTheDocument();
-            });
+            } finally {
+                jest.useRealTimers();
+            }
         });
     });
 
     describe('End State', () => {
         it('should disable buttons when all cards are swiped', async () => {
-            render(<TinderScreen {...defaultProps} />);
-            await waitFor(() => expect(screen.getByText('Hermès')).toBeInTheDocument());
+            jest.useFakeTimers();
+            try {
+                render(<TinderScreen {...defaultProps} />);
 
-            const likeButton = screen.getByRole('button', { name: /like/i });
+                const likeButton = screen.getByRole('button', { name: /like/i });
 
-            // Swipe all 2 cards
-            for (let i = 0; i < 2; i++) {
-                fireEvent.click(likeButton);
-                await waitFor(() => { }, { timeout: 100 });
-            }
+                // Swipe all 2 cards
+                for (let i = 0; i < 2; i++) {
+                    fireEvent.click(likeButton);
+                    await act(async () => {
+                        jest.advanceTimersByTime(450);
+                    });
+                }
 
-            // Buttons should be disabled
-            await waitFor(() => {
+                // Buttons should be disabled
                 expect(likeButton).toBeDisabled();
                 expect(screen.getByRole('button', { name: /pass/i })).toBeDisabled();
-            });
+            } finally {
+                jest.useRealTimers();
+            }
         });
 
         it('should call onContinue when all cards are swiped', async () => {
@@ -197,7 +219,6 @@ describe('TinderScreen', () => {
         it('should call onBack when back button is clicked', async () => {
             const user = userEvent.setup();
             render(<TinderScreen {...defaultProps} />);
-            await waitFor(() => expect(screen.getByRole('button', { name: /back/i })).toBeInTheDocument());
 
             const backButton = screen.getByRole('button', { name: /back/i });
             await user.click(backButton);
@@ -207,9 +228,8 @@ describe('TinderScreen', () => {
     });
 
     describe('Drag Gestures', () => {
-        it('should have draggable card element', async () => {
+        it('should have draggable card element', () => {
             render(<TinderScreen {...defaultProps} />);
-            await waitFor(() => expect(screen.getByText('Hermès')).toBeInTheDocument());
 
             // The card should have drag properties
             const card = screen.getByText('Hermès').closest('[data-testid="swipe-card"]');

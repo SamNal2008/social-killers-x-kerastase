@@ -17,6 +17,7 @@ import { userAnswerService } from '~/onboarding/services/userAnswerService';
 import { computeResultService } from '~/onboarding/services/computeResultService';
 import { moodboardService, type Moodboard } from '~/shared/services/moodboardService';
 import { keywordService } from '~/onboarding/services/keywordService';
+import { brandService } from '~/onboarding/services/brandService';
 
 export function meta({ }: Route.MetaArgs) {
   return [
@@ -44,6 +45,7 @@ export default function Home() {
   });
   const [moodboards, setMoodboards] = useState<Moodboard[]>([]);
   const [keywords, setKeywords] = useState<Tables<'keywords'>[]>([]);
+  const [brands, setBrands] = useState<Tables<'brands'>[]>([]);
 
   const isLoading = loadingState.status === 'loading';
   const isError = loadingState.status === 'error';
@@ -156,10 +158,27 @@ export default function Home() {
     }));
   };
 
-  const handleKeywordsContinue = (keywords: string[]) => {
+  const handleKeywordsContinue = async (keywords: string[]) => {
+    if (isLoading) {
+      return;
+    }
+
     setFormData((prev) => ({ ...prev, keywords }));
-    setDirection('forward');
-    goToNextPage();
+    setLoadingState({ status: 'loading' });
+
+    try {
+      const data = await brandService.getAll();
+      setBrands(data);
+      setLoadingState({ status: 'idle' });
+      setDirection('forward');
+      goToNextPage();
+    } catch (error) {
+      const appError = error instanceof Error
+        ? error
+        : new Error('Failed to load brands');
+
+      setLoadingState({ status: 'error', error: appError });
+    }
   };
 
   const handleBackToKeywords = () => {
@@ -232,6 +251,7 @@ export default function Home() {
           <TinderScreen
             onBack={handleBackToKeywords}
             onContinue={handleTinderContinue}
+            brands={brands}
           />
         </motion.div>
       ) : currentPage === 'KeywordPage' ? (
@@ -248,6 +268,9 @@ export default function Home() {
             onBack={handleBackToMoodboard}
             onContinue={handleKeywordsContinue}
             keywords={keywords}
+            isLoading={isLoading}
+            isError={isError}
+            error={isError ? loadingState.error : undefined}
           />
         </motion.div>
       ) : currentPage === 'MoodboardPage' ? (

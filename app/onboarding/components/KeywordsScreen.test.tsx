@@ -243,6 +243,67 @@ describe('KeywordsScreen', () => {
     });
   });
 
+  describe('Loading and Error States', () => {
+    it('should show loader icon on Continue button when loading', async () => {
+      const user = userEvent.setup();
+      render(<KeywordsScreen onBack={mockOnBack} onContinue={mockOnContinue} keywords={mockKeywords} isLoading={true} />);
+
+      // Select 3 keywords to enable button (but it should still be disabled due to loading)
+      await user.click(screen.getByRole('button', { name: /legacy/i }));
+      await user.click(screen.getByRole('button', { name: /^tradition$/i }));
+      await user.click(screen.getByRole('button', { name: /discretion/i }));
+
+      const continueButton = screen.getByRole('button', { name: /continue/i });
+
+      // Check for loader icon (LoaderCircle has animate-spin class)
+      const loaderIcon = continueButton.querySelector('.animate-spin');
+      expect(loaderIcon).toBeInTheDocument();
+    });
+
+    it('should disable Continue button during loading', async () => {
+      const user = userEvent.setup();
+      render(<KeywordsScreen onBack={mockOnBack} onContinue={mockOnContinue} keywords={mockKeywords} isLoading={true} />);
+
+      // Select 3 keywords
+      await user.click(screen.getByRole('button', { name: /legacy/i }));
+      await user.click(screen.getByRole('button', { name: /^tradition$/i }));
+      await user.click(screen.getByRole('button', { name: /discretion/i }));
+
+      const continueButton = screen.getByRole('button', { name: /continue/i });
+      expect(continueButton).toBeDisabled();
+    });
+
+    it('should display error message when isError is true', () => {
+      const testError = new Error('Failed to load brands');
+      render(<KeywordsScreen onBack={mockOnBack} onContinue={mockOnContinue} keywords={mockKeywords} isError={true} error={testError} />);
+
+      expect(screen.getByRole('alert')).toBeInTheDocument();
+      expect(screen.getByText('Failed to load brands')).toBeInTheDocument();
+    });
+
+    it('should not display error message when isError is false', () => {
+      render(<KeywordsScreen onBack={mockOnBack} onContinue={mockOnContinue} keywords={mockKeywords} isError={false} />);
+
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    });
+
+    it('should not show loader icon when not loading', async () => {
+      const user = userEvent.setup();
+      render(<KeywordsScreen onBack={mockOnBack} onContinue={mockOnContinue} keywords={mockKeywords} isLoading={false} />);
+
+      // Select 3 keywords to enable button
+      await user.click(screen.getByRole('button', { name: /legacy/i }));
+      await user.click(screen.getByRole('button', { name: /^tradition$/i }));
+      await user.click(screen.getByRole('button', { name: /discretion/i }));
+
+      const continueButton = screen.getByRole('button', { name: /continue/i });
+
+      // Loader icon should not be present
+      const loaderIcon = continueButton.querySelector('.animate-spin');
+      expect(loaderIcon).not.toBeInTheDocument();
+    });
+  });
+
   describe('Accessibility', () => {
     it('should have proper heading hierarchy', () => {
       render(<KeywordsScreen onBack={mockOnBack} onContinue={mockOnContinue} keywords={mockKeywords} />);
