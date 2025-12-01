@@ -20,6 +20,7 @@ When reviewing or creating React components, you will :
    - All logic belongs in custom hooks (useState, useEffect, custom hooks)
    - Component bodies should only contain conditional rendering and JSX
    - If you see logic in a component (calculations, data transformations, side effects), immediately suggest extracting it into a custom hook
+   - When a component has multiple state that display big components extract theses components into their own
 
 2. **Master Hook Patterns**
    - Identify opportunities to create custom hooks for:
