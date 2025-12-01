@@ -1,5 +1,5 @@
 import type { FC } from 'react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Check } from 'lucide-react';
 import { FormHeader } from './FormHeader';
@@ -9,49 +9,46 @@ import { Title } from '~/shared/components/Typography/Title';
 import { Body } from '~/shared/components/Typography/Body';
 import type { KeywordsScreenProps } from '../types';
 import { staggerContainerVariants, staggerItemVariants } from '~/shared/animations/transitions';
-
-const KEYWORDS = [
-  'legacy',
-  'tradition',
-  'discretion',
-  'exclusivity',
-  'pleasure',
-  'sustainability',
-  'discipline',
-  'minimalism',
-  'home rituals',
-  'quiet beauty',
-  'introspective',
-  'magnetic',
-  'creative',
-  'culturally fluent',
-  'performance',
-  'bold attitude',
-  'provocation',
-  'fearless voice',
-  'glow',
-  'red carpet energy',
-] as const;
+import { keywordService } from '../services/keywordService';
+import type { Tables } from '~/shared/types/database.types';
 
 const MIN_KEYWORDS = 3;
 const MAX_KEYWORDS = 10;
 
 export const KeywordsScreen: FC<KeywordsScreenProps> = ({ onBack, onContinue }) => {
+  const [keywords, setKeywords] = useState<Tables<'keywords'>[]>([]);
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    const fetchKeywords = async () => {
+      try {
+        const data = await keywordService.getAll();
+        setKeywords(data);
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error('Failed to load keywords'));
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchKeywords();
+  }, []);
 
   const isValidSelection = selectedKeywords.length >= MIN_KEYWORDS && selectedKeywords.length <= MAX_KEYWORDS;
 
-  const handleKeywordToggle = (keyword: string) => {
+  const handleKeywordToggle = (keywordId: string) => {
     setSelectedKeywords((prev) => {
-      const isSelected = prev.includes(keyword);
+      const isSelected = prev.includes(keywordId);
 
       if (isSelected) {
         // Deselect
-        return prev.filter((k) => k !== keyword);
+        return prev.filter((k) => k !== keywordId);
       } else {
         // Select only if under max limit
         if (prev.length < MAX_KEYWORDS) {
-          return [...prev, keyword];
+          return [...prev, keywordId];
         }
         return prev;
       }
@@ -63,6 +60,26 @@ export const KeywordsScreen: FC<KeywordsScreenProps> = ({ onBack, onContinue }) 
       onContinue(selectedKeywords);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="bg-surface-light min-h-screen p-6 md:p-8 flex items-center justify-center">
+        <Body variant="1" className="text-neutral-gray">
+          Loading keywords...
+        </Body>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-surface-light min-h-screen p-6 md:p-8 flex items-center justify-center">
+        <Body variant="1" className="text-red-600">
+          Error loading keywords
+        </Body>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-surface-light min-h-screen p-6 md:p-8">
@@ -108,16 +125,16 @@ export const KeywordsScreen: FC<KeywordsScreenProps> = ({ onBack, onContinue }) 
             variants={staggerItemVariants}
             className="flex flex-wrap gap-3 items-center justify-center w-full"
           >
-            {KEYWORDS.map((keyword) => {
-              const isSelected = selectedKeywords.includes(keyword);
+            {keywords.map((keyword) => {
+              const isSelected = selectedKeywords.includes(keyword.id);
               return (
                 <Badge
-                  key={keyword}
+                  key={keyword.id}
                   selected={isSelected}
-                  onClick={() => handleKeywordToggle(keyword)}
+                  onClick={() => handleKeywordToggle(keyword.id)}
                   icon={<Check data-testid="badge-check-icon" size={16} />}
                 >
-                  {keyword}
+                  {keyword.name}
                 </Badge>
               );
             })}

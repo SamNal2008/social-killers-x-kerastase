@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 const CURRENT_PAGE_KEY = 'kerastase_current_page';
 
 // Define page order for navigation logic
-const PAGE_ORDER: PageType[] = ['WelcomePage', 'NamePage', 'MoodboardPage', 'KeywordPage', 'TinderPage', 'Step4Page'];
+const PAGE_ORDER: PageType[] = ['WelcomePage', 'NamePage', 'MoodboardPage', 'KeywordPage', 'TinderPage', 'ResultsPage'];
 
 export const useStepStore = () => {
     const [currentPage, setCurrentPage] = useState<PageType>('WelcomePage');
@@ -53,7 +53,7 @@ export const useStepStore = () => {
             }
 
             // If user has both ID and name, go to next step
-            return 'Step2Page';
+            return 'MoodboardPage';
         },
     };
 };

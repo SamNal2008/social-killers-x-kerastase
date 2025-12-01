@@ -12,6 +12,9 @@ import { KeywordsScreen } from '~/onboarding/components/KeywordsScreen';
 import { TinderScreen } from '../onboarding/components/TinderScreen';
 import { MoodboardScreen } from '../onboarding/components/MoodboardScreen';
 import type { FormData } from '~/onboarding/types';
+import { useNavigate } from 'react-router';
+import { userAnswerService } from '~/onboarding/services/userAnswerService';
+import { computeResultService } from '~/onboarding/services/computeResultService';
 
 export function meta({ }: Route.MetaArgs) {
   return [
@@ -131,15 +134,42 @@ export default function Home() {
     }));
   };
 
-  const handleTinderContinue = (liked: string[], passed: string[]) => {
-    setFormData((prev) => ({
-      ...prev,
-      brands: { liked, passed }
-    }));
-    setDirection('forward');
-    goToNextPage();
-    // Final step - log completed onboarding data
-    console.log('Finished onboarding:', { ...formData, brands: { liked, passed } });
+  const navigate = useNavigate();
+
+  const handleTinderContinue = async (liked: string[], passed: string[]) => {
+    setLoadingState({ status: 'loading' });
+
+    try {
+      const userId = localStorageUtils.getUserId();
+      if (!userId) {
+        throw new Error('User ID not found');
+      }
+
+      if (!formData.moodboard) {
+        throw new Error('Moodboard not selected');
+      }
+
+      // 1. Save user answers
+      const answer = await userAnswerService.create({
+        user_id: userId,
+        moodboard_id: formData.moodboard,
+        keywords: formData.keywords,
+        brands: liked, // We only store liked brands in the brands array based on schema
+      });
+
+      // 2. Compute results
+      const userResultId = await computeResultService.compute(answer.id);
+
+      // 3. Navigate to results
+      navigate(`/results?userResultId=${userResultId}`);
+
+    } catch (error) {
+      const appError = error instanceof Error
+        ? error
+        : new Error('An unexpected error occurred while saving results');
+
+      setLoadingState({ status: 'error', error: appError });
+    }
   };
 
   return (

@@ -1,4 +1,4 @@
-export type PageType = 'WelcomePage' | 'NamePage' | 'KeywordPage' | 'TinderPage' | 'MoodboardPage' | 'Step4Page';
+export type PageType = 'WelcomePage' | 'NamePage' | 'KeywordPage' | 'TinderPage' | 'MoodboardPage' | 'ResultsPage';
 
 export interface FormData {
   name: string;

@@ -1,6 +1,23 @@
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, within, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { KeywordsScreen } from './KeywordsScreen';
+import { keywordService } from '../services/keywordService';
+
+jest.mock('../services/keywordService');
+
+const mockKeywords = [
+  { id: 'kw-1', name: 'legacy', created_at: null, updated_at: null, tribe_id: null },
+  { id: 'kw-2', name: 'tradition', created_at: null, updated_at: null, tribe_id: null },
+  { id: 'kw-3', name: 'discretion', created_at: null, updated_at: null, tribe_id: null },
+  { id: 'kw-4', name: 'exclusivity', created_at: null, updated_at: null, tribe_id: null },
+  { id: 'kw-5', name: 'pleasure', created_at: null, updated_at: null, tribe_id: null },
+  { id: 'kw-6', name: 'sustainability', created_at: null, updated_at: null, tribe_id: null },
+  { id: 'kw-7', name: 'discipline', created_at: null, updated_at: null, tribe_id: null },
+  { id: 'kw-8', name: 'minimalism', created_at: null, updated_at: null, tribe_id: null },
+  { id: 'kw-9', name: 'home rituals', created_at: null, updated_at: null, tribe_id: null },
+  { id: 'kw-10', name: 'quiet beauty', created_at: null, updated_at: null, tribe_id: null },
+  { id: 'kw-11', name: 'introspective', created_at: null, updated_at: null, tribe_id: null },
+];
 
 describe('KeywordsScreen', () => {
   const mockOnBack = jest.fn();
@@ -8,69 +25,67 @@ describe('KeywordsScreen', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    (keywordService.getAll as jest.Mock).mockResolvedValue(mockKeywords);
   });
 
   describe('Initial Rendering', () => {
-    it('should render the main title', () => {
+    it('should render loading state initially', () => {
+      (keywordService.getAll as jest.Mock).mockImplementation(() => new Promise(() => { }));
       render(<KeywordsScreen onBack={mockOnBack} onContinue={mockOnContinue} />);
-      expect(screen.getByText('Select the words that define you')).toBeInTheDocument();
+      expect(screen.getByText(/loading/i)).toBeInTheDocument();
     });
 
-    it('should render the subtitle with instructions', () => {
+    it('should render the main title', async () => {
       render(<KeywordsScreen onBack={mockOnBack} onContinue={mockOnContinue} />);
-      expect(screen.getByText('Choose between 3 and 10 words.')).toBeInTheDocument();
-    });
-
-    it('should render all 20 keywords', () => {
-      render(<KeywordsScreen onBack={mockOnBack} onContinue={mockOnContinue} />);
-
-      const keywords = [
-        'legacy',
-        'tradition',
-        'discretion',
-        'exclusivity',
-        'pleasure',
-        'sustainability',
-        'discipline',
-        'minimalism',
-        'home rituals',
-        'quiet beauty',
-        'introspective',
-        'magnetic',
-        'creative',
-        'culturally fluent',
-        'performance',
-        'bold attitude',
-        'provocation',
-        'fearless voice',
-        'glow',
-        'red carpet energy',
-      ];
-
-      keywords.forEach((keyword) => {
-        expect(screen.getByRole('button', { name: new RegExp(keyword, 'i') })).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('Select the words that define you')).toBeInTheDocument();
       });
     });
 
-    it('should render progress indicator showing Step 3/4', () => {
+    it('should render the subtitle with instructions', async () => {
       render(<KeywordsScreen onBack={mockOnBack} onContinue={mockOnContinue} />);
-      expect(screen.getByText('Step 3 / 4')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('Choose between 3 and 10 words.')).toBeInTheDocument();
+      });
     });
 
-    it('should render Back button', () => {
+    it('should render fetched keywords', async () => {
       render(<KeywordsScreen onBack={mockOnBack} onContinue={mockOnContinue} />);
-      expect(screen.getByRole('button', { name: /back/i })).toBeInTheDocument();
+
+      await waitFor(() => {
+        mockKeywords.forEach((keyword) => {
+          expect(screen.getByRole('button', { name: new RegExp(keyword.name, 'i') })).toBeInTheDocument();
+        });
+      });
     });
 
-    it('should render Continue button', () => {
+    it('should render progress indicator showing Step 3/4', async () => {
       render(<KeywordsScreen onBack={mockOnBack} onContinue={mockOnContinue} />);
-      expect(screen.getByRole('button', { name: /continue/i })).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('Step 3 / 4')).toBeInTheDocument();
+      });
     });
 
-    it('should have Continue button disabled initially', () => {
+    it('should render Back button', async () => {
       render(<KeywordsScreen onBack={mockOnBack} onContinue={mockOnContinue} />);
-      const continueButton = screen.getByRole('button', { name: /continue/i });
-      expect(continueButton).toBeDisabled();
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /back/i })).toBeInTheDocument();
+      });
+    });
+
+    it('should render Continue button', async () => {
+      render(<KeywordsScreen onBack={mockOnBack} onContinue={mockOnContinue} />);
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /continue/i })).toBeInTheDocument();
+      });
+    });
+
+    it('should have Continue button disabled initially', async () => {
+      render(<KeywordsScreen onBack={mockOnBack} onContinue={mockOnContinue} />);
+      await waitFor(() => {
+        const continueButton = screen.getByRole('button', { name: /continue/i });
+        expect(continueButton).toBeDisabled();
+      });
     });
   });
 
@@ -78,6 +93,7 @@ describe('KeywordsScreen', () => {
     it('should allow selecting a keyword', async () => {
       const user = userEvent.setup();
       render(<KeywordsScreen onBack={mockOnBack} onContinue={mockOnContinue} />);
+      await waitFor(() => expect(screen.getByText('legacy')).toBeInTheDocument());
 
       const legacyBadge = screen.getByRole('button', { name: /legacy/i });
       await user.click(legacyBadge);
@@ -89,6 +105,7 @@ describe('KeywordsScreen', () => {
     it('should allow deselecting a keyword', async () => {
       const user = userEvent.setup();
       render(<KeywordsScreen onBack={mockOnBack} onContinue={mockOnContinue} />);
+      await waitFor(() => expect(screen.getByText('legacy')).toBeInTheDocument());
 
       const legacyBadge = screen.getByRole('button', { name: /legacy/i });
 
@@ -106,6 +123,7 @@ describe('KeywordsScreen', () => {
     it('should allow selecting multiple keywords', async () => {
       const user = userEvent.setup();
       render(<KeywordsScreen onBack={mockOnBack} onContinue={mockOnContinue} />);
+      await waitFor(() => expect(screen.getByText('legacy')).toBeInTheDocument());
 
       const legacyBadge = screen.getByRole('button', { name: /legacy/i });
       const traditionBadge = screen.getByRole('button', { name: /^tradition$/i });
@@ -123,6 +141,7 @@ describe('KeywordsScreen', () => {
     it('should display check icon on selected badges', async () => {
       const user = userEvent.setup();
       render(<KeywordsScreen onBack={mockOnBack} onContinue={mockOnContinue} />);
+      await waitFor(() => expect(screen.getByText('legacy')).toBeInTheDocument());
 
       const legacyBadge = screen.getByRole('button', { name: /legacy/i });
       await user.click(legacyBadge);
@@ -135,24 +154,11 @@ describe('KeywordsScreen', () => {
     it('should not allow selecting more than 10 keywords', async () => {
       const user = userEvent.setup();
       render(<KeywordsScreen onBack={mockOnBack} onContinue={mockOnContinue} />);
-
-      const keywords = [
-        'legacy',
-        'tradition',
-        'discretion',
-        'exclusivity',
-        'pleasure',
-        'sustainability',
-        'discipline',
-        'minimalism',
-        'home rituals',
-        'quiet beauty',
-        'introspective', // 11th keyword
-      ];
+      await waitFor(() => expect(screen.getByText('legacy')).toBeInTheDocument());
 
       // Select first 10
       for (let i = 0; i < 10; i++) {
-        const badge = screen.getByRole('button', { name: new RegExp(keywords[i], 'i') });
+        const badge = screen.getByRole('button', { name: new RegExp(mockKeywords[i].name, 'i') });
         await user.click(badge);
       }
 
@@ -170,6 +176,7 @@ describe('KeywordsScreen', () => {
     it('should keep Continue button disabled with less than 3 selections', async () => {
       const user = userEvent.setup();
       render(<KeywordsScreen onBack={mockOnBack} onContinue={mockOnContinue} />);
+      await waitFor(() => expect(screen.getByText('legacy')).toBeInTheDocument());
 
       const continueButton = screen.getByRole('button', { name: /continue/i });
 
@@ -183,6 +190,7 @@ describe('KeywordsScreen', () => {
     it('should enable Continue button with exactly 3 selections', async () => {
       const user = userEvent.setup();
       render(<KeywordsScreen onBack={mockOnBack} onContinue={mockOnContinue} />);
+      await waitFor(() => expect(screen.getByText('legacy')).toBeInTheDocument());
 
       const continueButton = screen.getByRole('button', { name: /continue/i });
 
@@ -197,22 +205,10 @@ describe('KeywordsScreen', () => {
     it('should enable Continue button with 10 selections', async () => {
       const user = userEvent.setup();
       render(<KeywordsScreen onBack={mockOnBack} onContinue={mockOnContinue} />);
+      await waitFor(() => expect(screen.getByText('legacy')).toBeInTheDocument());
 
-      const keywords = [
-        'legacy',
-        'tradition',
-        'discretion',
-        'exclusivity',
-        'pleasure',
-        'sustainability',
-        'discipline',
-        'minimalism',
-        'home rituals',
-        'quiet beauty',
-      ];
-
-      for (const keyword of keywords) {
-        await user.click(screen.getByRole('button', { name: new RegExp(keyword, 'i') }));
+      for (let i = 0; i < 10; i++) {
+        await user.click(screen.getByRole('button', { name: new RegExp(mockKeywords[i].name, 'i') }));
       }
 
       const continueButton = screen.getByRole('button', { name: /continue/i });
@@ -222,6 +218,7 @@ describe('KeywordsScreen', () => {
     it('should disable Continue button when deselecting below 3', async () => {
       const user = userEvent.setup();
       render(<KeywordsScreen onBack={mockOnBack} onContinue={mockOnContinue} />);
+      await waitFor(() => expect(screen.getByText('legacy')).toBeInTheDocument());
 
       // Select 3
       const legacyBadge = screen.getByRole('button', { name: /legacy/i });
@@ -246,6 +243,7 @@ describe('KeywordsScreen', () => {
     it('should call onBack when Back button is clicked', async () => {
       const user = userEvent.setup();
       render(<KeywordsScreen onBack={mockOnBack} onContinue={mockOnContinue} />);
+      await waitFor(() => expect(screen.getByRole('button', { name: /back/i })).toBeInTheDocument());
 
       await user.click(screen.getByRole('button', { name: /back/i }));
 
@@ -255,6 +253,7 @@ describe('KeywordsScreen', () => {
     it('should call onContinue with selected keywords when Continue is clicked', async () => {
       const user = userEvent.setup();
       render(<KeywordsScreen onBack={mockOnBack} onContinue={mockOnContinue} />);
+      await waitFor(() => expect(screen.getByText('legacy')).toBeInTheDocument());
 
       // Select 3 keywords
       await user.click(screen.getByRole('button', { name: /legacy/i }));
@@ -264,12 +263,14 @@ describe('KeywordsScreen', () => {
       await user.click(screen.getByRole('button', { name: /continue/i }));
 
       expect(mockOnContinue).toHaveBeenCalledTimes(1);
-      expect(mockOnContinue).toHaveBeenCalledWith(['legacy', 'tradition', 'discretion']);
+      // Should be called with IDs, not labels
+      expect(mockOnContinue).toHaveBeenCalledWith(['kw-1', 'kw-2', 'kw-3']);
     });
 
     it('should not call onContinue when button is disabled', async () => {
       const user = userEvent.setup();
       render(<KeywordsScreen onBack={mockOnBack} onContinue={mockOnContinue} />);
+      await waitFor(() => expect(screen.getByText('legacy')).toBeInTheDocument());
 
       const continueButton = screen.getByRole('button', { name: /continue/i });
       await user.click(continueButton);
@@ -279,16 +280,17 @@ describe('KeywordsScreen', () => {
   });
 
   describe('Accessibility', () => {
-    it('should have proper heading hierarchy', () => {
+    it('should have proper heading hierarchy', async () => {
       render(<KeywordsScreen onBack={mockOnBack} onContinue={mockOnContinue} />);
-
-      // Title should be prominent (h1 or similar)
-      const title = screen.getByText('Select the words that define you');
-      expect(title).toBeInTheDocument();
+      await waitFor(() => {
+        const title = screen.getByText('Select the words that define you');
+        expect(title).toBeInTheDocument();
+      });
     });
 
-    it('should have keyboard navigation support for badges', () => {
+    it('should have keyboard navigation support for badges', async () => {
       render(<KeywordsScreen onBack={mockOnBack} onContinue={mockOnContinue} />);
+      await waitFor(() => expect(screen.getByText('legacy')).toBeInTheDocument());
 
       const badges = screen.getAllByRole('button');
       badges.forEach((badge) => {

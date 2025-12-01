@@ -77,7 +77,7 @@ describe('stepStore', () => {
             expect(result.current.getCurrentPage()).toBe('NamePage');
         });
 
-        it('should go from NamePage to Step2Page', () => {
+        it('should go from NamePage to MoodboardPage', () => {
             const { result } = renderHook(() => useStepStore());
             act(() => {
                 result.current.setCurrentPage('NamePage');
@@ -86,19 +86,19 @@ describe('stepStore', () => {
                 result.current.goToNextPage();
             });
 
-            expect(result.current.getCurrentPage()).toBe('Step2Page');
+            expect(result.current.getCurrentPage()).toBe('MoodboardPage');
         });
 
         it('should stay on last page when no next page exists', () => {
             const { result } = renderHook(() => useStepStore());
             act(() => {
-                result.current.setCurrentPage('Step4Page');
+                result.current.setCurrentPage('ResultsPage');
             });
             act(() => {
                 result.current.goToNextPage();
             });
 
-            expect(result.current.getCurrentPage()).toBe('Step4Page');
+            expect(result.current.getCurrentPage()).toBe('ResultsPage');
         });
     });
 
@@ -133,7 +133,7 @@ describe('stepStore', () => {
                 result.current.goToPage('KeywordPage');
             });
 
-            expect(result.current.getCurrentPage()).toBe('Step2Page');
+            expect(result.current.getCurrentPage()).toBe('KeywordPage');
         });
     });
 
@@ -142,9 +142,9 @@ describe('stepStore', () => {
             const { result } = renderHook(() => useStepStore());
             expect(result.current.getPageNumber('WelcomePage')).toBe(1);
             expect(result.current.getPageNumber('NamePage')).toBe(2);
-            expect(result.current.getPageNumber('KeywordPage')).toBe(3);
-            expect(result.current.getPageNumber('TinderPage')).toBe(4);
-            expect(result.current.getPageNumber('Step4Page')).toBe(5);
+            expect(result.current.getPageNumber('MoodboardPage')).toBe(3);
+            expect(result.current.getPageNumber('KeywordPage')).toBe(4);
+            expect(result.current.getPageNumber('TinderPage')).toBe(5);
         });
     });
 
@@ -181,13 +181,13 @@ describe('stepStore', () => {
             expect(res).toBe('NamePage');
         });
 
-        it('should return Step2Page when user has both ID and name', () => {
+        it('should return MoodboardPage when user has both ID and name', () => {
             const { result } = renderHook(() => useStepStore());
             mockLocalStorageUtils.hasUserId.mockReturnValue(true);
             mockLocalStorageUtils.hasUserName.mockReturnValue(true);
 
             const res = result.current.determineInitialPage();
-            expect(res).toBe('Step2Page');
+            expect(res).toBe('MoodboardPage');
         });
     });
 });
