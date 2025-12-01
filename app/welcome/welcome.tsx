@@ -1,4 +1,5 @@
 import type { FC } from 'react';
+import { LoaderCircle } from 'lucide-react';
 import { Button } from '~/shared/components/Button/Button';
 import { Body } from '~/shared/components/Typography/Body';
 import { Caption } from '~/shared/components/Typography/Caption';
@@ -61,13 +62,14 @@ export const Welcome: FC<WelcomeProps> = ({ onBeginExperience, isLoading, isErro
         {/* CTA Button */}
         <Button
           variant="primary"
-          className="w-full h-[52px] md:h-[56px] flex items-center justify-center"
+          className="w-full h-[52px] md:h-[56px] flex items-center justify-center gap-2"
           type="button"
           aria-label="Begin the experience"
           onClick={onBeginExperience}
           disabled={isLoading}
         >
-          {isLoading ? 'Creating your profile...' : 'Begin the experience'}
+          {isLoading && <LoaderCircle className="w-5 h-5 animate-spin" />}
+          Begin the experience
         </Button>
       </div>
     </main>
