@@ -16,6 +16,9 @@ export interface MoodboardScreenProps {
   onBack: () => void;
   onContinue: (moodboardId: string) => void;
   moodboards: Tables<'moodboards'>[];
+  isLoading?: boolean;
+  isError?: boolean;
+  error?: Error;
 }
 
 export interface FormHeaderProps {
@@ -33,6 +36,7 @@ export interface NameScreenProps {
 export interface KeywordsScreenProps {
   onBack: () => void;
   onContinue: (keywords: string[]) => void;
+  keywords: Tables<'keywords'>[];
 }
 
 export interface TinderScreenProps {

@@ -1,6 +1,7 @@
 import type { FC } from 'react';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { LoaderCircle } from 'lucide-react';
 import { FormHeader } from './FormHeader';
 import { MoodboardCard } from './MoodboardCard';
 import { Button } from '~/shared/components/Button/Button';
@@ -9,7 +10,7 @@ import { Body } from '~/shared/components/Typography/Body';
 import type { MoodboardScreenProps } from '../types';
 import { staggerContainerVariants, staggerItemVariants } from '~/shared/animations/transitions';
 
-export const MoodboardScreen: FC<MoodboardScreenProps> = ({ onBack, onContinue, moodboards }) => {
+export const MoodboardScreen: FC<MoodboardScreenProps> = ({ onBack, onContinue, moodboards, isLoading, isError, error }) => {
   const [selectedMoodboardId, setSelectedMoodboardId] = useState<string | null>(null);
 
   const handleMoodboardClick = (id: string) => {
@@ -83,6 +84,17 @@ export const MoodboardScreen: FC<MoodboardScreenProps> = ({ onBack, onContinue, 
             ))}
           </motion.div>
 
+          {/* Error Message (if any) */}
+          {isError && (
+            <motion.div variants={staggerItemVariants}>
+              <div className="w-full bg-red-50 border border-red-200 rounded-lg p-4" role="alert">
+                <p className="text-red-800 text-sm text-center">
+                  {error?.message}
+                </p>
+              </div>
+            </motion.div>
+          )}
+
           {/* Continue Button */}
           <motion.div
             variants={staggerItemVariants}
@@ -91,11 +103,12 @@ export const MoodboardScreen: FC<MoodboardScreenProps> = ({ onBack, onContinue, 
             <Button
               variant="primary"
               onClick={handleContinue}
-              disabled={!selectedMoodboardId}
+              disabled={!selectedMoodboardId || isLoading}
               type="button"
-              className="w-full h-[52px] flex items-center justify-center"
+              className="w-full h-[52px] flex items-center justify-center gap-2"
               aria-label="Continue"
             >
+              {isLoading && <LoaderCircle className="w-5 h-5 animate-spin" />}
               Continue
             </Button>
           </motion.div>

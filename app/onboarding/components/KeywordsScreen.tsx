@@ -1,5 +1,5 @@
 import type { FC } from 'react';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Check } from 'lucide-react';
 import { FormHeader } from './FormHeader';
@@ -9,32 +9,12 @@ import { Title } from '~/shared/components/Typography/Title';
 import { Body } from '~/shared/components/Typography/Body';
 import type { KeywordsScreenProps } from '../types';
 import { staggerContainerVariants, staggerItemVariants } from '~/shared/animations/transitions';
-import { keywordService } from '../services/keywordService';
-import type { Tables } from '~/shared/types/database.types';
 
 const MIN_KEYWORDS = 3;
 const MAX_KEYWORDS = 10;
 
-export const KeywordsScreen: FC<KeywordsScreenProps> = ({ onBack, onContinue }) => {
-  const [keywords, setKeywords] = useState<Tables<'keywords'>[]>([]);
+export const KeywordsScreen: FC<KeywordsScreenProps> = ({ onBack, onContinue, keywords }) => {
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-
-  useEffect(() => {
-    const fetchKeywords = async () => {
-      try {
-        const data = await keywordService.getAll();
-        setKeywords(data);
-      } catch (err) {
-        setError(err instanceof Error ? err : new Error('Failed to load keywords'));
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchKeywords();
-  }, []);
 
   const isValidSelection = selectedKeywords.length >= MIN_KEYWORDS && selectedKeywords.length <= MAX_KEYWORDS;
 
@@ -60,26 +40,6 @@ export const KeywordsScreen: FC<KeywordsScreenProps> = ({ onBack, onContinue }) 
       onContinue(selectedKeywords);
     }
   };
-
-  if (isLoading) {
-    return (
-      <div className="bg-surface-light min-h-screen p-6 md:p-8 flex items-center justify-center">
-        <Body variant="1" className="text-neutral-gray">
-          Loading keywords...
-        </Body>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="bg-surface-light min-h-screen p-6 md:p-8 flex items-center justify-center">
-        <Body variant="1" className="text-red-600">
-          Error loading keywords
-        </Body>
-      </div>
-    );
-  }
 
   return (
     <div className="bg-surface-light min-h-screen p-6 md:p-8">
