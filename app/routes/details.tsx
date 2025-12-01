@@ -4,17 +4,8 @@ import { DetailsScreen } from '~/features/subculture-details/components/DetailsS
 
 const DetailsRoute: FC = () => {
   const [searchParams] = useSearchParams();
-  const userResultId = searchParams.get('userResultId');
-
-  if (!userResultId) {
-    return (
-      <div className="bg-surface-light min-h-screen p-6 md:p-8 flex items-center justify-center">
-        <p className="text-neutral-gray">
-          Missing result ID. Please complete the onboarding process.
-        </p>
-      </div>
-    );
-  }
+  // Use mock ID for development if no userResultId is provided
+  const userResultId = searchParams.get('userResultId') || 'mock-user-result-id';
 
   return <DetailsScreen userResultId={userResultId} />;
 };
