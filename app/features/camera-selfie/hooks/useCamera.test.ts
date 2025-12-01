@@ -148,6 +148,8 @@ describe('useCamera', () => {
 
       const mockContext = {
         drawImage: jest.fn(),
+        translate: jest.fn(),
+        scale: jest.fn(),
       } as unknown as CanvasRenderingContext2D;
 
       const mockCanvas = {
@@ -177,6 +179,8 @@ describe('useCamera', () => {
 
       expect(mockCanvas.width).toBe(640);
       expect(mockCanvas.height).toBe(480);
+      expect(mockContext.translate).toHaveBeenCalledWith(640, 0);
+      expect(mockContext.scale).toHaveBeenCalledWith(-1, 1);
       expect(mockContext.drawImage).toHaveBeenCalledWith(mockVideo, 0, 0, 640, 480);
       expect(result.current.capturedPhoto).toEqual({
         dataUrl: 'data:image/png;base64,mockdata',
@@ -218,6 +222,8 @@ describe('useCamera', () => {
 
       const mockContext = {
         drawImage: jest.fn(),
+        translate: jest.fn(),
+        scale: jest.fn(),
       } as unknown as CanvasRenderingContext2D;
 
       const mockCanvas = {
