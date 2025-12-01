@@ -1,9 +1,9 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { DetailsScreen } from './DetailsScreen';
-import { subcultureService } from '../services/subcultureService';
+import { tribeService } from '../services/tribeService';
 
-jest.mock('../services/subcultureService');
+jest.mock('../services/tribeService');
 jest.mock('react-router', () => ({
   useNavigate: jest.fn(),
 }));
@@ -18,7 +18,7 @@ describe('DetailsScreen', () => {
   });
 
   it('should display loading state initially', () => {
-    (subcultureService.fetchSubcultureByUserResultId as jest.Mock).mockImplementation(
+    (tribeService.fetchTribeByUserResultId as jest.Mock).mockImplementation(
       () => new Promise(() => { })
     );
 
@@ -27,10 +27,10 @@ describe('DetailsScreen', () => {
     expect(screen.getByText(/loading/i)).toBeInTheDocument();
   });
 
-  it('should display subculture name when loaded', async () => {
+  it('should display tribe name when loaded', async () => {
     const mockData = {
-      id: 'subculture-123',
-      name: 'Functionals',
+      id: 'tribe-123',
+      name: 'Heritage Heiress',
       subtitle: 'Understated refinement is your signature',
       description: 'You appreciate beauty in discretion, favoring quality over volume.',
       dos: ['Choose quality over quantity'],
@@ -38,19 +38,19 @@ describe('DetailsScreen', () => {
       userResultId: 'test-123',
     };
 
-    (subcultureService.fetchSubcultureByUserResultId as jest.Mock).mockResolvedValue(mockData);
+    (tribeService.fetchTribeByUserResultId as jest.Mock).mockResolvedValue(mockData);
 
     render(<DetailsScreen userResultId="test-123" />);
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: 'Functionals' })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Heritage Heiress' })).toBeInTheDocument();
     });
   });
 
-  it('should display subculture description when loaded', async () => {
+  it('should display tribe description when loaded', async () => {
     const mockData = {
-      id: 'subculture-123',
-      name: 'Functionals',
+      id: 'tribe-123',
+      name: 'Heritage Heiress',
       subtitle: 'Understated refinement is your signature',
       description: 'You appreciate beauty in discretion, favoring quality over volume.',
       dos: ['Choose quality over quantity'],
@@ -58,7 +58,7 @@ describe('DetailsScreen', () => {
       userResultId: 'test-123',
     };
 
-    (subcultureService.fetchSubcultureByUserResultId as jest.Mock).mockResolvedValue(mockData);
+    (tribeService.fetchTribeByUserResultId as jest.Mock).mockResolvedValue(mockData);
 
     render(<DetailsScreen userResultId="test-123" />);
 
@@ -69,8 +69,8 @@ describe('DetailsScreen', () => {
 
   it('should display "Generate my AI moodboard" button', async () => {
     const mockData = {
-      id: 'subculture-123',
-      name: 'Functionals',
+      id: 'tribe-123',
+      name: 'Quiet Luxury',
       subtitle: 'Understated refinement is your signature',
       description: 'You appreciate beauty in discretion.',
       dos: ['Item 1'],
@@ -78,7 +78,7 @@ describe('DetailsScreen', () => {
       userResultId: 'test-123',
     };
 
-    (subcultureService.fetchSubcultureByUserResultId as jest.Mock).mockResolvedValue(mockData);
+    (tribeService.fetchTribeByUserResultId as jest.Mock).mockResolvedValue(mockData);
 
     render(<DetailsScreen userResultId="test-123" />);
 
@@ -88,8 +88,8 @@ describe('DetailsScreen', () => {
   });
 
   it('should display error state on fetch failure', async () => {
-    (subcultureService.fetchSubcultureByUserResultId as jest.Mock).mockRejectedValue(
-      new Error('Failed to fetch subculture')
+    (tribeService.fetchTribeByUserResultId as jest.Mock).mockRejectedValue(
+      new Error('Failed to fetch tribe')
     );
 
     render(<DetailsScreen userResultId="test-123" />);
@@ -101,8 +101,8 @@ describe('DetailsScreen', () => {
 
   it('should have back button that navigates to results', async () => {
     const mockData = {
-      id: 'subculture-123',
-      name: 'Functionals',
+      id: 'tribe-123',
+      name: 'Quiet Luxury',
       subtitle: 'Understated refinement is your signature',
       description: 'You appreciate beauty in discretion.',
       dos: ['Item 1'],
@@ -110,12 +110,12 @@ describe('DetailsScreen', () => {
       userResultId: 'test-123',
     };
 
-    (subcultureService.fetchSubcultureByUserResultId as jest.Mock).mockResolvedValue(mockData);
+    (tribeService.fetchTribeByUserResultId as jest.Mock).mockResolvedValue(mockData);
 
     render(<DetailsScreen userResultId="test-123" />);
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: 'Functionals' })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Quiet Luxury' })).toBeInTheDocument();
     });
 
     const backButton = screen.getByRole('button', { name: /back/i });
@@ -124,10 +124,10 @@ describe('DetailsScreen', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/results?userResultId=test-123');
   });
 
-  it('should display "YOUR KÉRASTASE SUBCULTURE" header', async () => {
+  it('should display "YOUR KÉRASTASE TRIBE" header', async () => {
     const mockData = {
-      id: 'subculture-123',
-      name: 'Functionals',
+      id: 'tribe-123',
+      name: 'Heritage Heiress',
       subtitle: 'You make timeless elegance your own',
       description: 'Understated refinement is your signature.',
       dos: ['Choose quality over quantity', 'Invest in timeless pieces'],
@@ -135,19 +135,19 @@ describe('DetailsScreen', () => {
       userResultId: 'test-123',
     };
 
-    (subcultureService.fetchSubcultureByUserResultId as jest.Mock).mockResolvedValue(mockData);
+    (tribeService.fetchTribeByUserResultId as jest.Mock).mockResolvedValue(mockData);
 
     render(<DetailsScreen userResultId="test-123" />);
 
     await waitFor(() => {
-      expect(screen.getByText(/your kérastase subculture/i)).toBeInTheDocument();
+      expect(screen.getByText(/your kérastase tribe/i)).toBeInTheDocument();
     });
   });
 
   it('should display subtitle when loaded', async () => {
     const mockData = {
-      id: 'subculture-123',
-      name: 'Legacist',
+      id: 'tribe-123',
+      name: 'Cosmic Explorer',
       subtitle: 'You make timeless elegance your own',
       description: 'Full description here.',
       dos: ['Item 1'],
@@ -155,7 +155,7 @@ describe('DetailsScreen', () => {
       userResultId: 'test-123',
     };
 
-    (subcultureService.fetchSubcultureByUserResultId as jest.Mock).mockResolvedValue(mockData);
+    (tribeService.fetchTribeByUserResultId as jest.Mock).mockResolvedValue(mockData);
 
     render(<DetailsScreen userResultId="test-123" />);
 
@@ -166,8 +166,8 @@ describe('DetailsScreen', () => {
 
   it('should display dos section with items', async () => {
     const mockData = {
-      id: 'subculture-123',
-      name: 'Legacist',
+      id: 'tribe-123',
+      name: 'Cosmic Explorer',
       subtitle: 'You make timeless elegance your own',
       description: 'Full description here.',
       dos: ['Choose quality over quantity', 'Invest in timeless pieces'],
@@ -175,7 +175,7 @@ describe('DetailsScreen', () => {
       userResultId: 'test-123',
     };
 
-    (subcultureService.fetchSubcultureByUserResultId as jest.Mock).mockResolvedValue(mockData);
+    (tribeService.fetchTribeByUserResultId as jest.Mock).mockResolvedValue(mockData);
 
     render(<DetailsScreen userResultId="test-123" />);
 
@@ -188,8 +188,8 @@ describe('DetailsScreen', () => {
 
   it('should display donts section with items', async () => {
     const mockData = {
-      id: 'subculture-123',
-      name: 'Legacist',
+      id: 'tribe-123',
+      name: 'Cosmic Explorer',
       subtitle: 'You make timeless elegance your own',
       description: 'Full description here.',
       dos: ['Choose quality over quantity'],
@@ -197,7 +197,7 @@ describe('DetailsScreen', () => {
       userResultId: 'test-123',
     };
 
-    (subcultureService.fetchSubcultureByUserResultId as jest.Mock).mockResolvedValue(mockData);
+    (tribeService.fetchTribeByUserResultId as jest.Mock).mockResolvedValue(mockData);
 
     render(<DetailsScreen userResultId="test-123" />);
 
@@ -210,8 +210,8 @@ describe('DetailsScreen', () => {
 
   it('should handle empty dos and donts arrays', async () => {
     const mockData = {
-      id: 'subculture-123',
-      name: 'Legacist',
+      id: 'tribe-123',
+      name: 'Cosmic Explorer',
       subtitle: 'You make timeless elegance your own',
       description: 'Full description here.',
       dos: [],
@@ -219,12 +219,12 @@ describe('DetailsScreen', () => {
       userResultId: 'test-123',
     };
 
-    (subcultureService.fetchSubcultureByUserResultId as jest.Mock).mockResolvedValue(mockData);
+    (tribeService.fetchTribeByUserResultId as jest.Mock).mockResolvedValue(mockData);
 
     render(<DetailsScreen userResultId="test-123" />);
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: 'Legacist' })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Cosmic Explorer' })).toBeInTheDocument();
     });
 
     // Should still render the DO and DON'T headers even with empty arrays

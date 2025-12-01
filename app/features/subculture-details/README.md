@@ -1,7 +1,7 @@
-# Subculture Details Feature
+# Tribe Details Feature
 
 ## Overview
-This feature displays the user's dominant subculture information after they complete the onboarding process. It shows the subculture name and description, providing a deeper understanding of their personality profile.
+This feature displays the user's dominant tribe information after they complete the onboarding process. It shows the tribe name and description, providing a deeper understanding of their personality profile.
 
 ## Architecture
 Following the screaming architecture pattern, this feature is organized by domain:
@@ -9,11 +9,13 @@ Following the screaming architecture pattern, this feature is organized by domai
 ```
 app/features/subculture-details/
 ├── components/
-│   ├── DetailsScreen.tsx          # Main component displaying subculture details
+│   ├── DetailsScreen.tsx          # Main component displaying tribe details
 │   └── DetailsScreen.test.tsx     # Component tests
+├── hooks/
+│   └── useTribeDetails.ts         # Data-fetching hook for tribe details
 ├── services/
-│   ├── subcultureService.ts       # Service for fetching subculture data
-│   └── subcultureService.test.ts  # Service tests
+│   ├── tribeService.ts            # Service for fetching tribe data
+│   └── tribeService.test.ts       # Service tests
 ├── types/
 │   └── index.ts                   # TypeScript interfaces
 └── README.md                      # This file
@@ -24,28 +26,27 @@ app/features/subculture-details/
 2. System computes results and navigates to `/results?userResultId=XXX`
 3. User sees tribe percentages and clicks "Let's deep dive"
 4. User is navigated to `/details?userResultId=XXX`
-5. System fetches and displays subculture information
+5. System fetches and displays tribe information
 
 ## Key Components
 
 ### DetailsScreen
 The main component that:
-- Fetches subculture data using the service
+- Fetches tribe data using the service
 - Displays loading, error, and success states
-- Shows subculture name, description, and CTA button
+- Shows tribe name, description, and CTA button
 - Provides back navigation to results page
 
 **Props**:
-- `userResultId: string` - The user result ID to fetch subculture for
+- `userResultId: string` - The user result ID to fetch tribe for
 
-### subcultureService
+### tribeService
 Service layer for database operations:
-- `fetchSubcultureByUserResultId(userResultId: string): Promise<SubcultureDetails>`
+- `fetchTribeByUserResultId(userResultId: string): Promise<TribeDetails>`
 
 **Database Queries**:
-1. Fetch user_results by ID → get tribe_id
-2. Join tribe_subcultures → get subculture_id
-3. Join subcultures → get name + description
+1. Fetch user_results by ID → join tribes
+2. Return tribe details (name, subtitle, description, dos, donts)
 
 ## Design Implementation
 Based on Figma design (node 4-365):
@@ -59,12 +60,12 @@ Based on Figma design (node 4-365):
 The `userResultId` is stored in localStorage for persistence:
 - Key: `kerastase_user_result_id`
 - Set in: `home.tsx` after computing results
-- Used in: Details route to fetch subculture data
+- Used in: Details route to fetch tribe data
 
 ## Testing
 Comprehensive test coverage (19+ tests):
 - Unit tests for localStorage utils
-- Unit tests for subcultureService
+- Unit tests for tribeService
 - Component tests for DetailsScreen
 - Integration tests for navigation flow
 
@@ -74,7 +75,7 @@ Comprehensive test coverage (19+ tests):
 ## Error Handling
 - Missing userResultId: Shows error message
 - Database errors: Displays user-friendly error
-- No subculture found: Shows appropriate error message
+- No tribe found: Shows appropriate error message
 
 ## Future Enhancements
 - AI moodboard generation (button currently placeholder)
