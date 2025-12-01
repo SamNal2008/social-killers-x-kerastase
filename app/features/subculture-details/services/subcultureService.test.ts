@@ -59,7 +59,16 @@ describe('subcultureService', () => {
       expect(result).toEqual({
         id: mockSubcultureId,
         name: 'Functionals',
+        subtitle: 'You make timeless elegance your own',
         description: 'Understated refinement is your signature. You appreciate beauty in discretion, favoring quality over volume.',
+        dos: [
+          'Choose quality over quantity',
+          'Invest in timeless pieces',
+        ],
+        donts: [
+          'Follow every trend',
+          'Compromise on craftsmanship',
+        ],
         userResultId: mockUserResultId,
       });
 
