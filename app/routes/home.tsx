@@ -160,7 +160,10 @@ export default function Home() {
       // 2. Compute results
       const userResultId = await computeResultService.compute(answer.id);
 
-      // 3. Navigate to results
+      // 3. Store userResultId in localStorage
+      localStorageUtils.setUserResultId(userResultId);
+
+      // 4. Navigate to results
       navigate(`/results?userResultId=${userResultId}`);
 
     } catch (error) {

@@ -109,9 +109,10 @@ describe('localStorageUtils', () => {
   describe('clearAllUserData', () => {
     it('should remove all user data from localStorage', () => {
       localStorageUtils.clearAllUserData();
-      
+
       expect(localStorageMock.removeItem).toHaveBeenCalledWith('kerastase_user_id');
       expect(localStorageMock.removeItem).toHaveBeenCalledWith('kerastase_user_name');
+      expect(localStorageMock.removeItem).toHaveBeenCalledWith('kerastase_user_result_id');
     });
   });
 
@@ -134,15 +135,70 @@ describe('localStorageUtils', () => {
   describe('hasUserName', () => {
     it('should return true when user name exists', () => {
       localStorageMock.setItem('kerastase_user_name', 'John Doe');
-      
+
       const result = localStorageUtils.hasUserName();
-      
+
       expect(result).toBe(true);
     });
 
     it('should return false when user name does not exist', () => {
       const result = localStorageUtils.hasUserName();
-      
+
+      expect(result).toBe(false);
+    });
+  });
+
+  describe('setUserResultId', () => {
+    it('should store user result ID in localStorage', () => {
+      const userResultId = '456e7890-e89b-12d3-a456-426614174001';
+
+      localStorageUtils.setUserResultId(userResultId);
+
+      expect(localStorageMock.setItem).toHaveBeenCalledWith('kerastase_user_result_id', userResultId);
+    });
+  });
+
+  describe('getUserResultId', () => {
+    it('should retrieve user result ID from localStorage', () => {
+      const userResultId = '456e7890-e89b-12d3-a456-426614174001';
+      localStorageMock.setItem('kerastase_user_result_id', userResultId);
+
+      const result = localStorageUtils.getUserResultId();
+
+      expect(result).toBe(userResultId);
+      expect(localStorageMock.getItem).toHaveBeenCalledWith('kerastase_user_result_id');
+    });
+
+    it('should return null when no user result ID is stored', () => {
+      const result = localStorageUtils.getUserResultId();
+
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('removeUserResultId', () => {
+    it('should remove user result ID from localStorage', () => {
+      const userResultId = '456e7890-e89b-12d3-a456-426614174001';
+      localStorageMock.setItem('kerastase_user_result_id', userResultId);
+
+      localStorageUtils.removeUserResultId();
+
+      expect(localStorageMock.removeItem).toHaveBeenCalledWith('kerastase_user_result_id');
+    });
+  });
+
+  describe('hasUserResultId', () => {
+    it('should return true when user result ID exists', () => {
+      localStorageMock.setItem('kerastase_user_result_id', '456e7890-e89b-12d3-a456-426614174001');
+
+      const result = localStorageUtils.hasUserResultId();
+
+      expect(result).toBe(true);
+    });
+
+    it('should return false when user result ID does not exist', () => {
+      const result = localStorageUtils.hasUserResultId();
+
       expect(result).toBe(false);
     });
   });

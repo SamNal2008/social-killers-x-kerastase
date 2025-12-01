@@ -1,5 +1,6 @@
 const USER_ID_KEY = 'kerastase_user_id';
 const USER_NAME_KEY = 'kerastase_user_name';
+const USER_RESULT_ID_KEY = 'kerastase_user_result_id';
 
 export const localStorageUtils = {
 
@@ -64,6 +65,7 @@ export const localStorageUtils = {
         if (typeof window !== 'undefined') {
             localStorage.removeItem(USER_ID_KEY);
             localStorage.removeItem(USER_NAME_KEY);
+            localStorage.removeItem(USER_RESULT_ID_KEY);
         }
     },
 
@@ -73,5 +75,28 @@ export const localStorageUtils = {
 
     hasUserName(): boolean {
         return this.getUserName() !== null;
+    },
+
+    setUserResultId(userResultId: string): void {
+        if (typeof window !== 'undefined') {
+            localStorage.setItem(USER_RESULT_ID_KEY, userResultId);
+        }
+    },
+
+    getUserResultId(): string | null {
+        if (typeof window !== 'undefined') {
+            return localStorage.getItem(USER_RESULT_ID_KEY);
+        }
+        return null;
+    },
+
+    removeUserResultId(): void {
+        if (typeof window !== 'undefined') {
+            localStorage.removeItem(USER_RESULT_ID_KEY);
+        }
+    },
+
+    hasUserResultId(): boolean {
+        return this.getUserResultId() !== null;
     },
 };

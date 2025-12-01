@@ -1,12 +1,20 @@
 import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { ResultsScreen } from './ResultsScreen';
 import { resultsService } from '../services/resultsService';
 
 jest.mock('../services/resultsService');
+jest.mock('react-router', () => ({
+    useNavigate: jest.fn(),
+}));
+
+const mockNavigate = jest.fn();
 
 describe('ResultsScreen', () => {
     beforeEach(() => {
         jest.clearAllMocks();
+        const { useNavigate } = require('react-router');
+        (useNavigate as jest.Mock).mockReturnValue(mockNavigate);
     });
 
     it('should display loading state initially', () => {
@@ -94,5 +102,37 @@ describe('ResultsScreen', () => {
         await waitFor(() => {
             expect(screen.getByText(/step 4 \/ 4/i)).toBeInTheDocument();
         });
+    });
+
+    it('should navigate to details page when "Let\'s deep dive" button is clicked', async () => {
+        const mockData = {
+            userResult: {
+                id: 'result-123',
+                userId: 'user-456',
+                dominantTribeId: 'tribe-789',
+                dominantTribeName: 'Minimalist',
+                createdAt: '2025-12-01T00:00:00Z',
+            },
+            tribePercentages: [
+                {
+                    tribeId: 'tribe-789',
+                    tribeName: 'Minimalist',
+                    percentage: 45.5,
+                },
+            ],
+        };
+
+        (resultsService.fetchUserResult as jest.Mock).mockResolvedValue(mockData);
+
+        render(<ResultsScreen userResultId="test-123" />);
+
+        await waitFor(() => {
+            expect(screen.getByRole('heading', { name: 'Minimalist' })).toBeInTheDocument();
+        });
+
+        const deepDiveButton = screen.getByRole('button', { name: /let's deep dive/i });
+        await userEvent.click(deepDiveButton);
+
+        expect(mockNavigate).toHaveBeenCalledWith('/details?userResultId=test-123');
     });
 });
