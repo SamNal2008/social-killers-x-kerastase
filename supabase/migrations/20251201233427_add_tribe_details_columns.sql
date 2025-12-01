@@ -1,8 +1,26 @@
--- Migration: Add Detail Columns to Tribes Table
--- Description: Adds subtitle, text, dos, and donts columns to tribes table
---              and populates them with tribe-specific content
+-- Migration: Add Detail Columns to Tribes Table & Simplify Moodboards
+-- Description: Adds subtitle, text, dos, and donts columns to tribes table,
+--              migrates detail ownership off subcultures, populates tribes
+--              with their specific content, and simplifies moodboards to only
+--              store image_url (name/description come from linked subculture)
 -- Author: Generated via Claude Code
 -- Date: 2025-12-01
+
+-- ============================================================================
+-- STEP 0: Remove subculture-only detail columns now stored on tribes
+-- ============================================================================
+
+ALTER TABLE subcultures
+  DROP COLUMN IF EXISTS dos,
+  DROP COLUMN IF EXISTS donts;
+
+-- ============================================================================
+-- STEP 0.5: Simplify moodboards table - name/description come from subculture
+-- ============================================================================
+
+ALTER TABLE moodboards
+  DROP COLUMN IF EXISTS name,
+  DROP COLUMN IF EXISTS description;
 
 -- ============================================================================
 -- STEP 1: Add columns to tribes table
@@ -107,6 +125,41 @@ SET
   dos = '["Channel raw emotion into creativity", "Express authenticity", "Challenge norms thoughtfully"]'::jsonb,
   donts = '["Conform for comfort", "Dilute your presence", "Chase perfection"]'::jsonb
 WHERE name = 'Edgy Aesthetes';
+
+-- ============================================================================
+-- STEP 3: Clear existing moodboards and seed new ones linked to subcultures
+-- ============================================================================
+
+-- Clear existing moodboards (they had name/description which no longer exist)
+DELETE FROM moodboards;
+
+-- Insert moodboards linked to subcultures with random Unsplash images
+DO $$
+DECLARE
+  legacists_id UUID;
+  functionals_id UUID;
+  romantics_id UUID;
+  curators_id UUID;
+  mystics_id UUID;
+  unapologetics_id UUID;
+BEGIN
+  -- Get subculture IDs
+  SELECT id INTO legacists_id FROM subcultures WHERE name = 'LEGACISTS';
+  SELECT id INTO functionals_id FROM subcultures WHERE name = 'FUNCTIONALS';
+  SELECT id INTO romantics_id FROM subcultures WHERE name = 'ROMANTICS';
+  SELECT id INTO curators_id FROM subcultures WHERE name = 'CURATORS';
+  SELECT id INTO mystics_id FROM subcultures WHERE name = 'MYSTICS';
+  SELECT id INTO unapologetics_id FROM subcultures WHERE name = 'UNAPOLOGETICS';
+
+  -- Insert moodboards with subculture links and random Unsplash images
+  INSERT INTO moodboards (subculture_id, image_url) VALUES
+    (legacists_id, 'https://source.unsplash.com/random/400x600?fashion,luxury,heritage&sig=1'),
+    (functionals_id, 'https://source.unsplash.com/random/400x600?minimalist,clean,modern&sig=2'),
+    (romantics_id, 'https://source.unsplash.com/random/400x600?romantic,beauty,dreamy&sig=3'),
+    (curators_id, 'https://source.unsplash.com/random/400x600?urban,art,creative&sig=4'),
+    (mystics_id, 'https://source.unsplash.com/random/400x600?mystical,spiritual,cosmic&sig=5'),
+    (unapologetics_id, 'https://source.unsplash.com/random/400x600?bold,edgy,fashion&sig=6');
+END $$;
 
 -- ============================================================================
 -- COMMENTS

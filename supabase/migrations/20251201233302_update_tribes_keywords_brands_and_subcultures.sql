@@ -27,11 +27,14 @@ DELETE FROM brands;
 DELETE FROM tribes;
 
 -- ============================================================================
--- STEP 3: Add text column to subcultures table
+-- STEP 3: Add text and subtitle columns to subcultures table
 -- ============================================================================
 
 ALTER TABLE subcultures
-  ADD COLUMN IF NOT EXISTS text TEXT;
+  ADD COLUMN IF NOT EXISTS text TEXT,
+  ADD COLUMN IF NOT EXISTS subtitle TEXT,
+  ADD COLUMN IF NOT EXISTS dos JSONB DEFAULT '[]'::jsonb,
+  ADD COLUMN IF NOT EXISTS donts JSONB DEFAULT '[]'::jsonb;
 
 -- ============================================================================
 -- STEP 4: Update subcultures with detailed information
