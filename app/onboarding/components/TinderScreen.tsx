@@ -15,28 +15,8 @@ import {
     staggerItemVariants,
 } from '~/shared/animations/transitions';
 
-const BRANDS: Brand[] = [
-    'Hermès',
-    'Cartier',
-    'The Row',
-    'Loro Piana',
-    'Aesop',
-    'Stella Mcartney',
-    'SkinCeuticals',
-    'Goop Beauty',
-    'Chloé',
-    'Miu Miu',
-    'Serge Lutens',
-    'Maison Margiela',
-    'Ganni',
-    'Glossier',
-    'MAC Cosmetics',
-    'GHD',
-    'YSL beauty',
-    'Tom Ford',
-    'Diesel',
-    'Gentle Monster',
-];
+import { brandService } from '../services/brandService';
+import type { Tables } from '~/shared/types/database.types';
 
 const SWIPE_THRESHOLD = 100;
 
@@ -169,6 +149,25 @@ const ActiveCard: FC<{
 };
 
 export const TinderScreen: FC<TinderScreenProps> = ({ onBack, onContinue }) => {
+    const [brands, setBrands] = useState<Tables<'brands'>[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<Error | null>(null);
+
+    useEffect(() => {
+        const fetchBrands = async () => {
+            try {
+                const data = await brandService.getAll();
+                setBrands(data);
+            } catch (err) {
+                setError(err instanceof Error ? err : new Error('Failed to load brands'));
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchBrands();
+    }, []);
+
     const [currentIndex, setCurrentIndex] = useState(0);
     const [likedBrands, setLikedBrands] = useState<string[]>([]);
     const [passedBrands, setPassedBrands] = useState<string[]>([]);
@@ -182,15 +181,15 @@ export const TinderScreen: FC<TinderScreenProps> = ({ onBack, onContinue }) => {
 
     const [swipeTrigger, setSwipeTrigger] = useState<'left' | 'right' | null>(null);
 
-    const hasMoreCards = currentIndex < BRANDS.length;
+    const hasMoreCards = currentIndex < brands.length;
 
     const handleSwipeComplete = (direction: 'left' | 'right') => {
-        const brand = BRANDS[currentIndex];
+        const brand = brands[currentIndex];
 
         if (direction === 'right') {
-            setLikedBrands((prev) => [...prev, brand]);
+            setLikedBrands((prev) => [...prev, brand.id]);
         } else {
-            setPassedBrands((prev) => [...prev, brand]);
+            setPassedBrands((prev) => [...prev, brand.id]);
         }
 
         // Animate background card to full scale/opacity
@@ -211,6 +210,37 @@ export const TinderScreen: FC<TinderScreenProps> = ({ onBack, onContinue }) => {
     const handlePass = () => {
         if (!swipeTrigger) setSwipeTrigger('left');
     };
+
+    // Auto-advance when all cards are swiped
+    useEffect(() => {
+        if (brands.length > 0 && currentIndex === brands.length) {
+            // Small delay to allow the last animation to complete visually if needed, 
+            // though the timeout in handleSwipeComplete already handles the card exit.
+            // We might want to show "All done!" for a split second or just go.
+            // Let's go immediately for now to fix the "stuck" feeling.
+            onContinue(likedBrands, passedBrands);
+        }
+    }, [currentIndex, onContinue, likedBrands, passedBrands, brands.length]);
+
+    if (isLoading) {
+        return (
+            <div className="bg-surface-light min-h-screen p-6 md:p-8 flex items-center justify-center">
+                <Body variant="1" className="text-neutral-gray">
+                    Loading brands...
+                </Body>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="bg-surface-light min-h-screen p-6 md:p-8 flex items-center justify-center">
+                <Body variant="1" className="text-red-600">
+                    Error loading brands
+                </Body>
+            </div>
+        );
+    }
 
     return (
         <div className="bg-surface-light min-h-screen p-6 md:p-8">
@@ -243,7 +273,7 @@ export const TinderScreen: FC<TinderScreenProps> = ({ onBack, onContinue }) => {
                         {hasMoreCards ? (
                             <>
                                 {/* Next Card (Bottom) */}
-                                {currentIndex + 1 < BRANDS.length && (
+                                {currentIndex + 1 < brands.length && (
                                     <motion.div
                                         className="absolute top-0 left-0 w-full h-full pointer-events-none"
                                         style={{
@@ -252,12 +282,12 @@ export const TinderScreen: FC<TinderScreenProps> = ({ onBack, onContinue }) => {
                                         }}
                                     >
                                         <Polaroid
-                                            imageSrc=""
-                                            imageAlt={BRANDS[currentIndex + 1]}
-                                            title={BRANDS[currentIndex + 1]}
+                                            imageSrc={brands[currentIndex + 1].logo_url}
+                                            imageAlt={brands[currentIndex + 1].name}
+                                            title={brands[currentIndex + 1].name}
                                             subtitle="Swipe to decide"
                                             currentItem={currentIndex + 2}
-                                            totalItems={BRANDS.length}
+                                            totalItems={brands.length}
                                             className="w-full h-full"
                                         />
                                     </motion.div>
@@ -266,9 +296,9 @@ export const TinderScreen: FC<TinderScreenProps> = ({ onBack, onContinue }) => {
                                 {/* Current Card (Top) */}
                                 <ActiveCard
                                     key={currentIndex}
-                                    brand={BRANDS[currentIndex]}
+                                    brand={brands[currentIndex].name}
                                     index={currentIndex}
-                                    total={BRANDS.length}
+                                    total={brands.length}
                                     onSwipe={handleSwipeComplete}
                                     onDrag={(x) => bgX.set(x)}
                                     externalSwipeTrigger={swipeTrigger}
