@@ -13,7 +13,7 @@ POST /functions/v1/compute-user-result
 
 **Headers:**
 - `Content-Type: application/json`
-- `Authorization: Bearer <SUPABASE_ANON_KEY>` (or service role key)
+- `Authorization: Bearer <SUPABASE_ANON_KEY>` (required - uses anon key for public access)
 
 **Body (camelCase):**
 ```json
@@ -99,26 +99,29 @@ POST /functions/v1/compute-user-result
 
 ## How It Works
 
-1. **Fetch User Answer**: Retrieves the user's answer including moodboard details, selected brands, and keywords
-2. **Fetch Reference Data**: Loads all available subcultures and tribes from the database
-3. **AI Analysis**: Sends user preferences to Gemini AI with a carefully crafted prompt
-4. **Parse Results**: Validates and parses Gemini's JSON response
-5. **Save to Database**: Creates a `user_results` record and associated `user_result_subcultures` entries
+1. **Public Access**: This function is publicly accessible using the Supabase anon key for authentication
+2. **Service Role Operations**: Internally uses the service role key to bypass RLS for database operations (safe for guest users)
+3. **Fetch User Answer**: Retrieves the user's answer including moodboard details, selected brands, and keywords
+4. **Calculate Tribe Scores**: Uses a scoring system based on moodboard, keywords, and brands
+5. **Save to Database**: Creates a `user_results` record and associated `user_result_tribes` entries
 6. **Return Response**: Sends the analysis results back to the client in camelCase format
 
-## Analysis Logic
+## Scoring Logic
 
-- **Subculture Matching**: Based primarily on moodboard selection and brand preferences
-- **Tribe Selection**: Determined by combining subculture affinities with selected keywords
-- **Percentage Calculation**: All subculture percentages must sum to exactly 100%
+The function uses a point-based system to calculate tribe affinities:
+
+1. **Moodboard Selection**: Each tribe in the selected subculture receives 2 points
+2. **Keyword Selection**: Each selected keyword adds 1 point to its associated tribe
+3. **Brand Selection**: Each selected brand adds 1 point to its associated tribe
+4. **Dominant Tribe**: The tribe with the highest total points becomes the dominant tribe
+5. **Percentage Calculation**: Each tribe's percentage is calculated as `(tribe_points / total_points) * 100`
 
 ## Environment Variables
 
-Required environment variables (configured in `supabase/config.toml`):
+Required environment variables (automatically provided by Supabase):
 
-- `GEMINI_API_KEY`: Google Gemini API key
-- `SUPABASE_URL`: Automatically provided by Supabase
-- `SUPABASE_SERVICE_ROLE_KEY`: Automatically provided by Supabase
+- `SUPABASE_URL`: Supabase project URL
+- `SUPABASE_SERVICE_ROLE_KEY`: Service role key for bypassing RLS
 
 ## Local Testing
 

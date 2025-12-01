@@ -184,7 +184,9 @@ Deno.serve(async (req) => {
       return buildErrorResponse('INVALID_REQUEST', 'userAnswerId is required and must be a string', 400);
     }
 
-    // Initialize Supabase client
+    // Initialize Supabase client with service role key
+    // Note: Using service role key bypasses RLS and allows public access
+    // This is safe because we're working with guest users and validating input
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
@@ -193,7 +195,13 @@ Deno.serve(async (req) => {
       return buildErrorResponse('CONFIGURATION_ERROR', 'Server configuration error', 500);
     }
 
-    const supabase = createClient<Database>(supabaseUrl, supabaseServiceKey);
+    const supabase = createClient<Database>(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+        detectSessionInUrl: false
+      }
+    });
 
     // Fetch user answer with moodboard and subculture details
     const { data: userAnswer, error: fetchError } = await supabase

@@ -1,4 +1,5 @@
 import { supabase } from '~/shared/services/supabase';
+
 interface TribeMatch {
     tribeId: string;
     tribeName: string;
@@ -27,10 +28,16 @@ type ComputeUserResultResponse =
 
 export const computeResultService = {
     async compute(userAnswerId: string): Promise<string> {
+        // Get the anon key to use as Bearer token for public edge function access
+        const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+
         const { data, error } = await supabase.functions.invoke<ComputeUserResultResponse>(
             'compute-user-result',
             {
                 body: { userAnswerId },
+                headers: {
+                    Authorization: `Bearer ${anonKey}`,
+                },
             }
         );
 
