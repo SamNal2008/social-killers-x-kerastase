@@ -38,10 +38,15 @@ export const imageGenerationService = {
         }
 
         try {
+            const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+
             const { data, error } = await supabase.functions.invoke<EdgeFunctionResponse>('generate-image', {
                 body: {
                     userResultId: request.userResultId,
                     userPhoto: request.userPhoto,
+                },
+                headers: {
+                    Authorization: `Bearer ${anonKey}`,
                 },
             });
 
