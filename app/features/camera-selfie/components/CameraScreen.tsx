@@ -5,15 +5,19 @@ import { motion } from 'framer-motion';
 import { Title } from '~/shared/components/Typography/Title';
 import { Body } from '~/shared/components/Typography/Body';
 import { useCamera } from '../hooks/useCamera';
+import { useImageGeneration } from '../hooks/useImageGeneration';
+import { localStorageUtils } from '~/shared/utils/localStorage';
 import { staggerContainerVariants, staggerItemVariants } from '~/shared/animations/transitions';
 import { CameraErrorScreen } from './CameraErrorScreen';
 import { CameraResultSelfie } from './CameraResultSelfie';
+import { CameraLoadingScreen } from './CameraLoadingScreen';
 import { CameraBackButton } from './CameraBackButton';
 
 export const CameraScreen: FC = () => {
   const navigate = useNavigate();
   const videoRef = useRef<HTMLVideoElement>(null);
   const { state, capturedPhoto, requestCameraAccess, stopCamera, capturePhoto, retakePhoto } = useCamera();
+  const { state: imageGenState, generateImage } = useImageGeneration();
 
   useEffect(() => {
     // Request camera access on mount
@@ -40,6 +44,28 @@ export const CameraScreen: FC = () => {
 
   const handleRetake = () => {
     retakePhoto();
+  };
+
+  const handleContinue = async () => {
+    if (!capturedPhoto) return;
+
+    const userResultId = localStorageUtils.getUserResultId();
+    if (!userResultId) {
+      console.error('No user result ID found');
+      // TODO: Show error to user
+      return;
+    }
+
+    try {
+      await generateImage({
+        userResultId,
+        userPhoto: capturedPhoto.dataUrl,
+      });
+      // TODO: Navigate to next screen or show generated image
+    } catch (error) {
+      console.error('Failed to generate image:', error);
+      // TODO: Show error to user
+    }
   };
 
   // Browser doesn't support camera
@@ -86,6 +112,11 @@ export const CameraScreen: FC = () => {
     );
   }
 
+  // Show loading screen during image generation
+  if (imageGenState.status === 'generating') {
+    return <CameraLoadingScreen />;
+  }
+
   // Show captured photo
   if (capturedPhoto) {
     return (
@@ -93,6 +124,7 @@ export const CameraScreen: FC = () => {
         photo={capturedPhoto}
         onBack={handleBack}
         onRetake={handleRetake}
+        onContinue={handleContinue}
       />
     );
   }
