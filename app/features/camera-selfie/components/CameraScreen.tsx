@@ -52,19 +52,23 @@ export const CameraScreen: FC = () => {
     const userResultId = localStorageUtils.getUserResultId();
     if (!userResultId) {
       console.error('No user result ID found');
-      // TODO: Show error to user
+      alert('Error: User result not found. Please complete the questionnaire first.');
       return;
     }
 
     try {
-      await generateImage({
+      const imageUrl = await generateImage({
         userResultId,
         userPhoto: capturedPhoto.dataUrl,
       });
+      console.log('Image generated successfully:', imageUrl);
       // TODO: Navigate to next screen or show generated image
+      // For now, show success message
+      alert(`Image generated successfully! URL: ${imageUrl}`);
     } catch (error) {
       console.error('Failed to generate image:', error);
-      // TODO: Show error to user
+      const errorMessage = error instanceof Error ? error.message : 'Failed to generate image';
+      alert(`Error: ${errorMessage}`);
     }
   };
 
