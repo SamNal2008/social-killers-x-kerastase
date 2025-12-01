@@ -1,3 +1,5 @@
+import type { Tables } from '~/shared/types/database.types';
+
 export type PageType = 'WelcomePage' | 'NamePage' | 'KeywordPage' | 'TinderPage' | 'MoodboardPage' | 'ResultsPage';
 
 export interface FormData {
@@ -13,6 +15,7 @@ export interface FormData {
 export interface MoodboardScreenProps {
   onBack: () => void;
   onContinue: (moodboardId: string) => void;
+  moodboards: Tables<'moodboards'>[];
 }
 
 export interface FormHeaderProps {
@@ -24,6 +27,7 @@ export interface FormHeaderProps {
 export interface NameScreenProps {
   onBack: () => void;
   onContinue: (name: string) => void;
+  isLoading?: boolean;
 }
 
 export interface KeywordsScreenProps {

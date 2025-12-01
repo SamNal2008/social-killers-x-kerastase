@@ -15,6 +15,7 @@ import type { FormData } from '~/onboarding/types';
 import { useNavigate } from 'react-router';
 import { userAnswerService } from '~/onboarding/services/userAnswerService';
 import { computeResultService } from '~/onboarding/services/computeResultService';
+import { moodboardService, type Moodboard } from '~/shared/services/moodboardService';
 
 export function meta({ }: Route.MetaArgs) {
   return [
@@ -40,6 +41,7 @@ export default function Home() {
     keywords: [],
     brands: { liked: [], passed: [] }
   });
+  const [moodboards, setMoodboards] = useState<Moodboard[]>([]);
 
   const isLoading = loadingState.status === 'loading';
   const isError = loadingState.status === 'error';
@@ -86,10 +88,27 @@ export default function Home() {
     goToPreviousPage();
   };
 
-  const handleNameContinue = (name: string) => {
+  const handleNameContinue = async (name: string) => {
+    if (isLoading) {
+      return;
+    }
+
     setFormData((prev) => ({ ...prev, name }));
-    setDirection('forward');
-    goToNextPage();
+    setLoadingState({ status: 'loading' });
+
+    try {
+      const data = await moodboardService.getAll();
+      setMoodboards(data);
+      setLoadingState({ status: 'idle' });
+      setDirection('forward');
+      goToNextPage();
+    } catch (error) {
+      const appError = error instanceof Error
+        ? error
+        : new Error('Failed to load moodboards');
+
+      setLoadingState({ status: 'error', error: appError });
+    }
   };
 
   const handleBackToName = () => {
@@ -224,6 +243,7 @@ export default function Home() {
           <MoodboardScreen
             onBack={handleBackToName}
             onContinue={handleMoodboardContinue}
+            moodboards={moodboards}
           />
         </motion.div>
       ) : currentPage === 'NamePage' ? (
@@ -239,6 +259,7 @@ export default function Home() {
           <NameScreen
             onBack={handleBackToWelcome}
             onContinue={handleNameContinue}
+            isLoading={isLoading}
           />
         </motion.div>
       ) : (
