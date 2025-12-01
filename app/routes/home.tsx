@@ -137,6 +137,10 @@ export default function Home() {
   const navigate = useNavigate();
 
   const handleTinderContinue = async (liked: string[], passed: string[]) => {
+    if (isLoading) {
+      return;
+    }
+
     setLoadingState({ status: 'loading' });
 
     try {
