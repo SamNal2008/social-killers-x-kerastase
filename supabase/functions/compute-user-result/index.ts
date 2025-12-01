@@ -12,13 +12,13 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface TribeCount {
-  count: number;
+interface TribeScore {
+  points: number;
   name: string;
 }
 
-interface TribeCounts {
-  [tribeId: string]: TribeCount;
+interface TribeScores {
+  [tribeId: string]: TribeScore;
 }
 
 interface DominantTribe {
@@ -27,6 +27,14 @@ interface DominantTribe {
 }
 
 interface TribeData {
+  tribe_id: string;
+  tribe: {
+    id: string;
+    name: string;
+  };
+}
+
+interface SubcultureTribe {
   tribe_id: string;
   tribe: {
     id: string;
@@ -55,34 +63,66 @@ const fetchTribesByIds = async (
   return (data as TribeData[]) || [];
 };
 
-const countTribes = (keywordTribes: TribeData[], brandTribes: TribeData[]): TribeCounts => {
-  const tribeCounts: TribeCounts = {};
+const fetchTribesInSubculture = async (
+  supabase: SupabaseClient<Database>,
+  subcultureId: string
+): Promise<SubcultureTribe[]> => {
+  const { data } = await supabase
+    .from('tribe_subcultures')
+    .select('tribe_id, tribe:tribes(id, name)')
+    .eq('subculture_id', subcultureId);
 
-  const processTribes = (items: TribeData[]) => {
-    items.forEach(item => {
-      if (item.tribe) {
-        if (!tribeCounts[item.tribe.id]) {
-          tribeCounts[item.tribe.id] = { count: 0, name: item.tribe.name };
-        }
-        tribeCounts[item.tribe.id].count++;
-      }
-    });
-  };
-
-  processTribes(keywordTribes);
-  processTribes(brandTribes);
-
-  return tribeCounts;
+  return (data as SubcultureTribe[]) || [];
 };
 
-const findDominantTribe = (tribeCounts: TribeCounts): DominantTribe => {
+const calculateTribeScores = (
+  subcultureTribes: SubcultureTribe[],
+  keywordTribes: TribeData[],
+  brandTribes: TribeData[]
+): TribeScores => {
+  const tribeScores: TribeScores = {};
+
+  // Step 1: Add 2 points for each tribe in the selected subculture (from moodboard)
+  subcultureTribes.forEach(item => {
+    if (item.tribe) {
+      if (!tribeScores[item.tribe.id]) {
+        tribeScores[item.tribe.id] = { points: 0, name: item.tribe.name };
+      }
+      tribeScores[item.tribe.id].points += 2;
+    }
+  });
+
+  // Step 2: Add 1 point for each selected keyword
+  keywordTribes.forEach(item => {
+    if (item.tribe) {
+      if (!tribeScores[item.tribe.id]) {
+        tribeScores[item.tribe.id] = { points: 0, name: item.tribe.name };
+      }
+      tribeScores[item.tribe.id].points += 1;
+    }
+  });
+
+  // Step 3: Add 1 point for each selected brand
+  brandTribes.forEach(item => {
+    if (item.tribe) {
+      if (!tribeScores[item.tribe.id]) {
+        tribeScores[item.tribe.id] = { points: 0, name: item.tribe.name };
+      }
+      tribeScores[item.tribe.id].points += 1;
+    }
+  });
+
+  return tribeScores;
+};
+
+const findDominantTribe = (tribeScores: TribeScores): DominantTribe => {
   let dominantTribeId = '';
   let dominantTribeName = '';
-  let maxCount = 0;
+  let maxPoints = 0;
 
-  Object.entries(tribeCounts).forEach(([tribeId, data]) => {
-    if (data.count > maxCount) {
-      maxCount = data.count;
+  Object.entries(tribeScores).forEach(([tribeId, data]) => {
+    if (data.points > maxPoints) {
+      maxPoints = data.points;
       dominantTribeId = tribeId;
       dominantTribeName = data.name;
     }
@@ -91,12 +131,12 @@ const findDominantTribe = (tribeCounts: TribeCounts): DominantTribe => {
   return { id: dominantTribeId, name: dominantTribeName };
 };
 
-const calculateTotalSelections = (tribeCounts: TribeCounts): number => {
-  return Object.values(tribeCounts).reduce((sum, t) => sum + t.count, 0);
+const calculateTotalPoints = (tribeScores: TribeScores): number => {
+  return Object.values(tribeScores).reduce((sum, t) => sum + t.points, 0);
 };
 
-const calculateTribePercentage = (count: number, total: number): number => {
-  return total > 0 ? Math.round((count / total) * 10000) / 100 : 0;
+const calculateTribePercentage = (points: number, total: number): number => {
+  return total > 0 ? Math.round((points / total) * 10000) / 100 : 0;
 };
 
 const buildErrorResponse = (
@@ -185,18 +225,21 @@ Deno.serve(async (req) => {
     // Extract moodboard and subculture
     const subculture = extractMoodboardSubculture(userAnswer);
 
-    // Fetch tribes for selected keywords and brands
+    // Fetch all tribes in the selected subculture (moodboard gives 2 points to each)
+    const subcultureTribes = await fetchTribesInSubculture(supabase, subculture.id);
+
+    // Fetch tribes for selected keywords and brands (each gives 1 point)
     const keywordTribes = await fetchTribesByIds(supabase, 'keywords', userAnswer.keywords);
     const brandTribes = await fetchTribesByIds(supabase, 'brands', userAnswer.brands);
 
-    // Count tribe occurrences
-    const tribeCounts = countTribes(keywordTribes, brandTribes);
+    // Calculate tribe scores based on new scoring system
+    const tribeScores = calculateTribeScores(subcultureTribes, keywordTribes, brandTribes);
 
-    // Find dominant tribe
-    const dominantTribe = findDominantTribe(tribeCounts);
+    // Find dominant tribe (highest score)
+    const dominantTribe = findDominantTribe(tribeScores);
 
-    // Calculate total selections
-    const totalSelections = calculateTotalSelections(tribeCounts);
+    // Calculate total points
+    const totalPoints = calculateTotalPoints(tribeScores);
 
     // Create user result
     const { data: userResult } = await supabase
@@ -214,10 +257,10 @@ Deno.serve(async (req) => {
     }
 
     // Create tribe percentage associations
-    const tribeInserts = Object.entries(tribeCounts).map(([tribeId, data]) => ({
+    const tribeInserts = Object.entries(tribeScores).map(([tribeId, data]) => ({
       user_result_id: userResult.id,
       tribe_id: tribeId,
-      percentage: calculateTribePercentage(data.count, totalSelections),
+      percentage: calculateTribePercentage(data.points, totalPoints),
     }));
 
     await supabase
@@ -234,10 +277,10 @@ Deno.serve(async (req) => {
           subcultureName: subculture.name,
           dominantTribeId: dominantTribe.id,
           dominantTribeName: dominantTribe.name,
-          tribes: Object.entries(tribeCounts).map(([tribeId, data]) => ({
+          tribes: Object.entries(tribeScores).map(([tribeId, data]) => ({
             tribeId,
             tribeName: data.name,
-            percentage: calculateTribePercentage(data.count, totalSelections),
+            percentage: calculateTribePercentage(data.points, totalPoints),
           })),
         },
       } satisfies ComputeUserResultResponse),

@@ -12,13 +12,18 @@ INSERT INTO brands (name, logo_url) VALUES
   ('Byredo', 'https://example.com/byredo-logo.png'),
   ('Diptyque', 'https://example.com/diptyque-logo.png');
 
--- Insert test moodboards
+-- Insert new moodboards (10 options)
 INSERT INTO moodboards (name, description) VALUES
-  ('Timeless Elegance', 'Classic sophistication with refined luxury and heritage brands'),
-  ('Modern Minimalism', 'Clean lines, neutral palettes, and functional beauty'),
-  ('Romantic Nostalgia', 'Vintage-inspired aesthetics with emotional storytelling'),
-  ('Urban Edge', 'Contemporary street culture meets high fashion'),
-  ('Spiritual Sanctuary', 'Wellness-focused with holistic and natural elements');
+  ('HERITAGE HEIRESS', 'Heritage Heiresses embody the continuity of family legacy and timeless elegance.'),
+  ('QUIET LUXURY', 'Quiet Luxury is luxury without ostentation, focusing on quality and subtlety.'),
+  ('Conscious Hedonists', 'Seeking pleasure and experiences while maintaining ethical and sustainable values.'),
+  ('CLEAN RITUALIST', 'Purist approach to beauty and lifestyle, valuing transparency and simplicity.'),
+  ('SILLAGE SEEKERS', 'Those who leave a mark through scent and presence, bold and memorable.'),
+  ('URBAN MUSE ENERGIZER', 'Drawing inspiration from the city energy, dynamic and constantly moving.'),
+  ('STAGEBREAKERS', 'Breaking conventions and taking center stage with innovative styles.'),
+  ('THE COSMIC EXPLORER', 'Looking to the stars and future, exploring new dimensions of beauty.'),
+  ('EDGY AESTHETES', 'Pushing boundaries with sharp, unconventional, and artistic choices.'),
+  ('GLOSS GODDESSES', 'Radiant, high-shine, and glamorous, celebrating diverse beauty.');
 
 -- Link brands to moodboards (store IDs for reference)
 DO $$
@@ -30,11 +35,11 @@ DECLARE
   brand_lelabo_id UUID;
   brand_byredo_id UUID;
 
-  moodboard_timeless_id UUID;
-  moodboard_minimalist_id UUID;
-  moodboard_romantic_id UUID;
-  moodboard_urban_id UUID;
-  moodboard_spiritual_id UUID;
+  moodboard_heritage_id UUID;
+  moodboard_quiet_id UUID;
+  moodboard_conscious_id UUID;
+  moodboard_clean_id UUID;
+  moodboard_sillage_id UUID;
 BEGIN
   -- Get brand IDs
   SELECT id INTO brand_chanel_id FROM brands WHERE name = 'Chanel';
@@ -45,27 +50,27 @@ BEGIN
   SELECT id INTO brand_byredo_id FROM brands WHERE name = 'Byredo';
 
   -- Get moodboard IDs
-  SELECT id INTO moodboard_timeless_id FROM moodboards WHERE name = 'Timeless Elegance';
-  SELECT id INTO moodboard_minimalist_id FROM moodboards WHERE name = 'Modern Minimalism';
-  SELECT id INTO moodboard_romantic_id FROM moodboards WHERE name = 'Romantic Nostalgia';
-  SELECT id INTO moodboard_urban_id FROM moodboards WHERE name = 'Urban Edge';
-  SELECT id INTO moodboard_spiritual_id FROM moodboards WHERE name = 'Spiritual Sanctuary';
+  SELECT id INTO moodboard_heritage_id FROM moodboards WHERE name = 'HERITAGE HEIRESS';
+  SELECT id INTO moodboard_quiet_id FROM moodboards WHERE name = 'QUIET LUXURY';
+  SELECT id INTO moodboard_conscious_id FROM moodboards WHERE name = 'Conscious Hedonists';
+  SELECT id INTO moodboard_clean_id FROM moodboards WHERE name = 'CLEAN RITUALIST';
+  SELECT id INTO moodboard_sillage_id FROM moodboards WHERE name = 'SILLAGE SEEKERS';
 
-  -- Link brands to Timeless Elegance
+  -- Link brands to HERITAGE HEIRESS
   INSERT INTO moodboard_brands (moodboard_id, brand_id) VALUES
-    (moodboard_timeless_id, brand_chanel_id),
-    (moodboard_timeless_id, brand_dior_id),
-    (moodboard_timeless_id, brand_hermes_id);
+    (moodboard_heritage_id, brand_chanel_id),
+    (moodboard_heritage_id, brand_dior_id),
+    (moodboard_heritage_id, brand_hermes_id);
 
-  -- Link brands to Modern Minimalism
+  -- Link brands to QUIET LUXURY
   INSERT INTO moodboard_brands (moodboard_id, brand_id) VALUES
-    (moodboard_minimalist_id, brand_lelabo_id),
-    (moodboard_minimalist_id, brand_byredo_id);
+    (moodboard_quiet_id, brand_lelabo_id),
+    (moodboard_quiet_id, brand_byredo_id);
 
-  -- Link brands to Romantic Nostalgia
+  -- Link brands to Conscious Hedonists
   INSERT INTO moodboard_brands (moodboard_id, brand_id) VALUES
-    (moodboard_romantic_id, brand_guerlain_id),
-    (moodboard_romantic_id, brand_dior_id);
+    (moodboard_conscious_id, brand_guerlain_id),
+    (moodboard_conscious_id, brand_dior_id);
 END $$;
 
 -- Assign tribes to brands
@@ -128,11 +133,11 @@ DECLARE
   soul_healer_id UUID;
   misfit_id UUID;
 
-  moodboard_timeless_id UUID;
-  moodboard_minimalist_id UUID;
-  moodboard_romantic_id UUID;
-  moodboard_urban_id UUID;
-  moodboard_spiritual_id UUID;
+  moodboard_heritage_id UUID;
+  moodboard_quiet_id UUID;
+  moodboard_conscious_id UUID;
+  moodboard_clean_id UUID;
+  moodboard_sillage_id UUID;
 BEGIN
   -- Get subculture IDs
   SELECT id INTO legacists_id FROM subcultures WHERE name = 'LEGACISTS';
@@ -152,46 +157,39 @@ BEGIN
   SELECT id INTO misfit_id FROM tribes WHERE name = 'MISFIT';
 
   -- Get moodboard IDs
-  SELECT id INTO moodboard_timeless_id FROM moodboards WHERE name = 'Timeless Elegance';
-  SELECT id INTO moodboard_minimalist_id FROM moodboards WHERE name = 'Modern Minimalism';
-  SELECT id INTO moodboard_romantic_id FROM moodboards WHERE name = 'Romantic Nostalgia';
-  SELECT id INTO moodboard_urban_id FROM moodboards WHERE name = 'Urban Edge';
-  SELECT id INTO moodboard_spiritual_id FROM moodboards WHERE name = 'Spiritual Sanctuary';
+  SELECT id INTO moodboard_heritage_id FROM moodboards WHERE name = 'HERITAGE HEIRESS';
+  SELECT id INTO moodboard_quiet_id FROM moodboards WHERE name = 'QUIET LUXURY';
+  SELECT id INTO moodboard_conscious_id FROM moodboards WHERE name = 'Conscious Hedonists';
+  SELECT id INTO moodboard_clean_id FROM moodboards WHERE name = 'CLEAN RITUALIST';
+  SELECT id INTO moodboard_sillage_id FROM moodboards WHERE name = 'SILLAGE SEEKERS';
 
-  -- Link moodboards to subcultures (1:1)
-  UPDATE moodboards SET subculture_id = legacists_id WHERE id = moodboard_timeless_id;
-  UPDATE moodboards SET subculture_id = functionals_id WHERE id = moodboard_minimalist_id;
-  UPDATE moodboards SET subculture_id = romantics_id WHERE id = moodboard_romantic_id;
-  UPDATE moodboards SET subculture_id = curators_id WHERE id = moodboard_urban_id;
-  UPDATE moodboards SET subculture_id = mystics_id WHERE id = moodboard_spiritual_id;
+  -- Link moodboards to subcultures (1:1) and add placeholder images
+  UPDATE moodboards SET 
+    subculture_id = legacists_id,
+    image_url = 'https://images.unsplash.com/photo-1515377905703-c4788e51af15?w=400&h=600&fit=crop'
+  WHERE id = moodboard_heritage_id;
+  
+  UPDATE moodboards SET 
+    subculture_id = functionals_id,
+    image_url = 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=400&h=600&fit=crop'
+  WHERE id = moodboard_quiet_id;
+  
+  UPDATE moodboards SET 
+    subculture_id = romantics_id,
+    image_url = 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400&h=600&fit=crop'
+  WHERE id = moodboard_conscious_id;
+  
+  UPDATE moodboards SET 
+    subculture_id = curators_id,
+    image_url = 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=400&h=600&fit=crop'
+  WHERE id = moodboard_clean_id;
+  
+  UPDATE moodboards SET 
+    subculture_id = mystics_id,
+    image_url = 'https://images.unsplash.com/photo-1509967419530-da38b4704bc6?w=400&h=600&fit=crop'
+  WHERE id = moodboard_sillage_id;
 
-  -- Create tribe-subculture relationships (many-to-many)
-  -- LEGACISTS subculture contains these tribes
-  INSERT INTO tribe_subcultures (tribe_id, subculture_id) VALUES
-    (heritage_heiress_id, legacists_id),
-    (quiet_luxury_id, legacists_id);
-
-  -- FUNCTIONALS subculture contains these tribes
-  INSERT INTO tribe_subcultures (tribe_id, subculture_id) VALUES
-    (clean_ritualist_id, functionals_id),
-    (quiet_luxury_id, functionals_id);
-
-  -- ROMANTICS subculture contains these tribes
-  INSERT INTO tribe_subcultures (tribe_id, subculture_id) VALUES
-    (sensorialist_id, romantics_id);
-
-  -- CURATORS subculture contains these tribes
-  INSERT INTO tribe_subcultures (tribe_id, subculture_id) VALUES
-    (culture_guru_id, curators_id),
-    (misfit_id, curators_id);
-
-  -- MYSTICS subculture contains these tribes
-  INSERT INTO tribe_subcultures (tribe_id, subculture_id) VALUES
-    (soul_healer_id, mystics_id);
-
-  -- UNAPOLOGETICS subculture contains these tribes
-  INSERT INTO tribe_subcultures (tribe_id, subculture_id) VALUES
-    (misfit_id, unapologetics_id);
+  -- Note: tribe_subcultures relationships are already seeded in migration 20251201000000_seed_tribe_subcultures.sql
 
   -- Insert keywords linked to tribes (not subcultures)
   INSERT INTO keywords (name, tribe_id) VALUES
@@ -230,9 +228,9 @@ DECLARE
   user_bob_id UUID;
   user_carol_id UUID;
 
-  moodboard_timeless_id UUID;
-  moodboard_minimalist_id UUID;
-  moodboard_romantic_id UUID;
+  moodboard_heritage_id UUID;
+  moodboard_quiet_id UUID;
+  moodboard_conscious_id UUID;
 
   brand_chanel_id UUID;
   brand_dior_id UUID;
@@ -253,9 +251,9 @@ BEGIN
   SELECT id INTO user_carol_id FROM users WHERE name = 'Carol Romantic';
 
   -- Get moodboard IDs
-  SELECT id INTO moodboard_timeless_id FROM moodboards WHERE name = 'Timeless Elegance';
-  SELECT id INTO moodboard_minimalist_id FROM moodboards WHERE name = 'Modern Minimalism';
-  SELECT id INTO moodboard_romantic_id FROM moodboards WHERE name = 'Romantic Nostalgia';
+  SELECT id INTO moodboard_heritage_id FROM moodboards WHERE name = 'HERITAGE HEIRESS';
+  SELECT id INTO moodboard_quiet_id FROM moodboards WHERE name = 'QUIET LUXURY';
+  SELECT id INTO moodboard_conscious_id FROM moodboards WHERE name = 'Conscious Hedonists';
 
   -- Get brand IDs
   SELECT id INTO brand_chanel_id FROM brands WHERE name = 'Chanel';
@@ -272,21 +270,21 @@ BEGIN
   SELECT id INTO keyword_romantic_id FROM keywords WHERE name = 'romantic';
   SELECT id INTO keyword_vintage_id FROM keywords WHERE name = 'vintage';
 
-  -- Alice's answer: Heritage-focused (LEGACISTS)
+  -- Alice's answer
   INSERT INTO user_answers (user_id, moodboard_id, brands, keywords) VALUES
-    (user_alice_id, moodboard_timeless_id,
+    (user_alice_id, moodboard_heritage_id,
      ARRAY[brand_chanel_id, brand_dior_id],
      ARRAY[keyword_heritage_id, keyword_classic_id]);
 
-  -- Bob's answer: Minimalist-focused (FUNCTIONALS)
+  -- Bob's answer
   INSERT INTO user_answers (user_id, moodboard_id, brands, keywords) VALUES
-    (user_bob_id, moodboard_minimalist_id,
+    (user_bob_id, moodboard_quiet_id,
      ARRAY[brand_lelabo_id, brand_byredo_id],
      ARRAY[keyword_minimalist_id, keyword_clean_id]);
 
-  -- Carol's answer: Romantic-focused (ROMANTICS)
+  -- Carol's answer
   INSERT INTO user_answers (user_id, moodboard_id, brands, keywords) VALUES
-    (user_carol_id, moodboard_romantic_id,
+    (user_carol_id, moodboard_conscious_id,
      ARRAY[brand_guerlain_id, brand_dior_id],
      ARRAY[keyword_romantic_id, keyword_vintage_id]);
 END $$;

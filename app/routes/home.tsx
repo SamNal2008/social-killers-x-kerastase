@@ -10,6 +10,7 @@ import { useStepStore } from '~/shared/stores/stepStore';
 import { pageTransitionVariants } from '~/shared/animations/transitions';
 import { KeywordsScreen } from '~/onboarding/components/KeywordsScreen';
 import { TinderScreen } from '../onboarding/components/TinderScreen';
+import { MoodboardScreen } from '../onboarding/components/MoodboardScreen';
 import type { FormData } from '~/onboarding/types';
 
 export function meta({ }: Route.MetaArgs) {
@@ -91,6 +92,27 @@ export default function Home() {
   const handleBackToName = () => {
     setDirection('backward');
     goToPreviousPage();
+    // Reset moodboard selection when going back
+    setFormData((prev) => ({
+      ...prev,
+      moodboard: undefined
+    }));
+  };
+
+  const handleMoodboardContinue = (moodboardId: string) => {
+    setFormData((prev) => ({ ...prev, moodboard: moodboardId }));
+    setDirection('forward');
+    goToNextPage();
+  };
+
+  const handleBackToMoodboard = () => {
+    setDirection('backward');
+    goToPreviousPage();
+    // Reset keywords when going back
+    setFormData((prev) => ({
+      ...prev,
+      keywords: []
+    }));
   };
 
   const handleKeywordsContinue = (keywords: string[]) => {
@@ -114,7 +136,9 @@ export default function Home() {
       ...prev,
       brands: { liked, passed }
     }));
-    // Next step implementation coming soon
+    setDirection('forward');
+    goToNextPage();
+    // Final step - log completed onboarding data
     console.log('Finished onboarding:', { ...formData, brands: { liked, passed } });
   };
 
@@ -146,8 +170,23 @@ export default function Home() {
           transition={pageTransitionVariants}
         >
           <KeywordsScreen
-            onBack={handleBackToName}
+            onBack={handleBackToMoodboard}
             onContinue={handleKeywordsContinue}
+          />
+        </motion.div>
+      ) : currentPage === 'MoodboardPage' ? (
+        <motion.div
+          key="moodboard"
+          custom={direction}
+          variants={pageTransitionVariants}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          transition={pageTransitionVariants}
+        >
+          <MoodboardScreen
+            onBack={handleBackToName}
+            onContinue={handleMoodboardContinue}
           />
         </motion.div>
       ) : currentPage === 'NamePage' ? (
