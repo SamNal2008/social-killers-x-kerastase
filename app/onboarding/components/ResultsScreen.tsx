@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { ProgressIndicator } from '~/shared/components/ProgressIndicator/ProgressIndicator';
 import { Title } from '~/shared/components/Typography/Title';
 import { Body } from '~/shared/components/Typography/Body';
+import { Button } from '~/shared/components/Button/Button';
 import type { ResultsScreenProps } from '../types/results';
 import { resultsService } from '../services/resultsService';
 import type { ResultsData } from '../types/results';
@@ -131,6 +132,19 @@ export const ResultsScreen: FC<ResultsScreenProps> = ({ userResultId }) => {
                                 </div>
                             </div>
                         ))}
+                    </motion.div>
+
+                    {/* Let's Deep Dive Button */}
+                    <motion.div
+                        variants={staggerItemVariants}
+                        className="w-full"
+                    >
+                        <Button
+                            variant="primary"
+                            className="w-full h-[52px] flex items-center justify-center"
+                        >
+                            Let's deep dive
+                        </Button>
                     </motion.div>
                 </div>
             </motion.div>
