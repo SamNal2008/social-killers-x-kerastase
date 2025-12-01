@@ -28,7 +28,11 @@ describe('subcultureService', () => {
         subculture: {
           id: mockSubcultureId,
           name: 'Functionals',
-          description: 'Understated refinement is your signature. You appreciate beauty in discretion, favoring quality over volume.',
+          description:
+            'Understated refinement is your signature. You appreciate beauty in discretion, favoring quality over volume.',
+          subtitle: 'You make timeless elegance your own',
+          dos: ['Choose quality over quantity', 'Invest in timeless pieces'],
+          donts: ['Follow every trend', 'Compromise on craftsmanship'],
         },
       };
 

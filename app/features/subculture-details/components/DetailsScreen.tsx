@@ -157,13 +157,13 @@ export const DetailsScreen: FC<DetailsScreenProps> = ({ userResultId }) => {
             className="flex gap-12 w-full"
           >
             {/* DO Column */}
-            <div className="flex-1 flex flex-col gap-4">
-              <Body
-                variant="1"
-                className="text-neutral-dark text-center font-bold"
+            <div className="flex-1 flex flex-col gap-4 items-center">
+              <Title
+                variant="h3"
+                className="text-neutral-dark text-center max-w-[322px] font-semibold"
               >
                 DO
-              </Body>
+              </Title>
               <div className="flex flex-col gap-2">
                 {subcultureData.dos.map((doItem, index) => (
                   <Body
@@ -178,13 +178,13 @@ export const DetailsScreen: FC<DetailsScreenProps> = ({ userResultId }) => {
             </div>
 
             {/* DON'T Column */}
-            <div className="flex-1 flex flex-col gap-4">
-              <Body
-                variant="1"
+            <div className="flex-1 flex flex-col gap-4 items-center">
+              <Title
+                variant="h3"
                 className="text-neutral-dark text-center font-bold"
               >
                 DON'T
-              </Body>
+              </Title>
               <div className="flex flex-col gap-2">
                 {subcultureData.donts.map((dontItem, index) => (
                   <Body
