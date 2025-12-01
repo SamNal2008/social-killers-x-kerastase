@@ -1,5 +1,6 @@
 import type { FC } from 'react';
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
 import { ProgressIndicator } from '~/shared/components/ProgressIndicator/ProgressIndicator';
 import { Title } from '~/shared/components/Typography/Title';
@@ -13,6 +14,7 @@ import { staggerContainerVariants, staggerItemVariants } from '~/shared/animatio
 type LoadingState = 'idle' | 'loading' | 'success' | 'error';
 
 export const ResultsScreen: FC<ResultsScreenProps> = ({ userResultId }) => {
+    const navigate = useNavigate();
     const [resultsData, setResultsData] = useState<ResultsData | null>(null);
     const [loadingState, setLoadingState] = useState<LoadingState>('loading');
     const [error, setError] = useState<Error | null>(null);
@@ -32,6 +34,10 @@ export const ResultsScreen: FC<ResultsScreenProps> = ({ userResultId }) => {
 
         fetchResults();
     }, [userResultId]);
+
+    const handleDeepDive = () => {
+        navigate(`/details?userResultId=${userResultId}`);
+    };
 
     if (loadingState === 'loading') {
         return (
@@ -142,6 +148,7 @@ export const ResultsScreen: FC<ResultsScreenProps> = ({ userResultId }) => {
                         <Button
                             variant="primary"
                             className="w-full h-[52px] flex items-center justify-center"
+                            onClick={handleDeepDive}
                         >
                             Let's deep dive
                         </Button>
