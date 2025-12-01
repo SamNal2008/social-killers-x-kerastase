@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 const CURRENT_PAGE_KEY = 'kerastase_current_page';
 
 // Define page order for navigation logic
-const PAGE_ORDER: PageType[] = ['WelcomePage', 'NamePage', 'KeywordPage', 'TinderPage', 'Step4Page'];
+const PAGE_ORDER: PageType[] = ['WelcomePage', 'NamePage', 'MoodboardPage', 'KeywordPage', 'TinderPage', 'Step4Page'];
 
 export const useStepStore = () => {
     const [currentPage, setCurrentPage] = useState<PageType>('WelcomePage');

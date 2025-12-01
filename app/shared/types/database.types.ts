@@ -142,6 +142,7 @@ export type Database = {
           created_at: string | null
           description: string
           id: string
+          image_url: string | null
           name: string
           subculture_id: string | null
           updated_at: string | null
@@ -150,6 +151,7 @@ export type Database = {
           created_at?: string | null
           description: string
           id?: string
+          image_url?: string | null
           name: string
           subculture_id?: string | null
           updated_at?: string | null
@@ -158,6 +160,7 @@ export type Database = {
           created_at?: string | null
           description?: string
           id?: string
+          image_url?: string | null
           name?: string
           subculture_id?: string | null
           updated_at?: string | null

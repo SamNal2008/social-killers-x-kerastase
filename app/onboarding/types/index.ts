@@ -1,4 +1,4 @@
-export type PageType = 'WelcomePage' | 'NamePage' | 'KeywordPage' | 'TinderPage' | 'Step4Page';
+export type PageType = 'WelcomePage' | 'NamePage' | 'KeywordPage' | 'TinderPage' | 'MoodboardPage' | 'Step4Page';
 
 export interface FormData {
   name: string;
@@ -7,6 +7,12 @@ export interface FormData {
     liked: string[];
     passed: string[];
   };
+  moodboard?: string;
+}
+
+export interface MoodboardScreenProps {
+  onBack: () => void;
+  onContinue: (moodboardId: string) => void;
 }
 
 export interface FormHeaderProps {
