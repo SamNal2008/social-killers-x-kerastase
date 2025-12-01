@@ -2,7 +2,7 @@
 // Generates personalized images from user selfies
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { createClient } from "@supabase/supabase-js";
+import { createClient } from '@supabase/supabase-js';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -189,10 +189,3 @@ Deno.serve(async (req) => {
     return buildErrorResponse('INTERNAL_ERROR', errorMessage, 500);
   }
 });
-
-curl - i--location--request POST 'http://127.0.0.1:54321/functions/v1/generate-image' \
---header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0' \
---header 'Content-Type: application/json' \
---data '{"name":"Functions"}'
-
-  */
