@@ -31,7 +31,10 @@ describe('DetailsScreen', () => {
     const mockData = {
       id: 'subculture-123',
       name: 'Functionals',
-      description: 'Understated refinement is your signature. You appreciate beauty in discretion, favoring quality over volume.',
+      subtitle: 'Understated refinement is your signature',
+      description: 'You appreciate beauty in discretion, favoring quality over volume.',
+      dos: ['Choose quality over quantity'],
+      donts: ['Follow every trend'],
       userResultId: 'test-123',
     };
 
@@ -48,7 +51,10 @@ describe('DetailsScreen', () => {
     const mockData = {
       id: 'subculture-123',
       name: 'Functionals',
-      description: 'Understated refinement is your signature. You appreciate beauty in discretion, favoring quality over volume.',
+      subtitle: 'Understated refinement is your signature',
+      description: 'You appreciate beauty in discretion, favoring quality over volume.',
+      dos: ['Choose quality over quantity'],
+      donts: ['Follow every trend'],
       userResultId: 'test-123',
     };
 
@@ -57,7 +63,7 @@ describe('DetailsScreen', () => {
     render(<DetailsScreen userResultId="test-123" />);
 
     await waitFor(() => {
-      expect(screen.getByText(/understated refinement/i)).toBeInTheDocument();
+      expect(screen.getByText(/appreciate beauty in discretion/i)).toBeInTheDocument();
     });
   });
 
@@ -65,7 +71,10 @@ describe('DetailsScreen', () => {
     const mockData = {
       id: 'subculture-123',
       name: 'Functionals',
-      description: 'Understated refinement is your signature.',
+      subtitle: 'Understated refinement is your signature',
+      description: 'You appreciate beauty in discretion.',
+      dos: ['Item 1'],
+      donts: ['Item 2'],
       userResultId: 'test-123',
     };
 
@@ -94,7 +103,10 @@ describe('DetailsScreen', () => {
     const mockData = {
       id: 'subculture-123',
       name: 'Functionals',
-      description: 'Understated refinement is your signature.',
+      subtitle: 'Understated refinement is your signature',
+      description: 'You appreciate beauty in discretion.',
+      dos: ['Item 1'],
+      donts: ['Item 2'],
       userResultId: 'test-123',
     };
 
@@ -116,7 +128,10 @@ describe('DetailsScreen', () => {
     const mockData = {
       id: 'subculture-123',
       name: 'Functionals',
+      subtitle: 'You make timeless elegance your own',
       description: 'Understated refinement is your signature.',
+      dos: ['Choose quality over quantity', 'Invest in timeless pieces'],
+      donts: ['Follow every trend', 'Compromise on craftsmanship'],
       userResultId: 'test-123',
     };
 
@@ -127,5 +142,93 @@ describe('DetailsScreen', () => {
     await waitFor(() => {
       expect(screen.getByText(/your kérastase subculture/i)).toBeInTheDocument();
     });
+  });
+
+  it('should display subtitle when loaded', async () => {
+    const mockData = {
+      id: 'subculture-123',
+      name: 'Legacist',
+      subtitle: 'You make timeless elegance your own',
+      description: 'Full description here.',
+      dos: ['Item 1'],
+      donts: ['Item 2'],
+      userResultId: 'test-123',
+    };
+
+    (subcultureService.fetchSubcultureByUserResultId as jest.Mock).mockResolvedValue(mockData);
+
+    render(<DetailsScreen userResultId="test-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByText('You make timeless elegance your own')).toBeInTheDocument();
+    });
+  });
+
+  it('should display dos section with items', async () => {
+    const mockData = {
+      id: 'subculture-123',
+      name: 'Legacist',
+      subtitle: 'You make timeless elegance your own',
+      description: 'Full description here.',
+      dos: ['Choose quality over quantity', 'Invest in timeless pieces'],
+      donts: ['Follow every trend'],
+      userResultId: 'test-123',
+    };
+
+    (subcultureService.fetchSubcultureByUserResultId as jest.Mock).mockResolvedValue(mockData);
+
+    render(<DetailsScreen userResultId="test-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByText('DO')).toBeInTheDocument();
+      expect(screen.getByText('Choose quality over quantity')).toBeInTheDocument();
+      expect(screen.getByText('Invest in timeless pieces')).toBeInTheDocument();
+    });
+  });
+
+  it('should display donts section with items', async () => {
+    const mockData = {
+      id: 'subculture-123',
+      name: 'Legacist',
+      subtitle: 'You make timeless elegance your own',
+      description: 'Full description here.',
+      dos: ['Choose quality over quantity'],
+      donts: ['Follow every trend', 'Compromise on craftsmanship'],
+      userResultId: 'test-123',
+    };
+
+    (subcultureService.fetchSubcultureByUserResultId as jest.Mock).mockResolvedValue(mockData);
+
+    render(<DetailsScreen userResultId="test-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("DON'T")).toBeInTheDocument();
+      expect(screen.getByText('Follow every trend')).toBeInTheDocument();
+      expect(screen.getByText('Compromise on craftsmanship')).toBeInTheDocument();
+    });
+  });
+
+  it('should handle empty dos and donts arrays', async () => {
+    const mockData = {
+      id: 'subculture-123',
+      name: 'Legacist',
+      subtitle: 'You make timeless elegance your own',
+      description: 'Full description here.',
+      dos: [],
+      donts: [],
+      userResultId: 'test-123',
+    };
+
+    (subcultureService.fetchSubcultureByUserResultId as jest.Mock).mockResolvedValue(mockData);
+
+    render(<DetailsScreen userResultId="test-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Legacist' })).toBeInTheDocument();
+    });
+
+    // Should still render the DO and DON'T headers even with empty arrays
+    expect(screen.getByText('DO')).toBeInTheDocument();
+    expect(screen.getByText("DON'T")).toBeInTheDocument();
   });
 });

@@ -2,6 +2,7 @@ import type { FC } from 'react';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
+import { ArrowLeft } from 'lucide-react';
 import { Title } from '~/shared/components/Typography/Title';
 import { Body } from '~/shared/components/Typography/Body';
 import { Caption } from '~/shared/components/Typography/Caption';
@@ -79,41 +80,25 @@ export const DetailsScreen: FC<DetailsScreenProps> = ({ userResultId }) => {
       >
         {/* Back Button */}
         <motion.div variants={staggerItemVariants}>
-          <button
+          <Button
+            variant="tertiary"
             onClick={handleBack}
-            className="flex items-center gap-1 px-0 py-1 text-neutral-dark hover:opacity-70 transition-opacity"
+            type="button"
             aria-label="Back"
           >
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 14 14"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              className="shrink-0"
-            >
-              <path
-                d="M12.8332 6.99996H1.1665M1.1665 6.99996L6.99984 12.8333M1.1665 6.99996L6.99984 1.16663"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            <Caption variant="2" className="text-neutral-dark">
-              Back
-            </Caption>
-          </button>
+            <ArrowLeft size={14} />
+            Back
+          </Button>
         </motion.div>
 
         {/* Main Content */}
         <div className="flex flex-col gap-12 w-full">
           {/* Header Section */}
           <div className="flex flex-col gap-4 w-full">
-            <motion.div variants={staggerItemVariants}>
+            <motion.div variants={staggerItemVariants} className="w-full">
               <Caption
                 variant="1"
-                className="text-neutral-gray text-center uppercase tracking-[2px]"
+                className="text-neutral-gray text-center uppercase tracking-[2px] w-full"
               >
                 Your Kérastase Subculture
               </Caption>
@@ -134,20 +119,84 @@ export const DetailsScreen: FC<DetailsScreenProps> = ({ userResultId }) => {
             variants={staggerItemVariants}
             className="flex items-center justify-center w-full"
           >
-            <div className="h-[1px] w-[128px] bg-gradient-to-r from-transparent via-[#c9a961] to-transparent" />
+            <div className="h-[1px] w-[180px] bg-gradient-to-r from-transparent via-[#c9a961] to-transparent" />
           </motion.div>
 
-          {/* Description */}
+          {/* Content Section: Subtitle, Description, Do's & Don'ts */}
+          <div className="flex flex-col gap-6 w-full">
+            {/* Subtitle */}
+            <motion.div
+              variants={staggerItemVariants}
+              className="flex items-center justify-center w-full"
+            >
+              <Title
+                variant="h2"
+                className="text-neutral-dark text-center max-w-[322px]"
+              >
+                {subcultureData.subtitle}
+              </Title>
+            </motion.div>
+
+            {/* Description */}
+            <motion.div
+              variants={staggerItemVariants}
+              className="flex items-center justify-center w-full"
+            >
+              <Body
+                variant="1"
+                className="text-neutral-dark text-center max-w-[322px]"
+              >
+                {subcultureData.description}
+              </Body>
+            </motion.div>
+          </div>
+
+          {/* Do's and Don'ts Section */}
           <motion.div
             variants={staggerItemVariants}
-            className="flex items-center justify-center w-full"
+            className="flex gap-12 w-full"
           >
-            <Body
-              variant="1"
-              className="text-neutral-gray text-center italic leading-[32.5px] max-w-[322px]"
-            >
-              {`"${subcultureData.description}"`}
-            </Body>
+            {/* DO Column */}
+            <div className="flex-1 flex flex-col gap-4 items-center">
+              <Title
+                variant="h3"
+                className="text-neutral-dark text-center max-w-[322px] font-semibold"
+              >
+                DO
+              </Title>
+              <div className="flex flex-col gap-2">
+                {subcultureData.dos.map((doItem, index) => (
+                  <Body
+                    key={`do-${index}`}
+                    variant="2"
+                    className="text-neutral-dark text-center"
+                  >
+                    {doItem}
+                  </Body>
+                ))}
+              </div>
+            </div>
+
+            {/* DON'T Column */}
+            <div className="flex-1 flex flex-col gap-4 items-center">
+              <Title
+                variant="h3"
+                className="text-neutral-dark text-center font-bold"
+              >
+                DON'T
+              </Title>
+              <div className="flex flex-col gap-2">
+                {subcultureData.donts.map((dontItem, index) => (
+                  <Body
+                    key={`dont-${index}`}
+                    variant="2"
+                    className="text-neutral-dark text-center"
+                  >
+                    {dontItem}
+                  </Body>
+                ))}
+              </div>
+            </div>
           </motion.div>
 
           {/* Generate AI Moodboard Button */}
