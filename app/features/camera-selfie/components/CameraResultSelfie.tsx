@@ -10,12 +10,14 @@ interface CameraResultSelfieProps {
     photo: CapturedPhoto;
     onBack: () => void;
     onRetake: () => void;
+    onContinue: () => void;
 }
 
 export const CameraResultSelfie: FC<CameraResultSelfieProps> = ({
     photo,
     onBack,
     onRetake,
+    onContinue,
 }) => {
     return (
         <div className="bg-surface-light min-h-screen p-6 md:p-8">
@@ -42,9 +44,16 @@ export const CameraResultSelfie: FC<CameraResultSelfieProps> = ({
                         />
                     </motion.div>
 
-                    <motion.div variants={staggerItemVariants} className="w-full">
+                    <motion.div variants={staggerItemVariants} className="flex flex-col gap-3 w-full">
                         <Button
                             variant="primary"
+                            onClick={onContinue}
+                            className="w-full h-[52px]"
+                        >
+                            Continue
+                        </Button>
+                        <Button
+                            variant="secondary"
                             onClick={onRetake}
                             className="w-full h-[52px]"
                         >
