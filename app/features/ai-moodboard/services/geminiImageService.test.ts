@@ -13,7 +13,6 @@ jest.mock('~/shared/services/supabase', () => ({
 
 describe('geminiImageService', () => {
   const mockRequest: GeminiGenerateImageRequest = {
-    prompt: 'Create a sophisticated moodboard',
     userPhoto: 'data:image/png;base64,mockBase64Data',
     userResultId: 'user-result-123',
     numberOfImages: 3,
@@ -30,9 +29,9 @@ describe('geminiImageService', () => {
           success: true,
           data: {
             images: [
-              { url: 'https://example.com/image1.jpg', prompt: 'prompt 1' },
-              { url: 'https://example.com/image2.jpg', prompt: 'prompt 2' },
-              { url: 'https://example.com/image3.jpg', prompt: 'prompt 3' },
+              { url: 'https://example.com/image1.jpg' },
+              { url: 'https://example.com/image2.jpg' },
+              { url: 'https://example.com/image3.jpg' },
             ],
           },
         },
@@ -56,7 +55,7 @@ describe('geminiImageService', () => {
           success: true,
           data: {
             images: [
-              { url: 'https://example.com/image1.jpg', prompt: 'prompt 1' },
+              { url: 'https://example.com/image1.jpg' },
             ],
           },
         },
@@ -71,24 +70,12 @@ describe('geminiImageService', () => {
         'generate-image',
         expect.objectContaining({
           body: expect.objectContaining({
-            prompt: mockRequest.prompt,
             userPhoto: mockRequest.userPhoto,
             userResultId: mockRequest.userResultId,
             numberOfImages: mockRequest.numberOfImages,
           }),
         })
       );
-    });
-
-    it('should throw error when prompt is empty', async () => {
-      const invalidRequest = {
-        ...mockRequest,
-        prompt: '',
-      };
-
-      await expect(
-        geminiImageService.generateImages(invalidRequest)
-      ).rejects.toThrow('Prompt cannot be empty');
     });
 
     it('should throw error when userPhoto is empty', async () => {
@@ -178,9 +165,9 @@ describe('geminiImageService', () => {
           success: true,
           data: {
             images: [
-              { url: 'https://example.com/image1.jpg', prompt: 'prompt 1' },
-              { url: 'https://example.com/image2.jpg', prompt: 'prompt 2' },
-              { url: 'https://example.com/image3.jpg', prompt: 'prompt 3' },
+              { url: 'https://example.com/image1.jpg' },
+              { url: 'https://example.com/image2.jpg' },
+              { url: 'https://example.com/image3.jpg' },
             ],
           },
         },
@@ -205,7 +192,7 @@ describe('geminiImageService', () => {
           success: true,
           data: {
             images: [
-              { url: 'https://example.com/image1.jpg', prompt: 'prompt 1' },
+              { url: 'https://example.com/image1.jpg' },
             ],
           },
         },

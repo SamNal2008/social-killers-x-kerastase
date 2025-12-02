@@ -1,16 +1,3 @@
-// Generate Image Edge Function
-// Generates personalized images from user selfies using Google's Imagen API
-//
-// IMPLEMENTATION STATUS:
-// - Core infrastructure: ✅ Complete
-// - Multiple image generation: ✅ Complete
-// - Supabase Storage integration: ✅ Complete
-// - Gemini/Imagen API integration: ✅ Complete
-//
-// REQUIRED ENVIRONMENT VARIABLES:
-// - GEMINI_API_ENDPOINT: Vertex AI Imagen API endpoint URL
-// - GEMINI_API_KEY: API authentication key (Bearer token)
-
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 
@@ -133,7 +120,7 @@ const retryWithBackoff = async <T>(
 
       // Check if it's a rate limit error (429)
       const is429Error = lastError.message.includes('429') ||
-                         lastError.message.includes('Too Many Requests');
+        lastError.message.includes('Too Many Requests');
 
       // If it's the last attempt or not a rate limit error, throw immediately
       if (attempt === maxRetries - 1 || !is429Error) {
@@ -353,7 +340,7 @@ Deno.serve(async (req) => {
     });
 
     // Get or fetch prompt from tribe
-    const prompt = requestBody.prompt || await fetchTribePrompt(supabase, requestBody.userResultId);
+    const prompt = await fetchTribePrompt(supabase, requestBody.userResultId);
     console.log(`Generating ${numberOfImages} image(s) for user result: ${requestBody.userResultId}`);
 
     // Generate images SEQUENTIALLY to avoid rate limiting

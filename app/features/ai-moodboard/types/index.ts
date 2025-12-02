@@ -38,7 +38,6 @@ export interface TribePromptData {
  * Request for Gemini image generation
  */
 export interface GeminiGenerateImageRequest {
-  prompt: string;
   userPhoto: string; // Base64 encoded image
   userResultId: string;
   numberOfImages: number;
