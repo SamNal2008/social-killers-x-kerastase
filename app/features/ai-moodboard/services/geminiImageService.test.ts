@@ -13,7 +13,6 @@ jest.mock('~/shared/services/supabase', () => ({
 
 describe('geminiImageService', () => {
   const mockRequest: GeminiGenerateImageRequest = {
-    prompt: 'Create a sophisticated moodboard',
     userPhoto: 'data:image/png;base64,mockBase64Data',
     userResultId: 'user-result-123',
     numberOfImages: 3,
@@ -71,7 +70,6 @@ describe('geminiImageService', () => {
         'generate-image',
         expect.objectContaining({
           body: expect.objectContaining({
-            prompt: mockRequest.prompt,
             userPhoto: mockRequest.userPhoto,
             userResultId: mockRequest.userResultId,
             numberOfImages: mockRequest.numberOfImages,

@@ -103,7 +103,6 @@ export const useAiMoodboard = ({
 
         // Generate 3 images with sequential processing and retry logic
         const images = await geminiImageService.generateImages({
-          prompt,
           userPhoto,
           userResultId,
           numberOfImages: 3,

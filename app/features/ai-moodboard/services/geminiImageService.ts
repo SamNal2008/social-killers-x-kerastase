@@ -11,10 +11,6 @@ export const geminiImageService = {
    * @throws Error if validation fails or generation fails
    */
   async generateImages(request: GeminiGenerateImageRequest): Promise<GeneratedImage[]> {
-    // Validate inputs
-    if (!request.prompt || request.prompt.trim().length === 0) {
-      throw new Error('Prompt cannot be empty');
-    }
 
     if (!request.userPhoto || request.userPhoto.trim().length === 0) {
       throw new Error('User photo is required');
@@ -34,7 +30,6 @@ export const geminiImageService = {
         'generate-image',
         {
           body: {
-            prompt: request.prompt,
             userPhoto: request.userPhoto,
             userResultId: request.userResultId,
             numberOfImages: request.numberOfImages,
