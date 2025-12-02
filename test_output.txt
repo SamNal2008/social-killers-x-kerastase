@@ -1,0 +1,76 @@
+
+> test
+> jest
+
+FAIL app/onboarding/services/resultsService.test.ts (13.139 s)
+  ● resultsService › fetchUserResult › should fetch user result with tribe percentages successfully
+
+    TypeError: Cannot read properties of undefined (reading 'select')
+
+      44 |         }
+      45 |
+    > 46 |         // Fetch tribe-subculture mappings
+         |             ^
+      47 |         const { data: tribeSubcultures, error: mappingError } = await supabase
+      48 |             .from('tribe_subcultures')
+      49 |             .select(`
+
+      at Object.fetchUserResult (app/onboarding/services/resultsService.ts:46:13)
+      at Object.<anonymous> (app/onboarding/services/resultsService.test.ts:73:28)
+
+PASS app/features/subculture-details/services/tribeService.test.ts (13.463 s)
+PASS app/features/camera-selfie/services/cameraService.test.ts (13.764 s)
+PASS app/features/camera-selfie/hooks/useCamera.test.ts (13.852 s)
+PASS app/onboarding/components/MoodboardScreen.test.tsx (15.868 s)
+  ● Console
+
+    console.error
+      React does not recognize the `whileTap` prop on a DOM element. If you intentionally want it to appear in the DOM as a custom attribute, spell it as lowercase `whiletap` instead. If you accidentally passed it from a parent component, remove it from the DOM element.
+
+      40 |
+      41 |     it('should render grid of moodboard cards', () => {
+    > 42 |         render(<MoodboardScreen onBack={mockOnBack} onContinue={mockOnContinue} moodboards={mockMoodboards} />);
+         |               ^
+      43 |
+      44 |         expect(screen.getByText('Heritage Heiress')).toBeInTheDocument();
+      45 |         expect(screen.getByText('Quiet Luxury')).toBeInTheDocument();
+
+      at validateProperty (node_modules/react-dom/cjs/react-dom-client.development.js:3001:19)
+      at warnUnknownProperties (node_modules/react-dom/cjs/react-dom-client.development.js:3146:9)
+      at validatePropertiesInDevelopment (node_modules/react-dom/cjs/react-dom-client.development.js:19868:9)
+      at setInitialProperties (node_modules/react-dom/cjs/react-dom-client.development.js:20491:7)
+      at completeWork (node_modules/react-dom/cjs/react-dom-client.development.js:12662:18)
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at completeUnitOfWork (node_modules/react-dom/cjs/react-dom-client.development.js:17777:19)
+      at performUnitOfWork (node_modules/react-dom/cjs/react-dom-client.development.js:17658:11)
+      at workLoopSync (node_modules/react-dom/cjs/react-dom-client.development.js:17469:41)
+      at renderRootSync (node_modules/react-dom/cjs/react-dom-client.development.js:17450:11)
+      at performWorkOnRoot (node_modules/react-dom/cjs/react-dom-client.development.js:16504:11)
+      at performWorkOnRootViaSchedulerTask (node_modules/react-dom/cjs/react-dom-client.development.js:18957:7)
+      at flushActQueue (node_modules/react/cjs/react.development.js:590:34)
+      at process.env.NODE_ENV.exports.act (node_modules/react/cjs/react.development.js:884:10)
+      at node_modules/@testing-library/react/dist/act-compat.js:47:25
+      at renderRoot (node_modules/@testing-library/react/dist/pure.js:190:26)
+      at render (node_modules/@testing-library/react/dist/pure.js:292:10)
+      at Object.<anonymous> (app/onboarding/components/MoodboardScreen.test.tsx:42:15)
+
+PASS app/onboarding/components/TinderScreen.test.tsx (16.458 s)
+PASS app/welcome/welcome.test.tsx
+PASS app/onboarding/components/FormHeader.test.tsx
+PASS app/shared/components/Badge/Badge.test.tsx
+PASS app/onboarding/components/MoodboardCard.test.tsx
+PASS app/onboarding/components/ResultsScreen.test.tsx
+PASS app/features/subculture-details/components/DetailsScreen.test.tsx
+PASS app/shared/stores/stepStore.test.ts
+PASS app/shared/services/moodboardService.test.ts
+PASS app/shared/services/userService.test.ts
+PASS app/shared/utils/localStorage.test.ts
+PASS src/__tests__/App.test.tsx
+PASS app/onboarding/components/NameScreen.test.tsx (5.005 s)
+PASS app/onboarding/components/KeywordsScreen.test.tsx (20.165 s)
+
+Test Suites: 1 failed, 18 passed, 19 total
+Tests:       1 failed, 184 passed, 185 total
+Snapshots:   0 total
+Time:        21.892 s, estimated 31 s
+Ran all test suites.

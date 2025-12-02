@@ -12,6 +12,8 @@ import type { ResultsScreenProps } from '../types/results';
 import { resultsService } from '../services/resultsService';
 import type { ResultsData } from '../types/results';
 import { staggerContainerVariants, staggerItemVariants } from '~/shared/animations/transitions';
+import { ResultsScreenSkeleton } from './ResultsScreenSkeleton';
+import { useMinimumLoadingTime } from '~/shared/hooks/useMinimumLoadingTime';
 
 type LoadingState = 'idle' | 'loading' | 'success' | 'error';
 
@@ -21,6 +23,9 @@ export const ResultsScreen: FC<ResultsScreenProps> = ({ userResultId }) => {
     const [loadingState, setLoadingState] = useState<LoadingState>('loading');
     const [error, setError] = useState<Error | null>(null);
     const [isNavigating, setIsNavigating] = useState<boolean>(false);
+
+    // Use minimum loading time hook to prevent flickering
+    const shouldShowLoading = useMinimumLoadingTime(loadingState === 'loading', 500);
 
     useEffect(() => {
         const fetchResults = async () => {
@@ -43,14 +48,8 @@ export const ResultsScreen: FC<ResultsScreenProps> = ({ userResultId }) => {
         navigate(`/details?userResultId=${userResultId}`);
     };
 
-    if (loadingState === 'loading') {
-        return (
-            <div className="bg-surface-light min-h-screen p-6 md:p-8 flex items-center justify-center">
-                <Body variant="1" className="text-neutral-gray">
-                    Loading your results...
-                </Body>
-            </div>
-        );
+    if (shouldShowLoading) {
+        return <ResultsScreenSkeleton />;
     }
 
     if (loadingState === 'error') {
