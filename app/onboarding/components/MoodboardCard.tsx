@@ -38,7 +38,7 @@ export const MoodboardCard: FC<MoodboardCardProps> = ({
                 }}
                 className={cn(
                     // Layout
-                    'relative w-full aspect-[3/4]',
+                    'relative w-full aspect-[165/100]',
                     'overflow-hidden cursor-pointer',
                     // Borders & Effects
                     'border-2 transition-all duration-200',
