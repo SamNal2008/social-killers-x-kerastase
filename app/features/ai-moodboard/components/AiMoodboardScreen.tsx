@@ -184,7 +184,7 @@ export const AiMoodboardScreen: FC = () => {
 
             {/* Download Button */}
             <motion.div variants={staggerItemVariants} className="w-full">
-              <Button onClick={handleDownload} className="w-full">
+              <Button variant="primary" onClick={handleDownload} className="w-full">
                 Download this picture
               </Button>
             </motion.div>

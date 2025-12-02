@@ -145,15 +145,25 @@ export const useAiMoodboard = ({
   }, []);
 
   /**
+   * Check if device is mobile
+   */
+  const isMobileDevice = useCallback(() => {
+    // Check for touch capability and screen size
+    const hasTouchScreen = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    const isMobileScreen = window.innerWidth <= 768;
+    return hasTouchScreen && isMobileScreen;
+  }, []);
+
+  /**
    * Share/Download image handler
-   * Uses Web Share API on mobile devices, falls back to download on desktop
+   * Uses Web Share API on mobile devices, downloads directly on desktop
    */
   const downloadImage = useCallback(async (imageUrl: string, filename?: string) => {
     const finalFilename = filename || `moodboard-${Date.now()}.jpg`;
 
     try {
-      // Check if Web Share API is available and supports file sharing
-      if (navigator.share && navigator.canShare) {
+      // Only use Web Share API on mobile devices
+      if (isMobileDevice() && navigator.share && navigator.canShare) {
         // Fetch image as blob
         const response = await fetch(imageUrl);
         const blob = await response.blob();
@@ -174,7 +184,7 @@ export const useAiMoodboard = ({
         }
       }
 
-      // Fallback to download if Web Share API is unavailable or file sharing not supported
+      // Desktop: Always download directly
       await fallbackDownload(imageUrl, finalFilename);
     } catch (error) {
       // If user cancels share dialog, don't treat it as an error
@@ -192,7 +202,7 @@ export const useAiMoodboard = ({
         throw new Error('Failed to share or download image');
       }
     }
-  }, [fallbackDownload]);
+  }, [fallbackDownload, isMobileDevice]);
 
   // Compute derived values
   const currentImage = state.status === 'success' ? state.images[currentImageIndex] : null;
