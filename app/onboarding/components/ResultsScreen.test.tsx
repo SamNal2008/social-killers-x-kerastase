@@ -34,6 +34,8 @@ describe('ResultsScreen', () => {
                 userId: 'user-456',
                 dominantTribeId: 'tribe-789',
                 dominantTribeName: 'Minimalist',
+                dominantSubcultureId: 'subculture-1',
+                dominantSubcultureName: 'Legacist',
                 createdAt: '2025-12-01T00:00:00Z',
             },
             tribePercentages: [
@@ -53,6 +55,23 @@ describe('ResultsScreen', () => {
                     percentage: 24.3,
                 },
             ],
+            subculturePercentages: [
+                {
+                    subcultureId: 'subculture-1',
+                    subcultureName: 'Legacist',
+                    percentage: 80,
+                },
+                {
+                    subcultureId: 'subculture-2',
+                    subcultureName: 'Mystics',
+                    percentage: 70,
+                },
+                {
+                    subcultureId: 'subculture-3',
+                    subcultureName: 'Curators',
+                    percentage: 59,
+                },
+            ],
         };
 
         (resultsService.fetchUserResult as jest.Mock).mockResolvedValue(mockData);
@@ -60,15 +79,15 @@ describe('ResultsScreen', () => {
         render(<ResultsScreen userResultId="test-123" />);
 
         await waitFor(() => {
-            expect(screen.getByRole('heading', { name: 'Minimalist' })).toBeInTheDocument();
+            expect(screen.getByRole('heading', { name: 'Your subculture matches' })).toBeInTheDocument();
         });
 
-        expect(screen.getByText('45.5%')).toBeInTheDocument();
-        expect(screen.getAllByText('Minimalist')).toHaveLength(2); // Once in heading, once in list
-        expect(screen.getByText('Maximalist')).toBeInTheDocument();
-        expect(screen.getByText('30.2%')).toBeInTheDocument();
-        expect(screen.getByText('Eclectic')).toBeInTheDocument();
-        expect(screen.getByText('24.3%')).toBeInTheDocument();
+        expect(screen.getByText('Legacist')).toBeInTheDocument();
+        expect(screen.getByText('80% Match')).toBeInTheDocument();
+        expect(screen.getByText('Mystics')).toBeInTheDocument();
+        expect(screen.getByText('70% Match')).toBeInTheDocument();
+        expect(screen.getByText('Curators')).toBeInTheDocument();
+        expect(screen.getByText('59% Match')).toBeInTheDocument();
     });
 
     it('should display error state when fetch fails', async () => {
@@ -90,9 +109,12 @@ describe('ResultsScreen', () => {
                 userId: 'user-456',
                 dominantTribeId: 'tribe-789',
                 dominantTribeName: 'Minimalist',
+                dominantSubcultureId: 'subculture-1',
+                dominantSubcultureName: 'Legacist',
                 createdAt: '2025-12-01T00:00:00Z',
             },
             tribePercentages: [],
+            subculturePercentages: [],
         };
 
         (resultsService.fetchUserResult as jest.Mock).mockResolvedValue(mockData);
@@ -111,6 +133,8 @@ describe('ResultsScreen', () => {
                 userId: 'user-456',
                 dominantTribeId: 'tribe-789',
                 dominantTribeName: 'Minimalist',
+                dominantSubcultureId: 'subculture-1',
+                dominantSubcultureName: 'Legacist',
                 createdAt: '2025-12-01T00:00:00Z',
             },
             tribePercentages: [
@@ -120,6 +144,13 @@ describe('ResultsScreen', () => {
                     percentage: 45.5,
                 },
             ],
+            subculturePercentages: [
+                {
+                    subcultureId: 'subculture-1',
+                    subcultureName: 'Legacist',
+                    percentage: 80,
+                },
+            ],
         };
 
         (resultsService.fetchUserResult as jest.Mock).mockResolvedValue(mockData);
@@ -127,7 +158,7 @@ describe('ResultsScreen', () => {
         render(<ResultsScreen userResultId="test-123" />);
 
         await waitFor(() => {
-            expect(screen.getByRole('heading', { name: 'Minimalist' })).toBeInTheDocument();
+            expect(screen.getByRole('heading', { name: 'Your subculture matches' })).toBeInTheDocument();
         });
 
         const deepDiveButton = screen.getByRole('button', { name: /let's deep dive/i });
