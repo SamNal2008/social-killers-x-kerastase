@@ -7,10 +7,12 @@ import { MoodboardCard } from './MoodboardCard';
 import { Button } from '~/shared/components/Button/Button';
 import { Title } from '~/shared/components/Typography/Title';
 import { Body } from '~/shared/components/Typography/Body';
+import { useScrollToTop } from '~/shared/hooks/useScrollToTop';
 import type { MoodboardScreenProps } from '../types';
 import { staggerContainerVariants, staggerItemVariants } from '~/shared/animations/transitions';
 
 export const MoodboardScreen: FC<MoodboardScreenProps> = ({ onBack, onContinue, moodboards, isLoading, isError, error }) => {
+  useScrollToTop();
   const [selectedMoodboardId, setSelectedMoodboardId] = useState<string | null>(null);
 
   const handleMoodboardClick = (id: string) => {
