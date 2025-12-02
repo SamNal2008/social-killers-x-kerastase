@@ -15,6 +15,9 @@ import type { FormData } from '~/onboarding/types';
 import { useNavigate } from 'react-router';
 import { userAnswerService } from '~/onboarding/services/userAnswerService';
 import { computeResultService } from '~/onboarding/services/computeResultService';
+import { moodboardService, type Moodboard } from '~/shared/services/moodboardService';
+import { keywordService } from '~/onboarding/services/keywordService';
+import { brandService } from '~/onboarding/services/brandService';
 
 export function meta({ }: Route.MetaArgs) {
   return [
@@ -40,6 +43,9 @@ export default function Home() {
     keywords: [],
     brands: { liked: [], passed: [] }
   });
+  const [moodboards, setMoodboards] = useState<Moodboard[]>([]);
+  const [keywords, setKeywords] = useState<Tables<'keywords'>[]>([]);
+  const [brands, setBrands] = useState<Tables<'brands'>[]>([]);
 
   const isLoading = loadingState.status === 'loading';
   const isError = loadingState.status === 'error';
@@ -86,10 +92,27 @@ export default function Home() {
     goToPreviousPage();
   };
 
-  const handleNameContinue = (name: string) => {
+  const handleNameContinue = async (name: string) => {
+    if (isLoading) {
+      return;
+    }
+
     setFormData((prev) => ({ ...prev, name }));
-    setDirection('forward');
-    goToNextPage();
+    setLoadingState({ status: 'loading' });
+
+    try {
+      const data = await moodboardService.getAll();
+      setMoodboards(data);
+      setLoadingState({ status: 'idle' });
+      setDirection('forward');
+      goToNextPage();
+    } catch (error) {
+      const appError = error instanceof Error
+        ? error
+        : new Error('Failed to load moodboards');
+
+      setLoadingState({ status: 'error', error: appError });
+    }
   };
 
   const handleBackToName = () => {
@@ -102,10 +125,27 @@ export default function Home() {
     }));
   };
 
-  const handleMoodboardContinue = (moodboardId: string) => {
+  const handleMoodboardContinue = async (moodboardId: string) => {
+    if (isLoading) {
+      return;
+    }
+
     setFormData((prev) => ({ ...prev, moodboard: moodboardId }));
-    setDirection('forward');
-    goToNextPage();
+    setLoadingState({ status: 'loading' });
+
+    try {
+      const data = await keywordService.getAll();
+      setKeywords(data);
+      setLoadingState({ status: 'idle' });
+      setDirection('forward');
+      goToNextPage();
+    } catch (error) {
+      const appError = error instanceof Error
+        ? error
+        : new Error('Failed to load keywords');
+
+      setLoadingState({ status: 'error', error: appError });
+    }
   };
 
   const handleBackToMoodboard = () => {
@@ -118,10 +158,27 @@ export default function Home() {
     }));
   };
 
-  const handleKeywordsContinue = (keywords: string[]) => {
+  const handleKeywordsContinue = async (keywords: string[]) => {
+    if (isLoading) {
+      return;
+    }
+
     setFormData((prev) => ({ ...prev, keywords }));
-    setDirection('forward');
-    goToNextPage();
+    setLoadingState({ status: 'loading' });
+
+    try {
+      const data = await brandService.getAll();
+      setBrands(data);
+      setLoadingState({ status: 'idle' });
+      setDirection('forward');
+      goToNextPage();
+    } catch (error) {
+      const appError = error instanceof Error
+        ? error
+        : new Error('Failed to load brands');
+
+      setLoadingState({ status: 'error', error: appError });
+    }
   };
 
   const handleBackToKeywords = () => {
@@ -194,6 +251,7 @@ export default function Home() {
           <TinderScreen
             onBack={handleBackToKeywords}
             onContinue={handleTinderContinue}
+            brands={brands}
           />
         </motion.div>
       ) : currentPage === 'KeywordPage' ? (
@@ -209,6 +267,10 @@ export default function Home() {
           <KeywordsScreen
             onBack={handleBackToMoodboard}
             onContinue={handleKeywordsContinue}
+            keywords={keywords}
+            isLoading={isLoading}
+            isError={isError}
+            error={isError ? loadingState.error : undefined}
           />
         </motion.div>
       ) : currentPage === 'MoodboardPage' ? (
@@ -224,6 +286,10 @@ export default function Home() {
           <MoodboardScreen
             onBack={handleBackToName}
             onContinue={handleMoodboardContinue}
+            moodboards={moodboards}
+            isLoading={isLoading}
+            isError={isError}
+            error={isError ? loadingState.error : undefined}
           />
         </motion.div>
       ) : currentPage === 'NamePage' ? (
@@ -239,6 +305,7 @@ export default function Home() {
           <NameScreen
             onBack={handleBackToWelcome}
             onContinue={handleNameContinue}
+            isLoading={isLoading}
           />
         </motion.div>
       ) : (

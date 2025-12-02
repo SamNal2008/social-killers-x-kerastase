@@ -82,8 +82,8 @@ describe('Welcome Component', () => {
         render(<Welcome isLoading={true} />);
         const button = screen.getByRole('button', { name: /begin the experience/i });
 
-        expect(screen.getByText('Creating your profile...')).toBeInTheDocument();
         expect(button).toBeDisabled();
+        expect(button.querySelector('svg')).toBeInTheDocument();
       });
 
       it('should show error message when isError is true', () => {

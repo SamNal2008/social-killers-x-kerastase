@@ -1,7 +1,7 @@
 import type { FC } from 'react';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Check } from 'lucide-react';
+import { Check, LoaderCircle } from 'lucide-react';
 import { FormHeader } from './FormHeader';
 import { Badge } from '~/shared/components/Badge/Badge';
 import { Button } from '~/shared/components/Button/Button';
@@ -9,32 +9,12 @@ import { Title } from '~/shared/components/Typography/Title';
 import { Body } from '~/shared/components/Typography/Body';
 import type { KeywordsScreenProps } from '../types';
 import { staggerContainerVariants, staggerItemVariants } from '~/shared/animations/transitions';
-import { keywordService } from '../services/keywordService';
-import type { Tables } from '~/shared/types/database.types';
 
 const MIN_KEYWORDS = 3;
 const MAX_KEYWORDS = 10;
 
-export const KeywordsScreen: FC<KeywordsScreenProps> = ({ onBack, onContinue }) => {
-  const [keywords, setKeywords] = useState<Tables<'keywords'>[]>([]);
+export const KeywordsScreen: FC<KeywordsScreenProps> = ({ onBack, onContinue, keywords, isLoading, isError, error }) => {
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-
-  useEffect(() => {
-    const fetchKeywords = async () => {
-      try {
-        const data = await keywordService.getAll();
-        setKeywords(data);
-      } catch (err) {
-        setError(err instanceof Error ? err : new Error('Failed to load keywords'));
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchKeywords();
-  }, []);
 
   const isValidSelection = selectedKeywords.length >= MIN_KEYWORDS && selectedKeywords.length <= MAX_KEYWORDS;
 
@@ -60,26 +40,6 @@ export const KeywordsScreen: FC<KeywordsScreenProps> = ({ onBack, onContinue }) 
       onContinue(selectedKeywords);
     }
   };
-
-  if (isLoading) {
-    return (
-      <div className="bg-surface-light min-h-screen p-6 md:p-8 flex items-center justify-center">
-        <Body variant="1" className="text-neutral-gray">
-          Loading keywords...
-        </Body>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="bg-surface-light min-h-screen p-6 md:p-8 flex items-center justify-center">
-        <Body variant="1" className="text-red-600">
-          Error loading keywords
-        </Body>
-      </div>
-    );
-  }
 
   return (
     <div className="bg-surface-light min-h-screen p-6 md:p-8">
@@ -140,16 +100,28 @@ export const KeywordsScreen: FC<KeywordsScreenProps> = ({ onBack, onContinue }) 
             })}
           </motion.div>
 
+          {/* Error Message (if any) */}
+          {isError && (
+            <motion.div variants={staggerItemVariants}>
+              <div className="w-full bg-red-50 border border-red-200 rounded-lg p-4" role="alert">
+                <p className="text-red-800 text-sm text-center">
+                  {error?.message}
+                </p>
+              </div>
+            </motion.div>
+          )}
+
           {/* Continue Button */}
           <motion.div variants={staggerItemVariants}>
             <Button
               variant={isValidSelection ? 'primary' : 'disabled'}
-              disabled={!isValidSelection}
+              disabled={!isValidSelection || isLoading}
               onClick={handleContinue}
               type="button"
-              className="w-full h-[52px] flex items-center justify-center"
+              className="w-full h-[52px] flex items-center justify-center gap-2"
               aria-label="Continue"
             >
+              {isLoading && <LoaderCircle className="w-5 h-5 animate-spin" />}
               Continue
             </Button>
           </motion.div>

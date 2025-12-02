@@ -1,6 +1,7 @@
 import type { FC } from 'react';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { LoaderCircle } from 'lucide-react';
 import { FormHeader } from './FormHeader';
 import { Input } from '~/shared/components/Input/Input';
 import { Button } from '~/shared/components/Button/Button';
@@ -9,7 +10,7 @@ import { Body } from '~/shared/components/Typography/Body';
 import type { NameScreenProps } from '../types';
 import { staggerContainerVariants, staggerItemVariants } from '~/shared/animations/transitions';
 
-export const NameScreen: FC<NameScreenProps> = ({ onBack, onContinue }) => {
+export const NameScreen: FC<NameScreenProps> = ({ onBack, onContinue, isLoading }) => {
   const [name, setName] = useState('');
 
   const isNameValid = name.trim().length > 0;
@@ -75,12 +76,13 @@ export const NameScreen: FC<NameScreenProps> = ({ onBack, onContinue }) => {
           <motion.div variants={staggerItemVariants}>
             <Button
               variant={isNameValid ? 'primary' : 'disabled'}
-              disabled={!isNameValid}
+              disabled={!isNameValid || isLoading}
               onClick={handleContinue}
               type="button"
-              className="w-full h-[52px] flex items-center justify-center"
+              className="w-full h-[52px] flex items-center justify-center gap-2"
               aria-label="Continue"
             >
+              {isLoading && <LoaderCircle className="w-5 h-5 animate-spin" />}
               Continue
             </Button>
           </motion.div>

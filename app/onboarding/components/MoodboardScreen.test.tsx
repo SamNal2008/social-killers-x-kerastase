@@ -1,10 +1,6 @@
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { MoodboardScreen } from './MoodboardScreen';
-import { moodboardService } from '~/shared/services/moodboardService';
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
-
-// Mock the moodboard service
-jest.mock('~/shared/services/moodboardService');
 
 // Mock framer-motion to avoid animation issues in tests
 jest.mock('framer-motion', () => ({
@@ -17,65 +13,40 @@ jest.mock('framer-motion', () => ({
 describe('MoodboardScreen', () => {
     const mockOnBack = jest.fn();
     const mockOnContinue = jest.fn();
+    const mockMoodboards = [
+        {
+            id: '1',
+            name: 'Heritage Heiress',
+            description: 'Test 1',
+            image_url: 'test1.jpg',
+            created_at: '2024-01-01',
+            updated_at: null,
+            subculture_id: null
+        },
+        {
+            id: '2',
+            name: 'Quiet Luxury',
+            description: 'Test 2',
+            image_url: 'test2.jpg',
+            created_at: '2024-01-01',
+            updated_at: null,
+            subculture_id: null
+        },
+    ];
 
     beforeEach(() => {
         jest.clearAllMocks();
     });
 
-    it('should display loading state while fetching moodboards', () => {
-        // Mock a pending promise
-        const mockedGetAll = jest.fn().mockImplementation(() => new Promise(() => { }));
-        (moodboardService.getAll as jest.Mock) = mockedGetAll;
+    it('should render grid of moodboard cards', () => {
+        render(<MoodboardScreen onBack={mockOnBack} onContinue={mockOnContinue} moodboards={mockMoodboards} />);
 
-        render(<MoodboardScreen onBack={mockOnBack} onContinue={mockOnContinue} />);
-
-        expect(screen.getByText(/loading/i)).toBeInTheDocument();
+        expect(screen.getByText('Heritage Heiress')).toBeInTheDocument();
+        expect(screen.getByText('Quiet Luxury')).toBeInTheDocument();
     });
 
-    it('should display error state on fetch failure', async () => {
-        // @ts-expect-error - Mocking for tests
-        const mockedGetAll = jest.fn().mockRejectedValue(new Error('Failed to fetch'));
-        (moodboardService.getAll as jest.Mock) = mockedGetAll;
-
-        render(<MoodboardScreen onBack={mockOnBack} onContinue={mockOnContinue} />);
-
-        await waitFor(() => {
-            expect(screen.getByText(/error/i)).toBeInTheDocument();
-        });
-    });
-
-    it('should render grid of moodboard cards on success', async () => {
-        const mockMoodboards = [
-            { id: '1', name: 'Heritage Heiress', description: 'Test 1' },
-            { id: '2', name: 'Quiet Luxury', description: 'Test 2' },
-        ];
-
-        // @ts-expect-error - Mocking for tests
-        const mockedGetAll = jest.fn().mockResolvedValue(mockMoodboards);
-        (moodboardService.getAll as jest.Mock) = mockedGetAll;
-
-        render(<MoodboardScreen onBack={mockOnBack} onContinue={mockOnContinue} />);
-
-        await waitFor(() => {
-            expect(screen.getByText('Heritage Heiress')).toBeInTheDocument();
-            expect(screen.getByText('Quiet Luxury')).toBeInTheDocument();
-        });
-    });
-
-    it('should highlight selected card when clicked', async () => {
-        const mockMoodboards = [
-            { id: '1', name: 'Heritage Heiress', description: 'Test 1' },
-        ];
-
-        // @ts-expect-error - Mocking for tests
-        const mockedGetAll = jest.fn().mockResolvedValue(mockMoodboards);
-        (moodboardService.getAll as jest.Mock) = mockedGetAll;
-
-        render(<MoodboardScreen onBack={mockOnBack} onContinue={mockOnContinue} />);
-
-        await waitFor(() => {
-            expect(screen.getByText('Heritage Heiress')).toBeInTheDocument();
-        });
+    it('should highlight selected card when clicked', () => {
+        render(<MoodboardScreen onBack={mockOnBack} onContinue={mockOnContinue} moodboards={mockMoodboards} />);
 
         const card = screen.getByRole('button', { name: /select heritage heiress/i });
         fireEvent.click(card);
@@ -84,39 +55,15 @@ describe('MoodboardScreen', () => {
         expect(card).toHaveAttribute('aria-pressed', 'true');
     });
 
-    it('should disable Continue button when no moodboard selected', async () => {
-        const mockMoodboards = [
-            { id: '1', name: 'Heritage Heiress', description: 'Test 1' },
-        ];
-
-        // @ts-expect-error - Mocking for tests
-        const mockedGetAll = jest.fn().mockResolvedValue(mockMoodboards);
-        (moodboardService.getAll as jest.Mock) = mockedGetAll;
-
-        render(<MoodboardScreen onBack={mockOnBack} onContinue={mockOnContinue} />);
-
-        await waitFor(() => {
-            expect(screen.getByText('Heritage Heiress')).toBeInTheDocument();
-        });
+    it('should disable Continue button when no moodboard selected', () => {
+        render(<MoodboardScreen onBack={mockOnBack} onContinue={mockOnContinue} moodboards={mockMoodboards} />);
 
         const continueButton = screen.getByRole('button', { name: /continue/i });
         expect(continueButton).toBeDisabled();
     });
 
-    it('should enable Continue button when moodboard is selected', async () => {
-        const mockMoodboards = [
-            { id: '1', name: 'Heritage Heiress', description: 'Test 1' },
-        ];
-
-        // @ts-expect-error - Mocking for tests
-        const mockedGetAll = jest.fn().mockResolvedValue(mockMoodboards);
-        (moodboardService.getAll as jest.Mock) = mockedGetAll;
-
-        render(<MoodboardScreen onBack={mockOnBack} onContinue={mockOnContinue} />);
-
-        await waitFor(() => {
-            expect(screen.getByText('Heritage Heiress')).toBeInTheDocument();
-        });
+    it('should enable Continue button when moodboard is selected', () => {
+        render(<MoodboardScreen onBack={mockOnBack} onContinue={mockOnContinue} moodboards={mockMoodboards} />);
 
         const card = screen.getByRole('button', { name: /select heritage heiress/i });
         fireEvent.click(card);
@@ -125,20 +72,20 @@ describe('MoodboardScreen', () => {
         expect(continueButton).not.toBeDisabled();
     });
 
-    it('should call onContinue with moodboard ID when Continue clicked', async () => {
-        const mockMoodboards = [
-            { id: 'test-id-123', name: 'Heritage Heiress', description: 'Test 1' },
+    it('should call onContinue with moodboard ID when Continue clicked', () => {
+        const testMoodboards = [
+            {
+                id: 'test-id-123',
+                name: 'Heritage Heiress',
+                description: 'Test 1',
+                image_url: 'test.jpg',
+                created_at: '2024-01-01',
+                updated_at: null,
+                subculture_id: null
+            },
         ];
 
-        // @ts-expect-error - Mocking for tests
-        const mockedGetAll = jest.fn().mockResolvedValue(mockMoodboards);
-        (moodboardService.getAll as jest.Mock) = mockedGetAll;
-
-        render(<MoodboardScreen onBack={mockOnBack} onContinue={mockOnContinue} />);
-
-        await waitFor(() => {
-            expect(screen.getByText('Heritage Heiress')).toBeInTheDocument();
-        });
+        render(<MoodboardScreen onBack={mockOnBack} onContinue={mockOnContinue} moodboards={testMoodboards} />);
 
         const card = screen.getByRole('button', { name: /select heritage heiress/i });
         fireEvent.click(card);
@@ -149,20 +96,8 @@ describe('MoodboardScreen', () => {
         expect(mockOnContinue).toHaveBeenCalledWith('test-id-123');
     });
 
-    it('should call onBack when back button is clicked', async () => {
-        const mockMoodboards = [
-            { id: '1', name: 'Heritage Heiress', description: 'Test 1' },
-        ];
-
-        // @ts-expect-error - Mocking for tests
-        const mockedGetAll = jest.fn().mockResolvedValue(mockMoodboards);
-        (moodboardService.getAll as jest.Mock) = mockedGetAll;
-
-        render(<MoodboardScreen onBack={mockOnBack} onContinue={mockOnContinue} />);
-
-        await waitFor(() => {
-            expect(screen.getByText('Heritage Heiress')).toBeInTheDocument();
-        });
+    it('should call onBack when back button is clicked', () => {
+        render(<MoodboardScreen onBack={mockOnBack} onContinue={mockOnContinue} moodboards={mockMoodboards} />);
 
         // FormHeader should have a back button
         const backButton = screen.getByRole('button', { name: /back/i });
@@ -171,21 +106,10 @@ describe('MoodboardScreen', () => {
         expect(mockOnBack).toHaveBeenCalled();
     });
 
-    it('should render FormHeader with correct step (2/4)', async () => {
-        const mockMoodboards = [
-            { id: '1', name: 'Heritage Heiress', description: 'Test 1' },
-        ];
+    it('should render FormHeader with correct step (2/4)', () => {
+        render(<MoodboardScreen onBack={mockOnBack} onContinue={mockOnContinue} moodboards={mockMoodboards} />);
 
-        // @ts-expect-error - Mocking for tests
-        const mockedGetAll = jest.fn().mockResolvedValue(mockMoodboards);
-        (moodboardService.getAll as jest.Mock) = mockedGetAll;
-
-        render(<MoodboardScreen onBack={mockOnBack} onContinue={mockOnContinue} />);
-
-        await waitFor(() => {
-            // Check for step indicator - looking for "2" and "4"
-            expect(screen.getByText(/2/)).toBeInTheDocument();
-            expect(screen.getByText(/4/)).toBeInTheDocument();
-        });
+        // Check for step indicator text "Step 2 / 4"
+        expect(screen.getByText(/step\s+2\s+\/\s+4/i)).toBeInTheDocument();
     });
 });
