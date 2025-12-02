@@ -90,16 +90,19 @@ export const useAiMoodboard = ({
   useEffect(() => {
     const generateImages = async () => {
       try {
-        setState({ status: 'generating' });
+        // Fetch tribe data first
+        setState({ status: 'loading-tribe' });
+        const tribeData = await fetchTribeData();
 
-        // Generate 3 images with sequential processing and retry logic
+        // Then generate images
+        setState({ status: 'generating' });
         const images = await geminiImageService.generateImages({
           userPhoto,
           userResultId,
           numberOfImages: 3,
         });
 
-        setState({ status: 'success', images });
+        setState({ status: 'success', images, tribe: tribeData });
       } catch (error) {
         console.error('Error generating images:', error);
         const errorObj = error instanceof Error ? error : new Error('Failed to generate images');
@@ -108,7 +111,7 @@ export const useAiMoodboard = ({
     };
 
     generateImages();
-  }, [userResultId, userPhoto]);
+  }, [userResultId, userPhoto, fetchTribeData]);
 
   /**
    * Navigation handlers
@@ -124,27 +127,72 @@ export const useAiMoodboard = ({
   }, []);
 
   /**
-   * Download image handler
+   * Fallback download function (used when Web Share API is unavailable)
+   */
+  const fallbackDownload = useCallback(async (imageUrl: string, filename: string) => {
+    const response = await fetch(imageUrl);
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    URL.revokeObjectURL(url);
+  }, []);
+
+  /**
+   * Share/Download image handler
+   * Uses Web Share API on mobile devices, falls back to download on desktop
    */
   const downloadImage = useCallback(async (imageUrl: string, filename?: string) => {
+    const finalFilename = filename || `moodboard-${Date.now()}.jpg`;
+
     try {
-      const response = await fetch(imageUrl);
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
+      // Check if Web Share API is available and supports file sharing
+      if (navigator.share && navigator.canShare) {
+        // Fetch image as blob
+        const response = await fetch(imageUrl);
+        const blob = await response.blob();
 
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = filename || `moodboard-${Date.now()}.jpg`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+        // Create File object from blob
+        const file = new File([blob], finalFilename, { type: blob.type });
 
-      URL.revokeObjectURL(url);
+        // Check if files can be shared
+        if (navigator.canShare({ files: [file] })) {
+          // Share the image
+          await navigator.share({
+            files: [file],
+            title: 'My Signature Moodboard',
+            text: 'Check out my signature moodboard!',
+          });
+          console.log('Image shared successfully');
+          return;
+        }
+      }
+
+      // Fallback to download if Web Share API is unavailable or file sharing not supported
+      await fallbackDownload(imageUrl, finalFilename);
     } catch (error) {
-      console.error('Error downloading image:', error);
-      throw new Error('Failed to download image');
+      // If user cancels share dialog, don't treat it as an error
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.log('Share cancelled by user');
+        return;
+      }
+
+      // For other errors, try fallback download
+      console.error('Error sharing image:', error);
+      try {
+        await fallbackDownload(imageUrl, finalFilename);
+      } catch (downloadError) {
+        console.error('Error downloading image:', downloadError);
+        throw new Error('Failed to share or download image');
+      }
     }
-  }, []);
+  }, [fallbackDownload]);
 
   // Compute derived values
   const currentImage = state.status === 'success' ? state.images[currentImageIndex] : null;

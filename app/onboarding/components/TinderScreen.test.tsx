@@ -33,9 +33,14 @@ describe('TinderScreen', () => {
             expect(screen.getByText('Hermès')).toBeInTheDocument();
         });
 
-        it('should show progress indicator 1/2', () => {
+        it('should render the current date in DD.MM.YY format', () => {
             render(<TinderScreen {...defaultProps} />);
-            expect(screen.getByText('1/2')).toBeInTheDocument();
+            // Date format: DD.MM.YY (e.g., "03.12.25")
+            // Check that date-like strings are present (matches DD.MM.YY pattern)
+            // Multiple cards may be present (stacked), so use getAllByText
+            const datePattern = /\d{2}\.\d{2}\.\d{2}/;
+            const dates = screen.getAllByText(datePattern);
+            expect(dates.length).toBeGreaterThan(0);
         });
 
         it('should render Like and Pass buttons', () => {
@@ -64,7 +69,6 @@ describe('TinderScreen', () => {
 
                 // Second card should appear
                 expect(screen.getByText('Cartier')).toBeInTheDocument();
-                expect(screen.getByText('2/2')).toBeInTheDocument();
             } finally {
                 jest.useRealTimers();
             }
@@ -137,12 +141,15 @@ describe('TinderScreen', () => {
     });
 
     describe('Progress Tracking', () => {
-        it('should update progress counter after each swipe', async () => {
+        it('should show next card after swipe', async () => {
             jest.useFakeTimers();
             try {
                 render(<TinderScreen {...defaultProps} />);
 
                 const likeButton = screen.getByRole('button', { name: /like/i });
+
+                // Initially showing first card
+                expect(screen.getByText('Hermès')).toBeInTheDocument();
 
                 fireEvent.click(likeButton);
 
@@ -151,7 +158,9 @@ describe('TinderScreen', () => {
                     jest.advanceTimersByTime(450);
                 });
 
-                expect(screen.getByText('2/2')).toBeInTheDocument();
+                // Now showing second card
+                expect(screen.getByText('Cartier')).toBeInTheDocument();
+                expect(screen.queryByText('Hermès')).not.toBeInTheDocument();
             } finally {
                 jest.useRealTimers();
             }

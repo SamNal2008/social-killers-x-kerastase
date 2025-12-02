@@ -65,6 +65,18 @@ export const CameraScreen: FC = () => {
     });
   };
 
+  // Auto-trigger navigation after photo capture
+  useEffect(() => {
+    if (capturedPhoto) {
+      // Small delay to show the captured photo briefly before navigating
+      const timer = setTimeout(() => {
+        handleContinue();
+      }, 500); // 500ms delay for better UX
+
+      return () => clearTimeout(timer);
+    }
+  }, [capturedPhoto]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Browser doesn't support camera
   if (state.status === 'unsupported') {
     return (
@@ -109,15 +121,20 @@ export const CameraScreen: FC = () => {
     );
   }
 
-  // Show captured photo
+  // Show captured photo with auto-navigation message
   if (capturedPhoto) {
     return (
-      <CameraResultSelfie
-        photo={capturedPhoto}
-        onBack={handleBack}
-        onRetake={handleRetake}
-        onContinue={handleContinue}
-      />
+      <div className="bg-surface-light min-h-screen p-6 md:p-8 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-6">
+          {/* Loading Spinner */}
+          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+
+          {/* Message */}
+          <Body variant="1" className="text-neutral-gray text-center">
+            Generating your personalized moodboard...
+          </Body>
+        </div>
+      </div>
     );
   }
 

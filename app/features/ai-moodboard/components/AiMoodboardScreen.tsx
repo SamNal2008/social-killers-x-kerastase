@@ -95,13 +95,6 @@ export const AiMoodboardScreen: FC = () => {
 
   // Success state
   if (state.status === 'success' && currentImage) {
-    // Get current date for polaroid
-    const currentDate = new Date().toLocaleDateString('en-US', {
-      day: '2-digit',
-      month: '2-digit',
-      year: '2-digit',
-    });
-
     return (
       <div className="bg-surface-light min-h-screen p-6 md:p-8">
         <motion.div
@@ -140,8 +133,8 @@ export const AiMoodboardScreen: FC = () => {
             </button>
 
             {/* Tribe Badge */}
-            <Caption variant="1" className="text-primary text-center uppercase">
-              Legacist
+            <Caption variant="1" className="text-primary text-center uppercase tracking-wider">
+              {state.tribe.tribeName}
             </Caption>
 
             {/* Title and Subtitle */}
@@ -164,8 +157,6 @@ export const AiMoodboardScreen: FC = () => {
                 imageAlt={`Moodboard ${currentImageIndex + 1}`}
                 title=""
                 subtitle="Tribes & Communities Day"
-                currentItem={currentImageIndex + 1}
-                totalItems={state.images.length}
                 className="w-full"
               />
             </motion.div>
