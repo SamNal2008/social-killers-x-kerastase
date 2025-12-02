@@ -12,7 +12,7 @@
 // - GEMINI_API_KEY: API authentication key (Bearer token)
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from 'jsr:@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -65,12 +65,45 @@ const buildErrorResponse = (
 };
 
 /**
- * Generates the default prompt for image generation
- * Used when no custom prompt is provided
- * TODO: Replace with actual tribe-based prompt logic
+ * Fetches the image generation prompt for the user's tribe
+ * Queries the database to get the tribe associated with the user result
+ * and returns the tribe's image_generation_prompt
  */
-const generateDefaultPrompt = (userResultId: string): string => {
-  return "Take this picture and make him happy to code now";
+const fetchTribePrompt = async (
+  supabase: ReturnType<typeof createClient>,
+  userResultId: string
+): Promise<string> => {
+  // Query user_results and join with tribes to get the prompt
+  const { data, error } = await supabase
+    .from('user_results')
+    .select(`
+      tribe_id,
+      tribes!inner (
+        name,
+        image_generation_prompt
+      )
+    `)
+    .eq('id', userResultId)
+    .single();
+
+  if (error) {
+    console.error('Error fetching tribe prompt:', error);
+    throw new Error(`Failed to fetch tribe information: ${error.message}`);
+  }
+
+  if (!data) {
+    throw new Error(`User result not found: ${userResultId}`);
+  }
+
+  // TypeScript type assertion for the joined data
+  const tribeData = data.tribes as { name: string; image_generation_prompt: string | null };
+
+  if (!tribeData.image_generation_prompt) {
+    throw new Error(`No image generation prompt configured for tribe: ${tribeData.name}`);
+  }
+
+  console.log(`Using prompt for tribe: ${tribeData.name}`);
+  return tribeData.image_generation_prompt;
 };
 
 
@@ -319,8 +352,8 @@ Deno.serve(async (req) => {
       }
     });
 
-    // Get or generate prompt
-    const prompt = requestBody.prompt || generateDefaultPrompt(requestBody.userResultId);
+    // Get or fetch prompt from tribe
+    const prompt = requestBody.prompt || await fetchTribePrompt(supabase, requestBody.userResultId);
     console.log(`Generating ${numberOfImages} image(s) for user result: ${requestBody.userResultId}`);
 
     // Generate images SEQUENTIALLY to avoid rate limiting
