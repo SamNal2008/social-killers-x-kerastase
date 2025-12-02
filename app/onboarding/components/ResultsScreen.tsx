@@ -99,7 +99,7 @@ export const ResultsScreen: FC<ResultsScreenProps> = ({ userResultId }) => {
                                 variant="h1"
                                 className="text-neutral-dark text-center"
                             >
-                                {resultsData.userResult.dominantTribeName}
+                                {resultsData.userResult.dominantSubcultureName || resultsData.userResult.dominantTribeName}
                             </Title>
                         </motion.div>
 
@@ -113,31 +113,34 @@ export const ResultsScreen: FC<ResultsScreenProps> = ({ userResultId }) => {
                         </motion.div>
                     </div>
 
-                    {/* Tribe Percentages */}
+                    {/* Subculture Percentages (Top 3) */}
                     <motion.div
                         variants={staggerItemVariants}
                         className="flex flex-col gap-6 w-full"
                     >
-                        {resultsData.tribePercentages.map((tribe) => (
-                            <div key={tribe.tribeId} className="flex flex-col gap-2">
-                                <div className="flex justify-between items-center">
-                                    <Body variant="2" className="text-neutral-dark font-medium">
-                                        {tribe.tribeName}
-                                    </Body>
-                                    <Body variant="2" className="text-neutral-gray">
-                                        {tribe.percentage}%
-                                    </Body>
+                        {(resultsData.subculturePercentages || [])
+                            .sort((a, b) => b.percentage - a.percentage)
+                            .slice(0, 3)
+                            .map((subculture) => (
+                                <div key={subculture.subcultureId} className="flex flex-col gap-2">
+                                    <div className="flex justify-between items-center">
+                                        <Body variant="2" className="text-neutral-dark font-medium">
+                                            {subculture.subcultureName}
+                                        </Body>
+                                        <Body variant="2" className="text-neutral-gray">
+                                            {subculture.percentage}%
+                                        </Body>
+                                    </div>
+                                    <div className="w-full h-2 bg-neutral-gray-200 rounded-full overflow-hidden">
+                                        <motion.div
+                                            className="h-full bg-primary rounded-full"
+                                            initial={{ width: 0 }}
+                                            animate={{ width: `${subculture.percentage}%` }}
+                                            transition={{ duration: 0.8, delay: 0.2 }}
+                                        />
+                                    </div>
                                 </div>
-                                <div className="w-full h-2 bg-neutral-gray-200 rounded-full overflow-hidden">
-                                    <motion.div
-                                        className="h-full bg-primary rounded-full"
-                                        initial={{ width: 0 }}
-                                        animate={{ width: `${tribe.percentage}%` }}
-                                        transition={{ duration: 0.8, delay: 0.2 }}
-                                    />
-                                </div>
-                            </div>
-                        ))}
+                            ))}
                     </motion.div>
 
                     {/* Let's Deep Dive Button */}

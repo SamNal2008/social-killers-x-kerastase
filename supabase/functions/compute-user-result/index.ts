@@ -21,7 +21,16 @@ interface TribeScores {
   [tribeId: string]: TribeScore;
 }
 
-interface DominantTribe {
+interface SubcultureScore {
+  points: number;
+  name: string;
+}
+
+interface SubcultureScores {
+  [subcultureId: string]: SubcultureScore;
+}
+
+interface DominantEntity {
   id: string;
   name: string;
 }
@@ -37,6 +46,15 @@ interface TribeData {
 interface SubcultureTribe {
   tribe_id: string;
   tribe: {
+    id: string;
+    name: string;
+  };
+}
+
+interface TribeSubcultureMapping {
+  tribe_id: string;
+  subculture_id: string;
+  subculture: {
     id: string;
     name: string;
   };
@@ -73,6 +91,16 @@ const fetchTribesInSubculture = async (
     .eq('subculture_id', subcultureId);
 
   return (data as SubcultureTribe[]) || [];
+};
+
+const fetchAllTribeSubcultures = async (
+  supabase: SupabaseClient<Database>
+): Promise<TribeSubcultureMapping[]> => {
+  const { data } = await supabase
+    .from('tribe_subcultures')
+    .select('tribe_id, subculture_id, subculture:subcultures(id, name)');
+
+  return (data as TribeSubcultureMapping[]) || [];
 };
 
 const calculateTribeScores = (
@@ -115,27 +143,50 @@ const calculateTribeScores = (
   return tribeScores;
 };
 
-const findDominantTribe = (tribeScores: TribeScores): DominantTribe => {
-  let dominantTribeId = '';
-  let dominantTribeName = '';
-  let maxPoints = 0;
+const calculateSubcultureScores = (
+  tribeScores: TribeScores,
+  tribeSubcultureMappings: TribeSubcultureMapping[]
+): SubcultureScores => {
+  const subcultureScores: SubcultureScores = {};
 
-  Object.entries(tribeScores).forEach(([tribeId, data]) => {
+  // Iterate through all scored tribes
+  Object.entries(tribeScores).forEach(([tribeId, tribeData]) => {
+    // Find all subcultures this tribe belongs to
+    const mappings = tribeSubcultureMappings.filter(m => m.tribe_id === tribeId);
+
+    // Add the tribe's points to each associated subculture
+    mappings.forEach(mapping => {
+      if (!subcultureScores[mapping.subculture_id]) {
+        subcultureScores[mapping.subculture_id] = { points: 0, name: mapping.subculture.name };
+      }
+      subcultureScores[mapping.subculture_id].points += tribeData.points;
+    });
+  });
+
+  return subcultureScores;
+};
+
+const findDominantEntity = (scores: TribeScores | SubcultureScores): DominantEntity => {
+  let dominantId = '';
+  let dominantName = '';
+  let maxPoints = -1; // Initialize with -1 to handle 0 points case if needed, though usually > 0
+
+  Object.entries(scores).forEach(([id, data]) => {
     if (data.points > maxPoints) {
       maxPoints = data.points;
-      dominantTribeId = tribeId;
-      dominantTribeName = data.name;
+      dominantId = id;
+      dominantName = data.name;
     }
   });
 
-  return { id: dominantTribeId, name: dominantTribeName };
+  return { id: dominantId, name: dominantName };
 };
 
-const calculateTotalPoints = (tribeScores: TribeScores): number => {
-  return Object.values(tribeScores).reduce((sum, t) => sum + t.points, 0);
+const calculateTotalPoints = (scores: TribeScores | SubcultureScores): number => {
+  return Object.values(scores).reduce((sum, t) => sum + t.points, 0);
 };
 
-const calculateTribePercentage = (points: number, total: number): number => {
+const calculatePercentage = (points: number, total: number): number => {
   return total > 0 ? Math.round((points / total) * 10000) / 100 : 0;
 };
 
@@ -229,24 +280,37 @@ Deno.serve(async (req) => {
       throw new Error(`User answer not found: ${fetchError?.message || 'No data returned'}`);
     }
 
+    // Cast to UserAnswerData to satisfy type checker, validation happens in extractMoodboardSubculture
+    const typedUserAnswer = userAnswer as unknown as UserAnswerData;
+
     // Extract moodboard and subculture
-    const subculture = extractMoodboardSubculture(userAnswer);
+    const subculture = extractMoodboardSubculture(typedUserAnswer);
 
     // Fetch all tribes in the selected subculture (moodboard gives 2 points to each)
     const subcultureTribes = await fetchTribesInSubculture(supabase, subculture.id);
 
     // Fetch tribes for selected keywords and brands (each gives 1 point)
-    const keywordTribes = await fetchTribesByIds(supabase, 'keywords', userAnswer.keywords);
-    const brandTribes = await fetchTribesByIds(supabase, 'brands', userAnswer.brands);
+    const keywordTribes = await fetchTribesByIds(supabase, 'keywords', typedUserAnswer.keywords);
+    const brandTribes = await fetchTribesByIds(supabase, 'brands', typedUserAnswer.brands);
+
+    // Fetch all tribe-subculture mappings for aggregation
+    const tribeSubcultureMappings = await fetchAllTribeSubcultures(supabase);
 
     // Calculate tribe scores based on new scoring system
     const tribeScores = calculateTribeScores(subcultureTribes, keywordTribes, brandTribes);
 
-    // Find dominant tribe (highest score)
-    const dominantTribe = findDominantTribe(tribeScores);
+    // Calculate subculture scores by aggregating tribe scores
+    const subcultureScores = calculateSubcultureScores(tribeScores, tribeSubcultureMappings);
 
-    // Calculate total points
-    const totalPoints = calculateTotalPoints(tribeScores);
+    // Find dominant tribe (highest score) - kept for DB record
+    const dominantTribe = findDominantEntity(tribeScores);
+
+    // Find dominant subculture (highest score) - for UI
+    const dominantSubculture = findDominantEntity(subcultureScores);
+
+    // Calculate total points for percentages
+    const totalTribePoints = calculateTotalPoints(tribeScores);
+    const totalSubculturePoints = calculateTotalPoints(subcultureScores);
 
     // Create user result
     const { data: userResult } = await supabase
@@ -267,7 +331,7 @@ Deno.serve(async (req) => {
     const tribeInserts = Object.entries(tribeScores).map(([tribeId, data]) => ({
       user_result_id: userResult.id,
       tribe_id: tribeId,
-      percentage: calculateTribePercentage(data.points, totalPoints),
+      percentage: calculatePercentage(data.points, totalTribePoints),
     }));
 
     await supabase
@@ -284,10 +348,17 @@ Deno.serve(async (req) => {
           subcultureName: subculture.name,
           dominantTribeId: dominantTribe.id,
           dominantTribeName: dominantTribe.name,
+          dominantSubcultureId: dominantSubculture.id,
+          dominantSubcultureName: dominantSubculture.name,
           tribes: Object.entries(tribeScores).map(([tribeId, data]) => ({
             tribeId,
             tribeName: data.name,
-            percentage: calculateTribePercentage(data.points, totalPoints),
+            percentage: calculatePercentage(data.points, totalTribePoints),
+          })),
+          subcultures: Object.entries(subcultureScores).map(([subcultureId, data]) => ({
+            subcultureId,
+            subcultureName: data.name,
+            percentage: calculatePercentage(data.points, totalSubculturePoints),
           })),
         },
       } satisfies ComputeUserResultResponse),
@@ -301,3 +372,4 @@ Deno.serve(async (req) => {
     return buildErrorResponse('INTERNAL_ERROR', 'An unexpected error occurred', 500);
   }
 });
+

@@ -11,6 +11,12 @@ export interface TribeMatch {
   percentage: number;
 }
 
+export interface SubcultureMatch {
+  subcultureId: string;
+  subcultureName: string;
+  percentage: number;
+}
+
 export type ComputeUserResultResponse =
   | {
     success: true;
@@ -20,7 +26,10 @@ export type ComputeUserResultResponse =
       subcultureName: string;
       dominantTribeId: string;
       dominantTribeName: string;
+      dominantSubcultureId: string;
+      dominantSubcultureName: string;
       tribes: TribeMatch[];
+      subcultures: SubcultureMatch[];
     };
   }
   | {
