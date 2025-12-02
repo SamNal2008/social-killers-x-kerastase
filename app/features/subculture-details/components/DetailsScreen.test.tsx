@@ -150,7 +150,7 @@ describe('DetailsScreen', () => {
     render(<DetailsScreen userResultId="test-123" />);
 
     await waitFor(() => {
-      expect(screen.getByText('You make timeless elegance your own')).toBeInTheDocument();
+      expect(screen.getByText('"You make timeless elegance your own"')).toBeInTheDocument();
     });
   });
 
@@ -170,7 +170,7 @@ describe('DetailsScreen', () => {
     render(<DetailsScreen userResultId="test-123" />);
 
     await waitFor(() => {
-      expect(screen.getByText('DO')).toBeInTheDocument();
+      expect(screen.getByText('Do')).toBeInTheDocument();
       expect(screen.getByText('Choose quality over quantity')).toBeInTheDocument();
       expect(screen.getByText('Invest in timeless pieces')).toBeInTheDocument();
     });
@@ -192,7 +192,7 @@ describe('DetailsScreen', () => {
     render(<DetailsScreen userResultId="test-123" />);
 
     await waitFor(() => {
-      expect(screen.getByText("DON'T")).toBeInTheDocument();
+      expect(screen.getByText("Don't")).toBeInTheDocument();
       expect(screen.getByText('Follow every trend')).toBeInTheDocument();
       expect(screen.getByText('Compromise on craftsmanship')).toBeInTheDocument();
     });
@@ -217,8 +217,8 @@ describe('DetailsScreen', () => {
       expect(screen.getByRole('heading', { name: 'Cosmic Explorer' })).toBeInTheDocument();
     });
 
-    // Should still render the DO and DON'T headers even with empty arrays
-    expect(screen.getByText('DO')).toBeInTheDocument();
-    expect(screen.getByText("DON'T")).toBeInTheDocument();
+    // Should still render the Do and Don't headers even with empty arrays
+    expect(screen.getByText('Do')).toBeInTheDocument();
+    expect(screen.getByText("Don't")).toBeInTheDocument();
   });
 });

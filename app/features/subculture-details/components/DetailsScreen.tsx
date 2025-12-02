@@ -44,9 +44,9 @@ export const DetailsScreen: FC<DetailsScreenProps> = ({ userResultId }) => {
   }
 
   return (
-    <div className="min-h-screen p-6 bg-surface-light md:p-8 lg:p-12">
+    <div className="min-h-screen p-6 bg-surface-light">
       <motion.div
-        className="flex flex-col w-full max-w-[345px] gap-12 mx-auto md:max-w-2xl md:gap-16 lg:max-w-4xl"
+        className="flex flex-col w-full max-w-[345px] gap-10 mx-auto"
         variants={staggerContainerVariants}
         initial="hidden"
         animate="show"
@@ -65,9 +65,9 @@ export const DetailsScreen: FC<DetailsScreenProps> = ({ userResultId }) => {
         </motion.div>
 
         {/* Main Content */}
-        <div className="flex w-full flex-col gap-12 md:gap-16">
+        <div className="flex w-full flex-col gap-12">
           {/* Header Section */}
-          <div className="flex w-full flex-col gap-6 items-center">
+          <div className="flex w-full flex-col gap-4 items-center">
             <motion.div variants={staggerItemVariants}>
               <Caption
                 variant="1"
@@ -79,104 +79,97 @@ export const DetailsScreen: FC<DetailsScreenProps> = ({ userResultId }) => {
 
             <motion.div
               variants={staggerItemVariants}
-              className="flex w-full items-center justify-center px-4"
+              className="flex w-full items-center justify-center px-0.5"
             >
-              <Title variant="h0" className="text-center text-neutral-dark">
+              <Title variant="h0" className="text-center text-neutral-dark w-[341px]">
                 {tribeData.subcultureName || tribeData.name}
               </Title>
             </motion.div>
+
+            {/* Decorative Line */}
+            <motion.div
+              variants={staggerItemVariants}
+              className="flex w-full items-center justify-center"
+            >
+              <div className="h-[1px] w-[128px] bg-gradient-to-r from-transparent via-primary to-transparent" />
+            </motion.div>
           </div>
 
-          {/* Decorative Line */}
+          {/* Subtitle and Description Section */}
           <motion.div
             variants={staggerItemVariants}
-            className="flex w-full items-center justify-center"
+            className="flex w-full flex-col gap-6 items-start"
           >
-            <div className="h-[1px] w-[128px] bg-gradient-to-r from-transparent via-primary to-transparent opacity-60" />
-          </motion.div>
-
-          {/* Content Section: Subtitle, Description */}
-          <div className="flex w-full flex-col gap-8 items-center">
             {/* Subtitle */}
-            <motion.div
-              variants={staggerItemVariants}
-              className="flex w-full items-center justify-center"
+            <Title
+              variant="h2"
+              className="text-center text-neutral-dark w-[322px]"
             >
-              <Title
-                variant="h2"
-                className="max-w-[322px] text-center text-neutral-dark md:max-w-md"
-              >
-                {tribeData.subtitle}
-              </Title>
-            </motion.div>
+              "{tribeData.subtitle}"
+            </Title>
 
             {/* Description */}
-            <motion.div
-              variants={staggerItemVariants}
-              className="flex w-full items-center justify-center"
+            <Body
+              variant="1"
+              className="text-center text-neutral-dark leading-[150%] w-[322px]"
             >
-              <Body
-                variant="1"
-                className="max-w-[322px] text-center text-neutral-dark leading-[150%] md:max-w-lg md:leading-[160%]"
-              >
-                {tribeData.description}
-              </Body>
-            </motion.div>
-          </div>
+              {tribeData.description}
+            </Body>
+          </motion.div>
 
           {/* Do's and Don'ts Section */}
           <motion.div
             variants={staggerItemVariants}
-            className="flex w-full flex-col gap-10 md:flex-row md:gap-12 lg:gap-16"
+            className="flex w-full gap-6"
           >
             {/* DO Column */}
-            <div className="flex-1 flex flex-col gap-6 items-center md:items-start">
-              <Title
-                variant="h3"
-                className="text-neutral-dark text-center font-semibold md:text-left"
+            <div className="flex-1 flex flex-col gap-4 items-start">
+              <Body
+                variant="1"
+                className="text-neutral-dark w-full"
               >
-                DO
-              </Title>
-              <div className="flex flex-col gap-3 w-full">
+                Do
+              </Body>
+              <div className="flex flex-col gap-2 w-full">
                 {tribeData.dos.map((doItem, index) => (
-                  <Body
+                  <Title
                     key={`do-${index}`}
-                    variant="2"
-                    className="text-center text-neutral-dark leading-[150%] md:text-left"
+                    variant="h3"
+                    className="text-neutral-dark w-full"
                   >
                     {doItem}
-                  </Body>
+                  </Title>
                 ))}
               </div>
             </div>
 
             {/* DON'T Column */}
-            <div className="flex-1 flex flex-col gap-6 items-center md:items-start">
-              <Title
-                variant="h3"
-                className="text-neutral-dark text-center font-semibold md:text-left"
+            <div className="flex-1 flex flex-col gap-4 items-start">
+              <Body
+                variant="1"
+                className="text-neutral-dark w-full"
               >
-                DON'T
-              </Title>
-              <div className="flex flex-col gap-3 w-full">
+                Don't
+              </Body>
+              <div className="flex flex-col gap-2 w-full">
                 {tribeData.donts.map((dontItem, index) => (
-                  <Body
+                  <Title
                     key={`dont-${index}`}
-                    variant="2"
-                    className="text-center text-neutral-dark leading-[150%] md:text-left"
+                    variant="h3"
+                    className="text-neutral-dark w-full"
                   >
                     {dontItem}
-                  </Body>
+                  </Title>
                 ))}
               </div>
             </div>
           </motion.div>
 
           {/* Generate AI Moodboard Button */}
-          <motion.div variants={staggerItemVariants} className="w-full mt-4">
+          <motion.div variants={staggerItemVariants} className="w-full">
             <Button
               variant="primary"
-              className="w-full h-[52px] flex items-center justify-center md:h-[56px]"
+              className="w-full h-[52px] flex items-center justify-center"
               onClick={handleGenerateMoodboard}
             >
               Generate my AI moodboard
