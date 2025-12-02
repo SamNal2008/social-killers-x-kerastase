@@ -13,23 +13,23 @@ export interface TribeMatch {
 
 export type ComputeUserResultResponse =
   | {
-      success: true;
-      data: {
-        userResultId: string;
-        subcultureId: string;
-        subcultureName: string;
-        dominantTribeId: string;
-        dominantTribeName: string;
-        tribes: TribeMatch[];
-      };
-    }
-  | {
-      success: false;
-      error: {
-        code: string;
-        message: string;
-      };
+    success: true;
+    data: {
+      userResultId: string;
+      subcultureId: string;
+      subcultureName: string;
+      dominantTribeId: string;
+      dominantTribeName: string;
+      tribes: TribeMatch[];
     };
+  }
+  | {
+    success: false;
+    error: {
+      code: string;
+      message: string;
+    };
+  };
 
 export interface UserAnswerData {
   id: string;
@@ -38,8 +38,6 @@ export interface UserAnswerData {
   brands: string[];
   keywords: string[];
   moodboard: {
-    name: string;
-    description: string;
     subculture_id: string;
     subculture: {
       id: string;
