@@ -6,18 +6,24 @@ export interface PolaroidProps {
   imageAlt: string;
   title: string;
   subtitle?: string;
-  currentItem?: number;
-  totalItems?: number;
+  currentItem?: number; // Deprecated - kept for backward compatibility
+  totalItems?: number; // Deprecated - kept for backward compatibility
   className?: string;
 }
+
+const formatDate = (): string => {
+  const now = new Date();
+  const day = String(now.getDate()).padStart(2, '0');
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const year = String(now.getFullYear()).slice(-2); // Last 2 digits
+  return `${day}.${month}.${year}`;
+};
 
 export const Polaroid: FC<PolaroidProps> = ({
   imageSrc,
   imageAlt,
   title,
   subtitle = "Swipe to decide",
-  currentItem,
-  totalItems,
   className = "",
 }) => {
   return (
@@ -28,6 +34,12 @@ export const Polaroid: FC<PolaroidProps> = ({
         p-6
         flex flex-col gap-6
         shadow-[0px_25px_50px_-12px_rgba(0,0,0,0.25)]
+        w-full
+        max-w-[343px]
+        md:max-w-[400px]
+        lg:max-w-[450px]
+        mx-auto
+        aspect-[3/4]
         ${className}
       `}
     >
@@ -49,11 +61,9 @@ export const Polaroid: FC<PolaroidProps> = ({
         <Body variant="2" className="text-neutral-gray">
           {subtitle}
         </Body>
-        {currentItem !== undefined && totalItems !== undefined && (
-          <Caption variant="2" className="text-neutral-dark">
-            {currentItem}/{totalItems}
-          </Caption>
-        )}
+        <Caption variant="2" className="text-neutral-dark">
+          {formatDate()}
+        </Caption>
       </div>
     </div>
   );

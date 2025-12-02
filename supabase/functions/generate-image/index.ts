@@ -183,6 +183,9 @@ const callGeminiAPI = async (userPhoto: string, prompt: string): Promise<string>
         ],
         generationConfig: {
           responseModalities: ['Text', 'Image'],
+          imageConfig: {
+            aspectRatio: '3:4',
+          },
         },
       }),
     });

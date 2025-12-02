@@ -21,7 +21,7 @@ export type AiMoodboardState =
   | { status: 'idle' }
   | { status: 'loading-tribe' }
   | { status: 'generating' }
-  | { status: 'success'; images: GeneratedImage[] }
+  | { status: 'success'; images: GeneratedImage[]; tribe: TribePromptData }
   | { status: 'error'; error: Error };
 
 /**
