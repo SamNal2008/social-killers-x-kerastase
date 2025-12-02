@@ -74,10 +74,56 @@ const generateDefaultPrompt = (userResultId: string): string => {
 };
 
 
+/**
+ * Helper function to add delay between API calls
+ */
+const delay = (ms: number): Promise<void> => {
+  return new Promise(resolve => setTimeout(resolve, ms));
+};
+
+/**
+ * Retry wrapper with exponential backoff
+ * Handles 429 (Too Many Requests) errors by retrying with increasing delays
+ */
+const retryWithBackoff = async <T>(
+  fn: () => Promise<T>,
+  maxRetries = 3,
+  initialDelayMs = 1000
+): Promise<T> => {
+  let lastError: Error;
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error('Unknown error');
+
+      // Check if it's a rate limit error (429)
+      const is429Error = lastError.message.includes('429') ||
+                         lastError.message.includes('Too Many Requests');
+
+      // If it's the last attempt or not a rate limit error, throw immediately
+      if (attempt === maxRetries - 1 || !is429Error) {
+        throw lastError;
+      }
+
+      // Calculate exponential backoff delay: 1s, 2s, 4s, etc.
+      const delayMs = initialDelayMs * Math.pow(2, attempt);
+      console.log(`Rate limit hit. Retrying in ${delayMs}ms (attempt ${attempt + 1}/${maxRetries})...`);
+      await delay(delayMs);
+    }
+  }
+
+  throw lastError!;
+};
+
+/**
+ * Call Gemini API with retry logic
+ */
 const callGeminiAPI = async (userPhoto: string, prompt: string): Promise<string> => {
   // Use the image generation model endpoint
-  const geminiApiEndpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent";
-  const geminiApiKey = "AIzaSyBJnQEia53Z8CnamHQzygs6ccvQ1M3koPA"// Deno.env.get('GEMINI_API_KEY');
+  const geminiApiEndpoint = Deno.env.get('GEMINI_API_ENDPOINT') || "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent";
+  const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
 
   // Validate environment variables
   if (!geminiApiEndpoint) {
@@ -150,17 +196,17 @@ const callGeminiAPI = async (userPhoto: string, prompt: string): Promise<string>
       throw new Error('No parts returned from Gemini API');
     }
 
-    // Find the image part (inline_data with image mime type)
-    const imagePart = parts.find((part: { inline_data?: { mime_type: string; data: string } }) =>
-      part.inline_data?.mime_type?.startsWith('image/')
+    // Find the image part (inlineData with image mime type)
+    const imagePart = parts.find((part: { inlineData?: { mimeType: string; data: string } }) =>
+      part.inlineData?.mimeType?.startsWith('image/')
     );
 
-    if (!imagePart?.inline_data?.data) {
+    if (!imagePart?.inlineData?.data) {
       console.error('No image data in parts:', parts);
       throw new Error('No image data returned from Gemini API');
     }
 
-    const generatedImageBase64 = imagePart.inline_data.data;
+    const generatedImageBase64 = imagePart.inlineData.data;
 
     console.log('Successfully generated image via Gemini API');
 
@@ -277,29 +323,40 @@ Deno.serve(async (req) => {
     const prompt = requestBody.prompt || generateDefaultPrompt(requestBody.userResultId);
     console.log(`Generating ${numberOfImages} image(s) for user result: ${requestBody.userResultId}`);
 
-    // Generate multiple images in parallel
-    const imagePromises = Array.from({ length: numberOfImages }, async (_, index) => {
+    // Generate images SEQUENTIALLY to avoid rate limiting
+    // Instead of Promise.all(), we use a loop with delays
+    const generatedImages = [];
+    const DELAY_BETWEEN_CALLS_MS = 2000; // 2 second delay between API calls
+
+    for (let index = 0; index < numberOfImages; index++) {
       try {
-        // Call Gemini API
-        const generatedImageData = await callGeminiAPI(requestBody.userPhoto, prompt);
+        // Add delay before each API call (except the first one)
+        if (index > 0) {
+          console.log(`Waiting ${DELAY_BETWEEN_CALLS_MS}ms before generating image ${index + 1}...`);
+          await delay(DELAY_BETWEEN_CALLS_MS);
+        }
+
+        console.log(`Generating image ${index + 1}/${numberOfImages}...`);
+
+        // Call Gemini API with retry logic
+        const generatedImageData = await retryWithBackoff(
+          () => callGeminiAPI(requestBody.userPhoto, prompt)
+        );
 
         // Upload to storage
         const publicUrl = await uploadToStorage(supabase, generatedImageData, requestBody.userResultId, index);
 
         console.log(`Image ${index + 1}/${numberOfImages} uploaded: ${publicUrl}`);
 
-        return {
+        generatedImages.push({
           url: publicUrl,
           prompt,
-        };
+        });
       } catch (error) {
         console.error(`Error generating image ${index + 1}:`, error);
         throw error;
       }
-    });
-
-    // Wait for all images to be generated
-    const generatedImages = await Promise.all(imagePromises);
+    }
 
     console.log(`Successfully generated ${generatedImages.length} image(s)`);
 

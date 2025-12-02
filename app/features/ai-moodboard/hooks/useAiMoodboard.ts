@@ -101,7 +101,7 @@ export const useAiMoodboard = ({
         // Build prompt
         const prompt = buildImagePrompt(tribeData);
 
-        // Generate 3 images
+        // Generate 3 images with sequential processing and retry logic
         const images = await geminiImageService.generateImages({
           prompt,
           userPhoto,
