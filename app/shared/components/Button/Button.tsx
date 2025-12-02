@@ -3,7 +3,7 @@ import type { ButtonProps } from "./types";
 
 const variantStyles: Record<NonNullable<ButtonProps["variant"]>, string> = {
   primary:
-    "bg-neutral-dark text-neutral-white font-['Inter'] font-normal text-[14px] leading-[normal] px-[20px] py-[8px] rounded-[8px] cursor-pointer transition-all duration-150 ease-out hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]",
+    "bg-neutral-dark text-neutral-white font-['Inter'] font-normal text-[14px] leading-[normal] h-[52px] px-[20px] rounded-[8px] cursor-pointer transition-all duration-150 ease-out hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-[10px]",
   secondary:
     "bg-transparent text-neutral-dark font-['Inter'] font-normal text-[14px] leading-[normal] border-[0.5px] border-solid border-primary px-[20px] py-[8px] rounded-[8px] cursor-pointer transition-all duration-150 ease-out hover:bg-primary/5 hover:scale-[1.02] active:scale-[0.98]",
   tertiary:
