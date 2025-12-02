@@ -7,10 +7,12 @@ import { Input } from '~/shared/components/Input/Input';
 import { Button } from '~/shared/components/Button/Button';
 import { Title } from '~/shared/components/Typography/Title';
 import { Body } from '~/shared/components/Typography/Body';
+import { useScrollToTop } from '~/shared/hooks/useScrollToTop';
 import type { NameScreenProps } from '../types';
 import { staggerContainerVariants, staggerItemVariants } from '~/shared/animations/transitions';
 
 export const NameScreen: FC<NameScreenProps> = ({ onBack, onContinue, isLoading }) => {
+  useScrollToTop();
   const [name, setName] = useState('');
 
   const isNameValid = name.trim().length > 0;

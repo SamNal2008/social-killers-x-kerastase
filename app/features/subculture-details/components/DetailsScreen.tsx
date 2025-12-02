@@ -44,9 +44,9 @@ export const DetailsScreen: FC<DetailsScreenProps> = ({ userResultId }) => {
   }
 
   return (
-    <div className="min-h-screen p-6 bg-surface-light md:p-8">
+    <div className="min-h-screen p-6 bg-surface-light md:p-8 lg:p-12">
       <motion.div
-        className="flex flex-col w-full max-w-[345px] gap-10 mx-auto md:max-w-4xl md:gap-12"
+        className="flex flex-col w-full max-w-[345px] gap-12 mx-auto md:max-w-2xl md:gap-16 lg:max-w-4xl"
         variants={staggerContainerVariants}
         initial="hidden"
         animate="show"
@@ -65,9 +65,9 @@ export const DetailsScreen: FC<DetailsScreenProps> = ({ userResultId }) => {
         </motion.div>
 
         {/* Main Content */}
-        <div className="flex w-full flex-col gap-16">
+        <div className="flex w-full flex-col gap-12 md:gap-16">
           {/* Header Section */}
-          <div className="flex w-full flex-col gap-4 items-center">
+          <div className="flex w-full flex-col gap-6 items-center">
             <motion.div variants={staggerItemVariants}>
               <Caption
                 variant="1"
@@ -79,7 +79,7 @@ export const DetailsScreen: FC<DetailsScreenProps> = ({ userResultId }) => {
 
             <motion.div
               variants={staggerItemVariants}
-              className="flex w-full items-center justify-center"
+              className="flex w-full items-center justify-center px-4"
             >
               <Title variant="h0" className="text-center text-neutral-dark">
                 {tribeData.subcultureName || tribeData.name}
@@ -92,11 +92,11 @@ export const DetailsScreen: FC<DetailsScreenProps> = ({ userResultId }) => {
             variants={staggerItemVariants}
             className="flex w-full items-center justify-center"
           >
-            <div className="h-[1px] w-[128px] bg-gradient-to-r from-transparent via-[#c9a961] to-transparent" />
+            <div className="h-[1px] w-[128px] bg-gradient-to-r from-transparent via-primary to-transparent opacity-60" />
           </motion.div>
 
-          {/* Content Section: Subtitle, Description, Do's & Don'ts */}
-          <div className="flex w-full flex-col gap-6 items-center">
+          {/* Content Section: Subtitle, Description */}
+          <div className="flex w-full flex-col gap-8 items-center">
             {/* Subtitle */}
             <motion.div
               variants={staggerItemVariants}
@@ -104,7 +104,7 @@ export const DetailsScreen: FC<DetailsScreenProps> = ({ userResultId }) => {
             >
               <Title
                 variant="h2"
-                className="max-w-[322px] text-center text-neutral-dark"
+                className="max-w-[322px] text-center text-neutral-dark md:max-w-md"
               >
                 {tribeData.subtitle}
               </Title>
@@ -117,7 +117,7 @@ export const DetailsScreen: FC<DetailsScreenProps> = ({ userResultId }) => {
             >
               <Body
                 variant="1"
-                className="max-w-[322px] text-center text-neutral-dark"
+                className="max-w-[322px] text-center text-neutral-dark leading-[150%] md:max-w-lg md:leading-[160%]"
               >
                 {tribeData.description}
               </Body>
@@ -127,22 +127,22 @@ export const DetailsScreen: FC<DetailsScreenProps> = ({ userResultId }) => {
           {/* Do's and Don'ts Section */}
           <motion.div
             variants={staggerItemVariants}
-            className="flex w-full gap-12"
+            className="flex w-full flex-col gap-10 md:flex-row md:gap-12 lg:gap-16"
           >
             {/* DO Column */}
-            <div className="flex-1 flex flex-col gap-4 items-center">
+            <div className="flex-1 flex flex-col gap-6 items-center md:items-start">
               <Title
                 variant="h3"
-                className="text-neutral-dark text-center max-w-[322px] font-semibold"
+                className="text-neutral-dark text-center font-semibold md:text-left"
               >
                 DO
               </Title>
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-3 w-full">
                 {tribeData.dos.map((doItem, index) => (
                   <Body
                     key={`do-${index}`}
                     variant="2"
-                    className="text-center text-neutral-dark"
+                    className="text-center text-neutral-dark leading-[150%] md:text-left"
                   >
                     {doItem}
                   </Body>
@@ -151,19 +151,19 @@ export const DetailsScreen: FC<DetailsScreenProps> = ({ userResultId }) => {
             </div>
 
             {/* DON'T Column */}
-            <div className="flex-1 flex flex-col gap-4 items-center">
+            <div className="flex-1 flex flex-col gap-6 items-center md:items-start">
               <Title
                 variant="h3"
-                className="text-neutral-dark text-center font-bold"
+                className="text-neutral-dark text-center font-semibold md:text-left"
               >
                 DON'T
               </Title>
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-3 w-full">
                 {tribeData.donts.map((dontItem, index) => (
                   <Body
                     key={`dont-${index}`}
                     variant="2"
-                    className="text-center text-neutral-dark"
+                    className="text-center text-neutral-dark leading-[150%] md:text-left"
                   >
                     {dontItem}
                   </Body>
@@ -173,10 +173,10 @@ export const DetailsScreen: FC<DetailsScreenProps> = ({ userResultId }) => {
           </motion.div>
 
           {/* Generate AI Moodboard Button */}
-          <motion.div variants={staggerItemVariants} className="w-full">
+          <motion.div variants={staggerItemVariants} className="w-full mt-4">
             <Button
               variant="primary"
-              className="w-full h-[52px] flex items-center justify-center"
+              className="w-full h-[52px] flex items-center justify-center md:h-[56px]"
               onClick={handleGenerateMoodboard}
             >
               Generate my AI moodboard
