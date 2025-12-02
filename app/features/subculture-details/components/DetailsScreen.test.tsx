@@ -17,16 +17,6 @@ describe('DetailsScreen', () => {
     (useNavigate as jest.Mock).mockReturnValue(mockNavigate);
   });
 
-  it('should display loading state initially', () => {
-    (tribeService.fetchTribeByUserResultId as jest.Mock).mockImplementation(
-      () => new Promise(() => { })
-    );
-
-    render(<DetailsScreen userResultId="test-123" />);
-
-    expect(screen.getByText(/loading/i)).toBeInTheDocument();
-  });
-
   it('should display tribe name when loaded', async () => {
     const mockData = {
       id: 'tribe-123',

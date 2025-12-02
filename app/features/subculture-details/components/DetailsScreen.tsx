@@ -22,16 +22,6 @@ export const DetailsScreen: FC<DetailsScreenProps> = ({ userResultId }) => {
     navigate('/camera');
   };
 
-  if (loadingState === 'loading') {
-    return (
-      <div className="flex min-h-screen items-center justify-center p-6 bg-surface-light md:p-8">
-        <Body variant="1" className="text-neutral-gray">
-          Loading your tribe...
-        </Body>
-      </div>
-    );
-  }
-
   if (loadingState === 'error') {
     return (
       <div className="flex min-h-screen items-center justify-center p-6 bg-surface-light md:p-8">

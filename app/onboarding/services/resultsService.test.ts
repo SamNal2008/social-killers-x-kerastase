@@ -48,6 +48,17 @@ describe('resultsService', () => {
                 },
             ];
 
+            const mockTribeSubcultures = [
+                {
+                    tribe_id: 'tribe-789',
+                    subculture_id: 'sub-1',
+                    subculture: {
+                        id: 'sub-1',
+                        name: 'Legacist'
+                    }
+                }
+            ];
+
             const mockUserResultQuery = {
                 select: jest.fn().mockReturnThis(),
                 eq: jest.fn().mockReturnThis(),
@@ -66,9 +77,17 @@ describe('resultsService', () => {
                 }),
             };
 
+            const mockSubculturesQuery = {
+                select: jest.fn().mockResolvedValue({
+                    data: mockTribeSubcultures,
+                    error: null,
+                }),
+            };
+
             (supabase.from as jest.Mock)
                 .mockReturnValueOnce(mockUserResultQuery)
-                .mockReturnValueOnce(mockTribesQuery);
+                .mockReturnValueOnce(mockTribesQuery)
+                .mockReturnValueOnce(mockSubculturesQuery);
 
             const result = await resultsService.fetchUserResult('result-123');
 
@@ -78,6 +97,8 @@ describe('resultsService', () => {
                     userId: 'user-456',
                     dominantTribeId: 'tribe-789',
                     dominantTribeName: 'Minimalist',
+                    dominantSubcultureId: 'sub-1',
+                    dominantSubcultureName: 'Legacist',
                     createdAt: '2025-12-01T00:00:00Z',
                 },
                 tribePercentages: [
@@ -92,6 +113,13 @@ describe('resultsService', () => {
                         percentage: 30.2,
                     },
                 ],
+                subculturePercentages: [
+                    {
+                        subcultureId: 'sub-1',
+                        subcultureName: 'Legacist',
+                        percentage: 45.5
+                    }
+                ]
             });
         });
 

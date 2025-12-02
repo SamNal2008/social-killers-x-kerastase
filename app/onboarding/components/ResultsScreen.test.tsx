@@ -166,4 +166,42 @@ describe('ResultsScreen', () => {
 
         expect(mockNavigate).toHaveBeenCalledWith('/details?userResultId=test-123');
     });
+
+    it('should show loading spinner in button when "Let\'s deep dive" is clicked', async () => {
+        const mockData = {
+            userResult: {
+                id: 'result-123',
+                userId: 'user-456',
+                dominantTribeId: 'tribe-789',
+                dominantTribeName: 'Minimalist',
+                dominantSubcultureId: 'subculture-1',
+                dominantSubcultureName: 'Legacist',
+                createdAt: '2025-12-01T00:00:00Z',
+            },
+            tribePercentages: [],
+            subculturePercentages: [
+                {
+                    subcultureId: 'subculture-1',
+                    subcultureName: 'Legacist',
+                    percentage: 80,
+                },
+            ],
+        };
+
+        (resultsService.fetchUserResult as jest.Mock).mockResolvedValue(mockData);
+
+        render(<ResultsScreen userResultId="test-123" />);
+
+        await waitFor(() => {
+            expect(screen.getByRole('heading', { name: 'Your subculture matches' })).toBeInTheDocument();
+        });
+
+        const deepDiveButton = screen.getByRole('button', { name: /let's deep dive/i });
+
+        // Click the button
+        await userEvent.click(deepDiveButton);
+
+        // Button should be disabled after click
+        expect(deepDiveButton).toBeDisabled();
+    });
 });

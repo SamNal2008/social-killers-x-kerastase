@@ -2,6 +2,7 @@ import type { FC } from 'react';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
+import { LoaderCircle } from 'lucide-react';
 import { ProgressIndicator } from '~/shared/components/ProgressIndicator/ProgressIndicator';
 import { Title } from "~/shared/components/Typography/Title";
 import { Body } from "~/shared/components/Typography/Body";
@@ -19,6 +20,7 @@ export const ResultsScreen: FC<ResultsScreenProps> = ({ userResultId }) => {
     const [resultsData, setResultsData] = useState<ResultsData | null>(null);
     const [loadingState, setLoadingState] = useState<LoadingState>('loading');
     const [error, setError] = useState<Error | null>(null);
+    const [isNavigating, setIsNavigating] = useState<boolean>(false);
 
     useEffect(() => {
         const fetchResults = async () => {
@@ -37,6 +39,7 @@ export const ResultsScreen: FC<ResultsScreenProps> = ({ userResultId }) => {
     }, [userResultId]);
 
     const handleDeepDive = () => {
+        setIsNavigating(true);
         navigate(`/details?userResultId=${userResultId}`);
     };
 
@@ -193,9 +196,11 @@ export const ResultsScreen: FC<ResultsScreenProps> = ({ userResultId }) => {
                     >
                         <Button
                             variant="primary"
-                            className="w-full h-[52px] flex items-center justify-center"
+                            className="w-full h-[52px] flex items-center justify-center gap-2"
                             onClick={handleDeepDive}
+                            disabled={isNavigating}
                         >
+                            {isNavigating && <LoaderCircle className="w-5 h-5 animate-spin" />}
                             Let's deep dive
                         </Button>
                     </motion.div>
