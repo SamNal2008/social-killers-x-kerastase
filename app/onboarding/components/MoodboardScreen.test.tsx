@@ -109,8 +109,7 @@ describe('MoodboardScreen', () => {
     it('should render FormHeader with correct step (2/4)', () => {
         render(<MoodboardScreen onBack={mockOnBack} onContinue={mockOnContinue} moodboards={mockMoodboards} />);
 
-        // Check for step indicator - looking for "2" and "4"
-        expect(screen.getByText(/2/)).toBeInTheDocument();
-        expect(screen.getByText(/4/)).toBeInTheDocument();
+        // Check for step indicator text "Step 2 / 4"
+        expect(screen.getByText(/step\s+2\s+\/\s+4/i)).toBeInTheDocument();
     });
 });

@@ -1,4 +1,5 @@
 import type { Tables } from '~/shared/types/database.types';
+import type { Moodboard } from '~/shared/services/moodboardService';
 
 export type PageType = 'WelcomePage' | 'NamePage' | 'KeywordPage' | 'TinderPage' | 'MoodboardPage' | 'ResultsPage';
 
@@ -15,7 +16,7 @@ export interface FormData {
 export interface MoodboardScreenProps {
   onBack: () => void;
   onContinue: (moodboardId: string) => void;
-  moodboards: Tables<'moodboards'>[];
+  moodboards: Moodboard[];
   isLoading?: boolean;
   isError?: boolean;
   error?: Error;
