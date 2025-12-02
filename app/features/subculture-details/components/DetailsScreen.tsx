@@ -111,7 +111,7 @@ export const DetailsScreen: FC<DetailsScreenProps> = ({ userResultId }) => {
             {/* Description */}
             <Body
               variant="1"
-              className="text-center text-neutral-dark leading-[150%] w-[322px]"
+              className="text-center text-neutral-dark leading-[170%] w-[322px]"
             >
               {tribeData.description}
             </Body>
