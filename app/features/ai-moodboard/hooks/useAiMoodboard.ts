@@ -39,38 +39,48 @@ export const useAiMoodboard = ({
       .from('user_results')
       .select(`
         id,
-        dominant_tribe:tribes!user_results_dominant_tribe_id_fkey(
+        tribe:tribes!user_results_tribe_id_fkey(
           id,
           name
         ),
-        subculture:subcultures(
-          id,
-          name
-        ),
-        user_result_tribes(
-          tribe:tribes(id, name)
+        user_answer:user_answers!user_results_user_answer_id_fkey(
+          moodboard:moodboards!user_answers_moodboard_id_fkey(
+            subculture:subcultures!moodboards_subculture_id_fkey(
+              id,
+              name
+            )
+          )
         )
       `)
       .eq('id', userResultId)
       .single();
 
     if (error || !data) {
+      console.error('Supabase query error:', error);
       throw new Error('Failed to fetch user result data');
     }
 
     // Extract tribe information
-    const dominantTribe = data.dominant_tribe as unknown as { id: string; name: string } | null;
-    const subculture = data.subculture as unknown as { id: string; name: string } | null;
+    const tribe = data.tribe as unknown as { id: string; name: string } | null;
+    const userAnswer = data.user_answer as unknown as {
+      moodboard: {
+        subculture: { id: string; name: string } | null;
+      } | null;
+    } | null;
 
-    if (!dominantTribe || !subculture) {
-      throw new Error('Missing tribe or subculture data');
+    if (!tribe) {
+      throw new Error('Missing tribe data');
+    }
+
+    if (!userAnswer?.moodboard?.subculture) {
+      throw new Error('Missing subculture data');
     }
 
     // For now, use empty keywords array (will be enhanced later)
     return {
-      tribeId: dominantTribe.id,
-      tribeName: dominantTribe.name,
-      subcultureName: subculture.name,
+      tribeId: tribe.id,
+      tribeName: tribe.name,
+      subcultureName: userAnswer.moodboard.subculture.name,
       keywords: [],
     };
   }, [userResultId]);

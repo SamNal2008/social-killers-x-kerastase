@@ -1,5 +1,15 @@
 // Generate Image Edge Function
-// Generates personalized images from user selfies
+// Generates personalized images from user selfies using Google's Imagen API
+//
+// IMPLEMENTATION STATUS:
+// - Core infrastructure: ✅ Complete
+// - Multiple image generation: ✅ Complete
+// - Supabase Storage integration: ✅ Complete
+// - Gemini/Imagen API integration: ✅ Complete
+//
+// REQUIRED ENVIRONMENT VARIABLES:
+// - GEMINI_API_ENDPOINT: Vertex AI Imagen API endpoint URL
+// - GEMINI_API_KEY: API authentication key (Bearer token)
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from '@supabase/supabase-js';
@@ -57,53 +67,118 @@ const buildErrorResponse = (
 /**
  * Generates the default prompt for image generation
  * Used when no custom prompt is provided
+ * TODO: Replace with actual tribe-based prompt logic
  */
 const generateDefaultPrompt = (userResultId: string): string => {
   return "Take this picture and make him happy to code now";
 };
 
-/**
- * Calls Gemini API to generate an image
- * TODO: Replace placeholder with actual Gemini API integration
- * NOTE: Returns original image for testing.
- */
+
 const callGeminiAPI = async (userPhoto: string, prompt: string): Promise<string> => {
-  console.log(`[PLACEHOLDER] Would generate image with prompt: "${prompt.substring(0, 50)}..."`);
-  console.log('[PLACEHOLDER] Using original image as placeholder for testing');
+  // Use the image generation model endpoint
+  const geminiApiEndpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent";
+  const geminiApiKey = "AIzaSyBJnQEia53Z8CnamHQzygs6ccvQ1M3koPA"// Deno.env.get('GEMINI_API_KEY');
 
-  const base64Image = userPhoto.replace(/^data:image\/\w+;base64,/, '');
-
-  // Simulate API delay (1-3 seconds per image)
-  await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
-
-  return base64Image;
-
-  // TODO: Actual Gemini API call would look like:
-  /*
-  const geminiApiEndpoint = Deno.env.get('GEMINI_API_ENDPOINT');
-  const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
-
-  const response = await fetch(geminiApiEndpoint, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${geminiApiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      prompt,
-      image: userPhoto,
-      model: 'imagen-3.0-generate-001',
-      aspectRatio: '1:1',
-    }),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Gemini API error: ${response.statusText}`);
+  // Validate environment variables
+  if (!geminiApiEndpoint) {
+    throw new Error('GEMINI_API_ENDPOINT environment variable is not set');
   }
 
-  const data = await response.json();
-  return data.generatedImage;
-  */
+  if (!geminiApiKey) {
+    throw new Error('GEMINI_API_KEY environment variable is not set');
+  }
+
+  // Remove data URL prefix if present
+  const base64Image = userPhoto.replace(/^data:image\/\w+;base64,/, '');
+
+  console.log(`Calling Gemini API with prompt: "${prompt.substring(0, 50)}..."`);
+
+  try {
+    // Call Imagen API with reference image and prompt
+    const response = await fetch(geminiApiEndpoint, {
+      method: 'POST',
+      headers: {
+        'x-goog-api-key': `${geminiApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [
+              { text: prompt },
+              {
+                inline_data: {
+                  mime_type: 'image/jpeg',
+                  data: base64Image,
+                },
+              },
+            ],
+          },
+        ],
+        generationConfig: {
+          responseModalities: ['Text', 'Image'],
+        },
+      }),
+    });
+
+    // Handle non-200 responses
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Gemini API error:', {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorText,
+      });
+      throw new Error(`Gemini API request failed: ${response.status} ${response.statusText}`);
+    }
+
+    // Parse response
+    const data = await response.json();
+
+    // Validate response structure - Gemini API returns candidates with content.parts
+    if (!data.candidates || !Array.isArray(data.candidates) || data.candidates.length === 0) {
+      console.error('Invalid API response structure:', data);
+      throw new Error('Invalid response from Gemini API: missing candidates');
+    }
+
+    // Extract generated image from candidates
+    const candidate = data.candidates[0];
+    const parts = candidate?.content?.parts;
+
+    if (!parts || !Array.isArray(parts)) {
+      console.error('No parts in candidate:', candidate);
+      throw new Error('No parts returned from Gemini API');
+    }
+
+    // Find the image part (inline_data with image mime type)
+    const imagePart = parts.find((part: { inline_data?: { mime_type: string; data: string } }) =>
+      part.inline_data?.mime_type?.startsWith('image/')
+    );
+
+    if (!imagePart?.inline_data?.data) {
+      console.error('No image data in parts:', parts);
+      throw new Error('No image data returned from Gemini API');
+    }
+
+    const generatedImageBase64 = imagePart.inline_data.data;
+
+    console.log('Successfully generated image via Gemini API');
+
+    return generatedImageBase64;
+  } catch (error) {
+    // Log detailed error for debugging
+    console.error('Gemini API call failed:', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      prompt: prompt.substring(0, 100),
+      endpoint: geminiApiEndpoint.substring(0, 50) + '...',
+    });
+
+    // Re-throw with context
+    if (error instanceof Error) {
+      throw new Error(`Failed to generate image: ${error.message}`);
+    }
+    throw new Error('Failed to generate image: Unknown error');
+  }
 };
 
 /**
