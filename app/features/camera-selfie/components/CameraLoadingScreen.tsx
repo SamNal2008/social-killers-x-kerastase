@@ -4,11 +4,21 @@ import { Title } from '~/shared/components/Typography/Title';
 import { Body } from '~/shared/components/Typography/Body';
 import { staggerContainerVariants, staggerItemVariants } from '~/shared/animations/transitions';
 
-export const CameraLoadingScreen: FC = () => {
+interface CameraLoadingScreenProps {
+    title?: string;
+    subtitle?: string;
+    compact?: boolean;
+}
+
+export const CameraLoadingScreen: FC<CameraLoadingScreenProps> = ({
+    title = "Creating your moodboard",
+    subtitle = "We're generating a personalized visual experience based on your tribe...",
+    compact = false
+}) => {
     return (
-        <div className="bg-surface-light min-h-screen p-6 md:p-8 flex items-center justify-center">
+        <div className={compact ? "flex items-center justify-center h-full" : "bg-surface-light min-h-screen p-6 md:p-8 flex items-center justify-center"}>
             <motion.div
-                className="flex flex-col gap-10 md:gap-12 w-full max-w-[345px] md:max-w-4xl mx-auto items-center"
+                className={compact ? "flex flex-col gap-6 w-full items-center" : "flex flex-col gap-10 md:gap-12 w-full max-w-[345px] md:max-w-4xl mx-auto items-center"}
                 variants={staggerContainerVariants}
                 initial="hidden"
                 animate="show"
@@ -16,7 +26,7 @@ export const CameraLoadingScreen: FC = () => {
                 {/* Loading Animation */}
                 <motion.div
                     variants={staggerItemVariants}
-                    className="relative w-32 h-32 md:w-40 md:h-40"
+                    className={compact ? "relative w-24 h-24" : "relative w-32 h-32 md:w-40 md:h-40"}
                 >
                     {/* Outer rotating circle */}
                     <motion.div
@@ -46,23 +56,27 @@ export const CameraLoadingScreen: FC = () => {
                             ease: "easeInOut",
                         }}
                     >
-                        <div className="w-12 h-12 md:w-16 md:h-16 bg-primary rounded-full" />
+                        <div className={compact ? "w-8 h-8 bg-primary rounded-full" : "w-12 h-12 md:w-16 md:h-16 bg-primary rounded-full"} />
                     </motion.div>
                 </motion.div>
 
                 {/* Text Content */}
                 <div className="flex flex-col gap-4 w-full text-center">
-                    <motion.div variants={staggerItemVariants}>
-                        <Title variant="h2" className="text-neutral-dark">
-                            Creating your moodboard
-                        </Title>
-                    </motion.div>
+                    {title && (
+                        <motion.div variants={staggerItemVariants}>
+                            <Title variant="h2" className="text-neutral-dark">
+                                {title}
+                            </Title>
+                        </motion.div>
+                    )}
 
-                    <motion.div variants={staggerItemVariants}>
-                        <Body variant="1" className="text-neutral-gray">
-                            We're generating a personalized visual experience based on your tribe...
-                        </Body>
-                    </motion.div>
+                    {subtitle && (
+                        <motion.div variants={staggerItemVariants}>
+                            <Body variant="1" className="text-neutral-gray">
+                                {subtitle}
+                            </Body>
+                        </motion.div>
+                    )}
                 </div>
 
                 {/* Progress dots */}

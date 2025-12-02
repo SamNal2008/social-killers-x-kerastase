@@ -6,6 +6,7 @@ import { Polaroid } from '~/shared/components/Polaroid/Polaroid';
 import { CircleButton } from '~/shared/components/CircleButton/CircleButton';
 import { Title } from '~/shared/components/Typography/Title';
 import { Body } from '~/shared/components/Typography/Body';
+import { CameraLoadingScreen } from '~/features/camera-selfie/components/CameraLoadingScreen';
 import type { TinderScreenProps, Brand } from '../types';
 import {
     swipeCardVariants,
@@ -305,11 +306,11 @@ export const TinderScreen: FC<TinderScreenProps> = ({ onBack, onContinue }) => {
                                 />
                             </>
                         ) : (
-                            <div className="flex items-center justify-center h-full w-full bg-neutral-white rounded-lg shadow-sm">
-                                <Title variant="h1" className="text-neutral-gray text-center">
-                                    All done!
-                                </Title>
-                            </div>
+                            <CameraLoadingScreen
+                                title=""
+                                subtitle="Analyzing your results"
+                                compact={true}
+                            />
                         )}
                     </div>
 
