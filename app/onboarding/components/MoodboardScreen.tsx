@@ -7,10 +7,12 @@ import { MoodboardCard } from './MoodboardCard';
 import { Button } from '~/shared/components/Button/Button';
 import { Title } from '~/shared/components/Typography/Title';
 import { Body } from '~/shared/components/Typography/Body';
+import { useScrollToTop } from '~/shared/hooks/useScrollToTop';
 import type { MoodboardScreenProps } from '../types';
 import { staggerContainerVariants, staggerItemVariants } from '~/shared/animations/transitions';
 
 export const MoodboardScreen: FC<MoodboardScreenProps> = ({ onBack, onContinue, moodboards, isLoading, isError, error }) => {
+  useScrollToTop();
   const [selectedMoodboardId, setSelectedMoodboardId] = useState<string | null>(null);
 
   const handleMoodboardClick = (id: string) => {
@@ -26,7 +28,7 @@ export const MoodboardScreen: FC<MoodboardScreenProps> = ({ onBack, onContinue, 
   return (
     <div className="bg-surface-light min-h-screen p-6 md:p-8">
       <motion.div
-        className="flex flex-col gap-10 md:gap-12 w-full max-w-[345px] md:max-w-4xl mx-auto"
+        className="flex flex-col gap-10 md:gap-12 w-full max-w-[345px] md:max-w-3xl lg:max-w-5xl mx-auto"
         variants={staggerContainerVariants}
         initial="hidden"
         animate="show"
@@ -67,10 +69,9 @@ export const MoodboardScreen: FC<MoodboardScreenProps> = ({ onBack, onContinue, 
             variants={staggerItemVariants}
             className="
               grid
-              grid-cols-2
+              grid-cols-1
               gap-4
-              md:grid-cols-3 md:gap-5
-              lg:grid-cols-4 lg:gap-6
+              lg:grid-cols-2 lg:gap-6
               w-full
             "
           >

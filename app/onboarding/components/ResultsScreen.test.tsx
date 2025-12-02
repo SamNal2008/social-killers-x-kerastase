@@ -17,14 +17,174 @@ describe('ResultsScreen', () => {
         (useNavigate as jest.Mock).mockReturnValue(mockNavigate);
     });
 
-    it('should display loading state initially', () => {
+    it('should show ResultsScreenSkeleton when loading', () => {
         (resultsService.fetchUserResult as jest.Mock).mockImplementation(
             () => new Promise(() => { })
         );
 
         render(<ResultsScreen userResultId="test-123" />);
 
-        expect(screen.getByText(/loading/i)).toBeInTheDocument();
+        const skeleton = screen.getByTestId('results-skeleton');
+        expect(skeleton).toBeInTheDocument();
+        expect(skeleton).toHaveAttribute('aria-busy', 'true');
+    });
+
+    it('should display skeleton for at least 500ms even on fast load', async () => {
+        jest.useFakeTimers();
+
+        // Fast load - resolves in 100ms
+        (resultsService.fetchUserResult as jest.Mock).mockImplementation(
+            () => new Promise((resolve) => {
+                setTimeout(() => {
+                    resolve({
+                        userResult: {
+                            id: 'result-123',
+                            userId: 'user-456',
+                            dominantTribeId: 'tribe-789',
+                            dominantTribeName: 'Minimalist',
+                            dominantSubcultureId: 'subculture-1',
+                            dominantSubcultureName: 'Legacist',
+                            createdAt: '2025-12-01T00:00:00Z',
+                        },
+                        tribePercentages: [],
+                        subculturePercentages: [{
+                            subcultureId: 'subculture-1',
+                            subcultureName: 'Legacist',
+                            percentage: 80,
+                        }],
+                    });
+                }, 100);
+            })
+        );
+
+        render(<ResultsScreen userResultId="test-123" />);
+
+        // Should show skeleton initially
+        expect(screen.getByTestId('results-skeleton')).toBeInTheDocument();
+
+        // Fast forward 100ms - data loaded but skeleton should still show
+        jest.advanceTimersByTime(100);
+        await waitFor(() => {
+            expect(screen.getByTestId('results-skeleton')).toBeInTheDocument();
+        });
+
+        // Fast forward remaining time to reach 500ms minimum
+        jest.advanceTimersByTime(400);
+
+        await waitFor(() => {
+            expect(screen.queryByTestId('results-skeleton')).not.toBeInTheDocument();
+            expect(screen.getByRole('heading', { name: 'Your subculture matches' })).toBeInTheDocument();
+        });
+
+        jest.useRealTimers();
+    });
+
+    it('should replace skeleton with real content after data loads', async () => {
+        const mockData = {
+            userResult: {
+                id: 'result-123',
+                userId: 'user-456',
+                dominantTribeId: 'tribe-789',
+                dominantTribeName: 'Minimalist',
+                dominantSubcultureId: 'subculture-1',
+                dominantSubcultureName: 'Legacist',
+                createdAt: '2025-12-01T00:00:00Z',
+            },
+            tribePercentages: [],
+            subculturePercentages: [{
+                subcultureId: 'subculture-1',
+                subcultureName: 'Legacist',
+                percentage: 80,
+            }],
+        };
+
+        (resultsService.fetchUserResult as jest.Mock).mockResolvedValue(mockData);
+
+        render(<ResultsScreen userResultId="test-123" />);
+
+        // Initially shows skeleton
+        expect(screen.getByTestId('results-skeleton')).toBeInTheDocument();
+
+        // Wait for real content
+        await waitFor(() => {
+            expect(screen.queryByTestId('results-skeleton')).not.toBeInTheDocument();
+            expect(screen.getByRole('heading', { name: 'Your subculture matches' })).toBeInTheDocument();
+        });
+    });
+
+    it('should not show skeleton when error occurs', async () => {
+        (resultsService.fetchUserResult as jest.Mock).mockRejectedValue(
+            new Error('Failed to fetch results')
+        );
+
+        render(<ResultsScreen userResultId="test-123" />);
+
+        await waitFor(() => {
+            expect(screen.queryByTestId('results-skeleton')).not.toBeInTheDocument();
+            expect(screen.getByText(/error/i)).toBeInTheDocument();
+        });
+    });
+
+    it('should handle slow data fetch correctly (> 500ms)', async () => {
+        jest.useFakeTimers();
+
+        const mockData = {
+            userResult: {
+                id: 'result-123',
+                userId: 'user-456',
+                dominantTribeId: 'tribe-789',
+                dominantTribeName: 'Minimalist',
+                dominantSubcultureId: 'subculture-1',
+                dominantSubcultureName: 'Legacist',
+                createdAt: '2025-12-01T00:00:00Z',
+            },
+            tribePercentages: [],
+            subculturePercentages: [{
+                subcultureId: 'subculture-1',
+                subcultureName: 'Legacist',
+                percentage: 80,
+            }],
+        };
+
+        // Slow load - resolves in 1000ms
+        (resultsService.fetchUserResult as jest.Mock).mockImplementation(
+            () => new Promise((resolve) => {
+                setTimeout(() => resolve(mockData), 1000);
+            })
+        );
+
+        render(<ResultsScreen userResultId="test-123" />);
+
+        // Skeleton should show during entire loading period
+        expect(screen.getByTestId('results-skeleton')).toBeInTheDocument();
+
+        jest.advanceTimersByTime(1000);
+
+        await waitFor(() => {
+            expect(screen.queryByTestId('results-skeleton')).not.toBeInTheDocument();
+            expect(screen.getByRole('heading', { name: 'Your subculture matches' })).toBeInTheDocument();
+        });
+
+        jest.useRealTimers();
+    });
+
+    it('should have skeleton layout matching real content layout', () => {
+        (resultsService.fetchUserResult as jest.Mock).mockImplementation(
+            () => new Promise(() => { })
+        );
+
+        render(<ResultsScreen userResultId="test-123" />);
+
+        const skeleton = screen.getByTestId('results-skeleton');
+
+        // Check container classes match
+        expect(skeleton).toHaveClass('bg-surface-light');
+        expect(skeleton).toHaveClass('min-h-screen');
+
+        // Check inner container
+        const innerContainer = screen.getByTestId('results-skeleton-inner');
+        expect(innerContainer).toHaveClass('max-w-[345px]');
+        expect(innerContainer).toHaveClass('md:max-w-4xl');
     });
 
     it('should display user results when loaded successfully', async () => {

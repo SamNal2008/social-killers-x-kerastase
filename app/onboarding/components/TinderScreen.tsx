@@ -7,6 +7,7 @@ import { CircleButton } from '~/shared/components/CircleButton/CircleButton';
 import { Title } from '~/shared/components/Typography/Title';
 import { Body } from '~/shared/components/Typography/Body';
 import { CameraLoadingScreen } from '~/features/camera-selfie/components/CameraLoadingScreen';
+import { useScrollToTop } from '~/shared/hooks/useScrollToTop';
 import type { TinderScreenProps, Brand } from '../types';
 import {
     swipeCardVariants,
@@ -147,6 +148,7 @@ const ActiveCard: FC<{
 };
 
 export const TinderScreen: FC<TinderScreenProps> = ({ onBack, onContinue, brands }) => {
+    useScrollToTop();
     const [currentIndex, setCurrentIndex] = useState(0);
     const [likedBrands, setLikedBrands] = useState<string[]>([]);
     const [passedBrands, setPassedBrands] = useState<string[]>([]);

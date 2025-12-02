@@ -44,9 +44,9 @@ export const DetailsScreen: FC<DetailsScreenProps> = ({ userResultId }) => {
   }
 
   return (
-    <div className="min-h-screen p-6 bg-surface-light md:p-8">
+    <div className="min-h-screen p-6 bg-surface-light">
       <motion.div
-        className="flex flex-col w-full max-w-[345px] gap-10 mx-auto md:max-w-4xl md:gap-12"
+        className="flex flex-col w-full max-w-[345px] gap-10 mx-auto"
         variants={staggerContainerVariants}
         initial="hidden"
         animate="show"
@@ -65,7 +65,7 @@ export const DetailsScreen: FC<DetailsScreenProps> = ({ userResultId }) => {
         </motion.div>
 
         {/* Main Content */}
-        <div className="flex w-full flex-col gap-16">
+        <div className="flex w-full flex-col gap-12">
           {/* Header Section */}
           <div className="flex w-full flex-col gap-4 items-center">
             <motion.div variants={staggerItemVariants}>
@@ -79,94 +79,87 @@ export const DetailsScreen: FC<DetailsScreenProps> = ({ userResultId }) => {
 
             <motion.div
               variants={staggerItemVariants}
-              className="flex w-full items-center justify-center"
+              className="flex w-full items-center justify-center px-0.5"
             >
-              <Title variant="h0" className="text-center text-neutral-dark">
+              <Title variant="h0" className="text-center text-neutral-dark w-[341px]">
                 {tribeData.subcultureName || tribeData.name}
               </Title>
             </motion.div>
+
+            {/* Decorative Line */}
+            <motion.div
+              variants={staggerItemVariants}
+              className="flex w-full items-center justify-center"
+            >
+              <div className="h-[1px] w-[128px] bg-gradient-to-r from-transparent via-primary to-transparent" />
+            </motion.div>
           </div>
 
-          {/* Decorative Line */}
+          {/* Subtitle and Description Section */}
           <motion.div
             variants={staggerItemVariants}
-            className="flex w-full items-center justify-center"
+            className="flex w-full flex-col gap-6 items-start"
           >
-            <div className="h-[1px] w-[128px] bg-gradient-to-r from-transparent via-[#c9a961] to-transparent" />
-          </motion.div>
-
-          {/* Content Section: Subtitle, Description, Do's & Don'ts */}
-          <div className="flex w-full flex-col gap-6 items-center">
             {/* Subtitle */}
-            <motion.div
-              variants={staggerItemVariants}
-              className="flex w-full items-center justify-center"
+            <Title
+              variant="h2"
+              className="text-center text-neutral-dark w-[322px]"
             >
-              <Title
-                variant="h2"
-                className="max-w-[322px] text-center text-neutral-dark"
-              >
-                {tribeData.subtitle}
-              </Title>
-            </motion.div>
+              "{tribeData.subtitle}"
+            </Title>
 
             {/* Description */}
-            <motion.div
-              variants={staggerItemVariants}
-              className="flex w-full items-center justify-center"
+            <Body
+              variant="1"
+              className="text-center text-neutral-dark leading-[170%] w-[322px]"
             >
-              <Body
-                variant="1"
-                className="max-w-[322px] text-center text-neutral-dark"
-              >
-                {tribeData.description}
-              </Body>
-            </motion.div>
-          </div>
+              {tribeData.description}
+            </Body>
+          </motion.div>
 
           {/* Do's and Don'ts Section */}
           <motion.div
             variants={staggerItemVariants}
-            className="flex w-full gap-12"
+            className="flex w-full gap-6"
           >
             {/* DO Column */}
-            <div className="flex-1 flex flex-col gap-4 items-center">
-              <Title
-                variant="h3"
-                className="text-neutral-dark text-center max-w-[322px] font-semibold"
+            <div className="flex-1 flex flex-col gap-4 items-start">
+              <Body
+                variant="1"
+                className="text-neutral-dark w-full"
               >
-                DO
-              </Title>
-              <div className="flex flex-col gap-2">
+                Do
+              </Body>
+              <div className="flex flex-col gap-2 w-full">
                 {tribeData.dos.map((doItem, index) => (
-                  <Body
+                  <Title
                     key={`do-${index}`}
-                    variant="2"
-                    className="text-center text-neutral-dark"
+                    variant="h3"
+                    className="text-neutral-dark w-full"
                   >
                     {doItem}
-                  </Body>
+                  </Title>
                 ))}
               </div>
             </div>
 
             {/* DON'T Column */}
-            <div className="flex-1 flex flex-col gap-4 items-center">
-              <Title
-                variant="h3"
-                className="text-neutral-dark text-center font-bold"
+            <div className="flex-1 flex flex-col gap-4 items-start">
+              <Body
+                variant="1"
+                className="text-neutral-dark w-full"
               >
-                DON'T
-              </Title>
-              <div className="flex flex-col gap-2">
+                Don't
+              </Body>
+              <div className="flex flex-col gap-2 w-full">
                 {tribeData.donts.map((dontItem, index) => (
-                  <Body
+                  <Title
                     key={`dont-${index}`}
-                    variant="2"
-                    className="text-center text-neutral-dark"
+                    variant="h3"
+                    className="text-neutral-dark w-full"
                   >
                     {dontItem}
-                  </Body>
+                  </Title>
                 ))}
               </div>
             </div>

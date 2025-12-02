@@ -7,6 +7,7 @@ import { Badge } from '~/shared/components/Badge/Badge';
 import { Button } from '~/shared/components/Button/Button';
 import { Title } from '~/shared/components/Typography/Title';
 import { Body } from '~/shared/components/Typography/Body';
+import { useScrollToTop } from '~/shared/hooks/useScrollToTop';
 import type { KeywordsScreenProps } from '../types';
 import { staggerContainerVariants, staggerItemVariants } from '~/shared/animations/transitions';
 
@@ -14,6 +15,7 @@ const MIN_KEYWORDS = 3;
 const MAX_KEYWORDS = 10;
 
 export const KeywordsScreen: FC<KeywordsScreenProps> = ({ onBack, onContinue, keywords, isLoading, isError, error }) => {
+  useScrollToTop();
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
 
   const isValidSelection = selectedKeywords.length >= MIN_KEYWORDS && selectedKeywords.length <= MAX_KEYWORDS;
