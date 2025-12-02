@@ -13,7 +13,7 @@ export const useTribeDetails = (userResultId: string) => {
     const fetchTribe = async () => {
       try {
         setLoadingState('loading');
-        const data = await tribeService.fetchTribeByUserResultId(userResultId);
+        const data = await tribeService.fetchTribeWithSubcultureName(userResultId);
         setTribeData(data);
         setLoadingState('success');
       } catch (err) {
