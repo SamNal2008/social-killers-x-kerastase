@@ -5,19 +5,16 @@ import { motion } from 'framer-motion';
 import { Title } from '~/shared/components/Typography/Title';
 import { Body } from '~/shared/components/Typography/Body';
 import { useCamera } from '../hooks/useCamera';
-import { useImageGeneration } from '../hooks/useImageGeneration';
 import { localStorageUtils } from '~/shared/utils/localStorage';
 import { staggerContainerVariants, staggerItemVariants } from '~/shared/animations/transitions';
 import { CameraErrorScreen } from './CameraErrorScreen';
 import { CameraResultSelfie } from './CameraResultSelfie';
-import { CameraLoadingScreen } from './CameraLoadingScreen';
 import { CameraBackButton } from './CameraBackButton';
 
 export const CameraScreen: FC = () => {
   const navigate = useNavigate();
   const videoRef = useRef<HTMLVideoElement>(null);
   const { state, capturedPhoto, requestCameraAccess, stopCamera, capturePhoto, retakePhoto } = useCamera();
-  const { state: imageGenState, generateImage } = useImageGeneration();
 
   useEffect(() => {
     // Request camera access on mount
@@ -50,26 +47,22 @@ export const CameraScreen: FC = () => {
     if (!capturedPhoto) return;
 
     const userResultId = localStorageUtils.getUserResultId();
+    const userName = localStorageUtils.getUserName();
+
     if (!userResultId) {
       console.error('No user result ID found');
       alert('Error: User result not found. Please complete the questionnaire first.');
       return;
     }
 
-    try {
-      const imageUrl = await generateImage({
-        userResultId,
+    // Navigate to AI moodboard screen
+    navigate('/ai-moodboard', {
+      state: {
         userPhoto: capturedPhoto.dataUrl,
-      });
-      console.log('Image generated successfully:', imageUrl);
-      // TODO: Navigate to next screen or show generated image
-      // For now, show success message
-      alert(`Image generated successfully! URL: ${imageUrl}`);
-    } catch (error) {
-      console.error('Failed to generate image:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to generate image';
-      alert(`Error: ${errorMessage}`);
-    }
+        userResultId,
+        userName,
+      },
+    });
   };
 
   // Browser doesn't support camera
@@ -114,11 +107,6 @@ export const CameraScreen: FC = () => {
         </Body>
       </div>
     );
-  }
-
-  // Show loading screen during image generation
-  if (imageGenState.status === 'generating') {
-    return <CameraLoadingScreen />;
   }
 
   // Show captured photo
