@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { AiMoodboardState, TribePromptData, GeneratedImage } from '../types';
 import { geminiImageService } from '../services/geminiImageService';
-import { buildImagePrompt } from '../services/promptService';
 import { supabase } from '~/shared/services/supabase';
 
 interface UseAiMoodboardParams {
@@ -91,15 +90,7 @@ export const useAiMoodboard = ({
   useEffect(() => {
     const generateImages = async () => {
       try {
-        setState({ status: 'loading-tribe' });
-
-        // Fetch tribe data
-        const tribeData = await fetchTribeData();
-
         setState({ status: 'generating' });
-
-        // Build prompt
-        const prompt = buildImagePrompt(tribeData);
 
         // Generate 3 images with sequential processing and retry logic
         const images = await geminiImageService.generateImages({
@@ -117,7 +108,7 @@ export const useAiMoodboard = ({
     };
 
     generateImages();
-  }, [userResultId, userPhoto, fetchTribeData]);
+  }, [userResultId, userPhoto]);
 
   /**
    * Navigation handlers

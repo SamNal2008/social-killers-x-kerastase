@@ -29,9 +29,9 @@ describe('geminiImageService', () => {
           success: true,
           data: {
             images: [
-              { url: 'https://example.com/image1.jpg', prompt: 'prompt 1' },
-              { url: 'https://example.com/image2.jpg', prompt: 'prompt 2' },
-              { url: 'https://example.com/image3.jpg', prompt: 'prompt 3' },
+              { url: 'https://example.com/image1.jpg' },
+              { url: 'https://example.com/image2.jpg' },
+              { url: 'https://example.com/image3.jpg' },
             ],
           },
         },
@@ -55,7 +55,7 @@ describe('geminiImageService', () => {
           success: true,
           data: {
             images: [
-              { url: 'https://example.com/image1.jpg', prompt: 'prompt 1' },
+              { url: 'https://example.com/image1.jpg' },
             ],
           },
         },
@@ -76,17 +76,6 @@ describe('geminiImageService', () => {
           }),
         })
       );
-    });
-
-    it('should throw error when prompt is empty', async () => {
-      const invalidRequest = {
-        ...mockRequest,
-        prompt: '',
-      };
-
-      await expect(
-        geminiImageService.generateImages(invalidRequest)
-      ).rejects.toThrow('Prompt cannot be empty');
     });
 
     it('should throw error when userPhoto is empty', async () => {
@@ -176,9 +165,9 @@ describe('geminiImageService', () => {
           success: true,
           data: {
             images: [
-              { url: 'https://example.com/image1.jpg', prompt: 'prompt 1' },
-              { url: 'https://example.com/image2.jpg', prompt: 'prompt 2' },
-              { url: 'https://example.com/image3.jpg', prompt: 'prompt 3' },
+              { url: 'https://example.com/image1.jpg' },
+              { url: 'https://example.com/image2.jpg' },
+              { url: 'https://example.com/image3.jpg' },
             ],
           },
         },
@@ -203,7 +192,7 @@ describe('geminiImageService', () => {
           success: true,
           data: {
             images: [
-              { url: 'https://example.com/image1.jpg', prompt: 'prompt 1' },
+              { url: 'https://example.com/image1.jpg' },
             ],
           },
         },
