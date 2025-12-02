@@ -171,6 +171,7 @@ export const TinderScreen: FC<TinderScreenProps> = ({ onBack, onContinue }) => {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [likedBrands, setLikedBrands] = useState<string[]>([]);
     const [passedBrands, setPassedBrands] = useState<string[]>([]);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Motion value for background card animation only
     const bgX = useMotionValue(0);
@@ -213,14 +214,13 @@ export const TinderScreen: FC<TinderScreenProps> = ({ onBack, onContinue }) => {
 
     // Auto-advance when all cards are swiped
     useEffect(() => {
-        if (brands.length > 0 && currentIndex === brands.length) {
-            // Small delay to allow the last animation to complete visually if needed, 
-            // though the timeout in handleSwipeComplete already handles the card exit.
-            // We might want to show "All done!" for a split second or just go.
-            // Let's go immediately for now to fix the "stuck" feeling.
+        // Only call onContinue once when all cards are swiped
+        // isSubmitting prevents infinite loop if onContinue causes a re-render (e.g., on error)
+        if (brands.length > 0 && currentIndex === brands.length && !isSubmitting) {
+            setIsSubmitting(true);
             onContinue(likedBrands, passedBrands);
         }
-    }, [currentIndex, onContinue, likedBrands, passedBrands, brands.length]);
+    }, [currentIndex, brands.length, isSubmitting]); // Removed onContinue, likedBrands, passedBrands from deps to prevent re-triggers
 
     if (isLoading) {
         return (

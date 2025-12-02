@@ -213,8 +213,6 @@ Deno.serve(async (req) => {
         brands,
         keywords,
         moodboard:moodboards (
-          name,
-          description,
           subculture_id,
           subculture:subcultures (
             id,
@@ -227,7 +225,8 @@ Deno.serve(async (req) => {
       .single();
 
     if (fetchError || !userAnswer) {
-      throw new Error('User answer not found');
+      console.error('Fetch error details:', fetchError);
+      throw new Error(`User answer not found: ${fetchError?.message || 'No data returned'}`);
     }
 
     // Extract moodboard and subculture

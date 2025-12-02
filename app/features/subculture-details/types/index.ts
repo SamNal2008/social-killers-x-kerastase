@@ -1,10 +1,8 @@
-export interface SubcultureDetails {
+export interface TribeDetails {
   id: string;
   name: string;
-  // TODO: This will be fetched from Supabase 'subcultures' table
   subtitle: string;
   description: string;
-  // TODO: dos and donts will be stored in Supabase as JSON arrays
   dos: string[];
   donts: string[];
   userResultId: string;
