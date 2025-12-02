@@ -2,9 +2,11 @@ import type { FC } from 'react';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
+import { LoaderCircle } from 'lucide-react';
 import { ProgressIndicator } from '~/shared/components/ProgressIndicator/ProgressIndicator';
-import { Title } from '~/shared/components/Typography/Title';
-import { Body } from '~/shared/components/Typography/Body';
+import { Title } from "~/shared/components/Typography/Title";
+import { Body } from "~/shared/components/Typography/Body";
+import { Caption } from "~/shared/components/Typography/Caption";
 import { Button } from '~/shared/components/Button/Button';
 import type { ResultsScreenProps } from '../types/results';
 import { resultsService } from '../services/resultsService';
@@ -18,6 +20,7 @@ export const ResultsScreen: FC<ResultsScreenProps> = ({ userResultId }) => {
     const [resultsData, setResultsData] = useState<ResultsData | null>(null);
     const [loadingState, setLoadingState] = useState<LoadingState>('loading');
     const [error, setError] = useState<Error | null>(null);
+    const [isNavigating, setIsNavigating] = useState<boolean>(false);
 
     useEffect(() => {
         const fetchResults = async () => {
@@ -36,6 +39,7 @@ export const ResultsScreen: FC<ResultsScreenProps> = ({ userResultId }) => {
     }, [userResultId]);
 
     const handleDeepDive = () => {
+        setIsNavigating(true);
         navigate(`/details?userResultId=${userResultId}`);
     };
 
@@ -99,7 +103,7 @@ export const ResultsScreen: FC<ResultsScreenProps> = ({ userResultId }) => {
                                 variant="h1"
                                 className="text-neutral-dark text-center"
                             >
-                                {resultsData.userResult.dominantTribeName}
+                                Your subculture matches
                             </Title>
                         </motion.div>
 
@@ -107,37 +111,82 @@ export const ResultsScreen: FC<ResultsScreenProps> = ({ userResultId }) => {
                             variants={staggerItemVariants}
                             className="flex items-center justify-center w-full"
                         >
-                            <Body variant="1" className="text-neutral-gray text-center">
-                                Your unique style profile
+                            <Body variant="1" className="text-neutral-gray text-center max-w-md">
+                                Based on your choices, you resonate most with these energies.
                             </Body>
                         </motion.div>
                     </div>
 
-                    {/* Tribe Percentages */}
+                    {/* Subculture Percentages (Top 3) */}
                     <motion.div
                         variants={staggerItemVariants}
-                        className="flex flex-col gap-6 w-full"
+                        className="flex flex-col gap-8 w-full"
                     >
-                        {resultsData.tribePercentages.map((tribe) => (
-                            <div key={tribe.tribeId} className="flex flex-col gap-2">
-                                <div className="flex justify-between items-center">
-                                    <Body variant="2" className="text-neutral-dark font-medium">
-                                        {tribe.tribeName}
-                                    </Body>
-                                    <Body variant="2" className="text-neutral-gray">
-                                        {tribe.percentage}%
-                                    </Body>
-                                </div>
-                                <div className="w-full h-2 bg-neutral-gray-200 rounded-full overflow-hidden">
-                                    <motion.div
-                                        className="h-full bg-primary rounded-full"
-                                        initial={{ width: 0 }}
-                                        animate={{ width: `${tribe.percentage}%` }}
-                                        transition={{ duration: 0.8, delay: 0.2 }}
-                                    />
-                                </div>
-                            </div>
-                        ))}
+                        {(resultsData.subculturePercentages || [])
+                            .sort((a, b) => b.percentage - a.percentage)
+                            .slice(0, 3)
+                            .map((subculture, index) => {
+                                const isFirst = index === 0;
+                                const isSecond = index === 1;
+                                const isThird = index === 2;
+                                const rank = `0${index + 1}`;
+
+                                // Ensure name is Title Case
+                                const formattedName = subculture.subcultureName
+                                    .toLowerCase()
+                                    .split(' ')
+                                    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                                    .join(' ');
+
+                                return (
+                                    <div key={subculture.subcultureId} className="flex flex-col gap-3">
+                                        <div className="flex items-center gap-4 w-full">
+                                            {/* Rank Number */}
+                                            {isFirst ? (
+                                                <span className="font-['Inter'] text-[16px] font-semibold leading-none text-[#C9A961]">
+                                                    {rank}
+                                                </span>
+                                            ) : isSecond ? (
+                                                <Caption
+                                                    variant="2"
+                                                    className="text-[#6A7282]"
+                                                >
+                                                    {rank}
+                                                </Caption>
+                                            ) : (
+                                                <span className="font-['Inter'] text-[10px] font-medium leading-none text-[#6A7282]">
+                                                    {rank}
+                                                </span>
+                                            )}
+
+                                            <div className="flex justify-between items-end w-full">
+                                                {/* Subculture Name */}
+                                                <Title
+                                                    variant={isFirst ? 'h1' : isSecond ? 'h2' : 'h3'}
+                                                    className="text-neutral-dark !leading-none"
+                                                >
+                                                    {formattedName}
+                                                </Title>
+
+                                                {/* Percentage */}
+                                                <span className="text-neutral-gray text-sm mb-1">
+                                                    {Math.round(subculture.percentage)}% Match
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        {/* Progress Bar */}
+                                        <div className="w-full h-[4px] bg-neutral-gray-200 rounded-full overflow-hidden">
+                                            <motion.div
+                                                className={`h-full rounded-full ${isFirst ? 'bg-[#C9A961]' : 'bg-[#101828]'}`}
+                                                initial={{ width: 0 }}
+                                                animate={{ width: `${subculture.percentage}%` }}
+                                                transition={{ duration: 0.8, delay: 0.2 }}
+                                            />
+                                        </div>
+                                    </div>
+                                );
+                            })}
                     </motion.div>
 
                     {/* Let's Deep Dive Button */}
@@ -147,9 +196,11 @@ export const ResultsScreen: FC<ResultsScreenProps> = ({ userResultId }) => {
                     >
                         <Button
                             variant="primary"
-                            className="w-full h-[52px] flex items-center justify-center"
+                            className="w-full h-[52px] flex items-center justify-center gap-2"
                             onClick={handleDeepDive}
+                            disabled={isNavigating}
                         >
+                            {isNavigating && <LoaderCircle className="w-5 h-5 animate-spin" />}
                             Let's deep dive
                         </Button>
                     </motion.div>

@@ -22,16 +22,6 @@ export const DetailsScreen: FC<DetailsScreenProps> = ({ userResultId }) => {
     navigate('/camera');
   };
 
-  if (loadingState === 'loading') {
-    return (
-      <div className="flex min-h-screen items-center justify-center p-6 bg-surface-light md:p-8">
-        <Body variant="1" className="text-neutral-gray">
-          Loading your tribe...
-        </Body>
-      </div>
-    );
-  }
-
   if (loadingState === 'error') {
     return (
       <div className="flex min-h-screen items-center justify-center p-6 bg-surface-light md:p-8">
@@ -75,15 +65,15 @@ export const DetailsScreen: FC<DetailsScreenProps> = ({ userResultId }) => {
         </motion.div>
 
         {/* Main Content */}
-        <div className="flex w-full flex-col gap-12">
+        <div className="flex w-full flex-col gap-16">
           {/* Header Section */}
-          <div className="flex w-full flex-col gap-4">
-            <motion.div variants={staggerItemVariants} className="w-full">
+          <div className="flex w-full flex-col gap-4 items-center">
+            <motion.div variants={staggerItemVariants}>
               <Caption
                 variant="1"
-                className="w-full text-center uppercase tracking-[2px] text-neutral-gray"
+                className="text-center uppercase tracking-[2px] text-neutral-gray"
               >
-                Your Kérastase Tribe
+                Your Kérastase subculture
               </Caption>
             </motion.div>
 
@@ -92,7 +82,7 @@ export const DetailsScreen: FC<DetailsScreenProps> = ({ userResultId }) => {
               className="flex w-full items-center justify-center"
             >
               <Title variant="h0" className="text-center text-neutral-dark">
-                {tribeData.name}
+                {tribeData.subcultureName || tribeData.name}
               </Title>
             </motion.div>
           </div>
@@ -102,11 +92,11 @@ export const DetailsScreen: FC<DetailsScreenProps> = ({ userResultId }) => {
             variants={staggerItemVariants}
             className="flex w-full items-center justify-center"
           >
-            <div className="h-[1px] w-[180px] bg-gradient-to-r from-transparent via-[#c9a961] to-transparent" />
+            <div className="h-[1px] w-[128px] bg-gradient-to-r from-transparent via-[#c9a961] to-transparent" />
           </motion.div>
 
           {/* Content Section: Subtitle, Description, Do's & Don'ts */}
-          <div className="flex w-full flex-col gap-6">
+          <div className="flex w-full flex-col gap-6 items-center">
             {/* Subtitle */}
             <motion.div
               variants={staggerItemVariants}
