@@ -12,13 +12,21 @@ const corsHeaders = {
 interface GenerateImageRequest {
   userResultId: string;
   userPhoto: string; // Base64 encoded image
+  prompt?: string; // Optional custom prompt
+  numberOfImages?: number; // Optional, defaults to 1 for backward compatibility
+}
+
+interface GeneratedImageData {
+  url: string;
+  prompt: string;
 }
 
 interface GenerateImageResponse {
   success: boolean;
   data?: {
-    imageUrl: string;
+    imageUrl?: string; // For single image (backward compatibility)
     userResultId: string;
+    images?: GeneratedImageData[]; // For multiple images
   };
   error?: {
     code: string;
@@ -47,27 +55,87 @@ const buildErrorResponse = (
 };
 
 /**
- * Generates the prompt for image generation
- * Currently returns a hardcoded prompt
+ * Generates the default prompt for image generation
+ * Used when no custom prompt is provided
  */
-const generatePrompt = (userResultId: string): string => {
+const generateDefaultPrompt = (userResultId: string): string => {
   return "Take this picture and make him happy to code now";
 };
 
 /**
- * Generates an image (placeholder implementation)
- * NOTE: Returns original image for testing. Replace with actual image generation API.
+ * Calls Gemini API to generate an image
+ * TODO: Replace placeholder with actual Gemini API integration
+ * NOTE: Returns original image for testing.
  */
-const generateImage = async (userPhoto: string, prompt: string): Promise<string> => {
-  console.log(`[PLACEHOLDER] Would generate image with prompt: "${prompt}"`);
+const callGeminiAPI = async (userPhoto: string, prompt: string): Promise<string> => {
+  console.log(`[PLACEHOLDER] Would generate image with prompt: "${prompt.substring(0, 50)}..."`);
   console.log('[PLACEHOLDER] Using original image as placeholder for testing');
 
   const base64Image = userPhoto.replace(/^data:image\/\w+;base64,/, '');
 
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 2000));
+  // Simulate API delay (1-3 seconds per image)
+  await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
 
   return base64Image;
+
+  // TODO: Actual Gemini API call would look like:
+  /*
+  const geminiApiEndpoint = Deno.env.get('GEMINI_API_ENDPOINT');
+  const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
+
+  const response = await fetch(geminiApiEndpoint, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${geminiApiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      prompt,
+      image: userPhoto,
+      model: 'imagen-3.0-generate-001',
+      aspectRatio: '1:1',
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Gemini API error: ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  return data.generatedImage;
+  */
+};
+
+/**
+ * Upload image to Supabase Storage
+ */
+const uploadToStorage = async (
+  supabase: ReturnType<typeof createClient>,
+  imageData: string,
+  userResultId: string,
+  imageIndex: number
+): Promise<string> => {
+  const binaryData = Uint8Array.from(atob(imageData), c => c.charCodeAt(0));
+  const blob = new Blob([binaryData], { type: 'image/jpeg' });
+  const filename = `${userResultId}-${Date.now()}-${imageIndex}.jpg`;
+
+  const { error: uploadError } = await supabase.storage
+    .from('generated-images')
+    .upload(filename, blob, {
+      contentType: 'image/jpeg',
+      upsert: false,
+    });
+
+  if (uploadError) {
+    throw new Error(`Failed to upload image: ${uploadError.message}`);
+  }
+
+  // Get public URL
+  const { data: { publicUrl } } = supabase.storage
+    .from('generated-images')
+    .getPublicUrl(filename);
+
+  return publicUrl;
 };
 
 Deno.serve(async (req) => {
@@ -106,6 +174,12 @@ Deno.serve(async (req) => {
       return buildErrorResponse('INVALID_REQUEST', 'userResultId must be a valid UUID', 400);
     }
 
+    // Validate numberOfImages (optional, defaults to 1)
+    const numberOfImages = requestBody.numberOfImages || 1;
+    if (numberOfImages < 1 || numberOfImages > 10) {
+      return buildErrorResponse('INVALID_REQUEST', 'numberOfImages must be between 1 and 10', 400);
+    }
+
     // Initialize Supabase client with service role key
     // Note: Using service role key bypasses RLS and allows public access
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -124,58 +198,61 @@ Deno.serve(async (req) => {
       }
     });
 
-    // Generate prompt
-    const prompt = generatePrompt(requestBody.userResultId);
-    console.log(`Generating image for user result: ${requestBody.userResultId}`);
+    // Get or generate prompt
+    const prompt = requestBody.prompt || generateDefaultPrompt(requestBody.userResultId);
+    console.log(`Generating ${numberOfImages} image(s) for user result: ${requestBody.userResultId}`);
 
-    // Generate image (placeholder)
-    const generatedImageData = await generateImage(requestBody.userPhoto, prompt);
-    console.log('Image generated successfully');
+    // Generate multiple images in parallel
+    const imagePromises = Array.from({ length: numberOfImages }, async (_, index) => {
+      try {
+        // Call Gemini API
+        const generatedImageData = await callGeminiAPI(requestBody.userPhoto, prompt);
 
-    // Upload to storage
-    const binaryData = Uint8Array.from(atob(generatedImageData), c => c.charCodeAt(0));
-    const blob = new Blob([binaryData], { type: 'image/jpeg' });
-    const filename = `${requestBody.userResultId}-${Date.now()}.jpg`;
+        // Upload to storage
+        const publicUrl = await uploadToStorage(supabase, generatedImageData, requestBody.userResultId, index);
 
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('generated-images')
-      .upload(filename, blob, {
-        contentType: 'image/jpeg',
-        upsert: false,
-      });
+        console.log(`Image ${index + 1}/${numberOfImages} uploaded: ${publicUrl}`);
 
-    if (uploadError) {
-      console.error('Storage upload error:', uploadError);
-      return buildErrorResponse('STORAGE_ERROR', `Failed to upload image: ${uploadError.message}`, 500);
+        return {
+          url: publicUrl,
+          prompt,
+        };
+      } catch (error) {
+        console.error(`Error generating image ${index + 1}:`, error);
+        throw error;
+      }
+    });
+
+    // Wait for all images to be generated
+    const generatedImages = await Promise.all(imagePromises);
+
+    console.log(`Successfully generated ${generatedImages.length} image(s)`);
+
+    // For backward compatibility: if single image, also update database
+    if (numberOfImages === 1) {
+      const { error: updateError } = await supabase
+        .from('user_results')
+        .update({ generated_image_url: generatedImages[0].url })
+        .eq('id', requestBody.userResultId);
+
+      if (updateError) {
+        console.error('Database update error:', updateError);
+        return buildErrorResponse('DATABASE_ERROR', `Failed to update user result: ${updateError.message}`, 500);
+      }
+
+      console.log('Database updated successfully');
     }
 
-    // Get public URL
-    const { data: { publicUrl } } = supabase.storage
-      .from('generated-images')
-      .getPublicUrl(filename);
-
-    console.log(`Image uploaded to: ${publicUrl}`);
-
-    // Update database
-    const { error: updateError } = await supabase
-      .from('user_results')
-      .update({ generated_image_url: publicUrl })
-      .eq('id', requestBody.userResultId);
-
-    if (updateError) {
-      console.error('Database update error:', updateError);
-      return buildErrorResponse('DATABASE_ERROR', `Failed to update user result: ${updateError.message}`, 500);
-    }
-
-    console.log('Database updated successfully');
-
-    // Return success response with camelCase
+    // Return success response
+    // For single image: include imageUrl for backward compatibility
+    // For multiple images: include images array
     return new Response(
       JSON.stringify({
         success: true,
         data: {
-          imageUrl: publicUrl,
+          ...(numberOfImages === 1 && { imageUrl: generatedImages[0].url }),
           userResultId: requestBody.userResultId,
+          images: generatedImages,
         },
       } satisfies GenerateImageResponse),
       {
