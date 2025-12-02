@@ -41,8 +41,13 @@ describe('MoodboardScreen', () => {
     it('should render grid of moodboard cards', () => {
         render(<MoodboardScreen onBack={mockOnBack} onContinue={mockOnContinue} moodboards={mockMoodboards} />);
 
-        expect(screen.getByText('Heritage Heiress')).toBeInTheDocument();
-        expect(screen.getByText('Quiet Luxury')).toBeInTheDocument();
+        // Check that moodboard cards are rendered by their aria-labels
+        expect(screen.getByLabelText(/select heritage heiress moodboard/i)).toBeInTheDocument();
+        expect(screen.getByLabelText(/select quiet luxury moodboard/i)).toBeInTheDocument();
+
+        // Check that magnifier buttons are rendered
+        const magnifierButtons = screen.getAllByLabelText(/zoom into moodboard/i);
+        expect(magnifierButtons).toHaveLength(2);
     });
 
     it('should highlight selected card when clicked', () => {
