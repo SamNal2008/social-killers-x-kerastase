@@ -80,7 +80,7 @@ export const DashboardScreen: FC = () => {
             <DashboardPolaroid
               key={result.id}
               userName={result.userName}
-              tribeName={result.tribeName}
+              subcultureName={result.subcultureName}
               imageUrls={result.imageUrls}
               timestamp={result.createdAt}
             />

@@ -25,7 +25,13 @@ describe('dashboardService', () => {
             name: 'Romain Lagrange',
           },
           tribes: {
-            name: 'Functionals',
+            tribe_subcultures: [
+              {
+                subcultures: {
+                  name: 'Functionals',
+                },
+              },
+            ],
           },
           generated_images: [
             { image_url: 'https://example.com/image1.jpg', image_index: 0 },
@@ -42,7 +48,13 @@ describe('dashboardService', () => {
             name: 'Jane Doe',
           },
           tribes: {
-            name: 'Creatives',
+            tribe_subcultures: [
+              {
+                subcultures: {
+                  name: 'Creatives',
+                },
+              },
+            ],
           },
           generated_images: [
             { image_url: 'https://example.com/image2.jpg', image_index: 0 },
@@ -82,7 +94,11 @@ describe('dashboardService', () => {
         generated_image_url,
         created_at,
         users(name),
-        tribes(name),
+        tribes(
+          tribe_subcultures(
+            subcultures(name)
+          )
+        ),
         generated_images(image_url, image_index)
       `);
       expect(mockNot).toHaveBeenCalledWith('generated_image_url', 'is', null);
@@ -95,7 +111,7 @@ describe('dashboardService', () => {
         userId: 'user-1',
         userName: 'Romain Lagrange',
         tribeId: 'tribe-1',
-        tribeName: 'Functionals',
+        subcultureName: 'Functionals',
         generatedImageUrl: 'https://example.com/image1.jpg',
         imageUrls: ['https://example.com/image1.jpg', 'https://example.com/image1-alt.jpg'],
         createdAt: '2024-12-02T10:42:00Z',
@@ -158,7 +174,7 @@ describe('dashboardService', () => {
       expect(results).toEqual([]);
     });
 
-    it('should handle missing user or tribe data gracefully', async () => {
+    it('should handle missing user or subculture data gracefully', async () => {
       const mockData = [
         {
           id: 'result-1',
@@ -168,8 +184,15 @@ describe('dashboardService', () => {
           created_at: '2024-12-02T10:42:00Z',
           users: null,
           tribes: {
-            name: 'Functionals',
+            tribe_subcultures: [
+              {
+                subcultures: {
+                  name: 'Functionals',
+                },
+              },
+            ],
           },
+          generated_images: [],
         },
       ];
 

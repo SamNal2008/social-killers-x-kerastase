@@ -4,7 +4,7 @@ import { DashboardPolaroid } from './DashboardPolaroid';
 describe('DashboardPolaroid', () => {
   const defaultProps = {
     userName: 'Romain Lagrange',
-    tribeName: 'Functionals',
+    subcultureName: 'Functionals',
     imageUrls: ['https://example.com/image.jpg'],
     timestamp: '2024-12-02T10:42:00Z',
   };
@@ -14,7 +14,7 @@ describe('DashboardPolaroid', () => {
     expect(screen.getByText('Romain Lagrange')).toBeInTheDocument();
   });
 
-  it('should render tribe name as badge', () => {
+  it('should render subculture name as badge', () => {
     render(<DashboardPolaroid {...defaultProps} />);
     expect(screen.getByText('FUNCTIONALS')).toBeInTheDocument();
   });
@@ -57,7 +57,7 @@ describe('DashboardPolaroid', () => {
 
   it('should have badge with correct color scheme', () => {
     render(<DashboardPolaroid {...defaultProps} />);
-    const badge = screen.getByText('FUNCTIONALS').closest('[data-testid="tribe-badge"]');
+    const badge = screen.getByText('FUNCTIONALS').closest('[data-testid="subculture-badge"]');
     expect(badge).toHaveClass('bg-primary-light');
 
     const badgeText = screen.getByText('FUNCTIONALS');
@@ -68,7 +68,7 @@ describe('DashboardPolaroid', () => {
     render(
       <DashboardPolaroid
         userName="John Doe"
-        tribeName="Creatives"
+        subcultureName="Creatives"
         imageUrls={['https://example.com/test.jpg']}
         timestamp="2024-12-02T14:30:00Z"
       />
