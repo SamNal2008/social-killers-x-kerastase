@@ -9,6 +9,7 @@ import { Body } from '~/shared/components/Typography/Body';
 import { CameraLoadingScreen } from '~/features/camera-selfie/components/CameraLoadingScreen';
 import { useScrollToTop } from '~/shared/hooks/useScrollToTop';
 import type { TinderScreenProps, Brand } from '../types';
+import type { Tables } from '~/shared/types/database.types';
 import {
     swipeCardVariants,
     swipeDragConfig,
@@ -83,7 +84,7 @@ const SwipeableCard: FC<SwipeableCardProps> = ({ brand, index, total, onSwipe, i
 
 // Separated component to handle its own motion values and lifecycle
 const ActiveCard: FC<{
-    brand: string;
+    brand: Tables<'brands'>;
     index: number;
     total: number;
     onSwipe: (direction: 'left' | 'right') => void;
@@ -135,10 +136,10 @@ const ActiveCard: FC<{
             onDragEnd={handleDragEnd}
         >
             <Polaroid
-                imageSrc=""
-                imageAlt={brand}
-                title={brand}
-                subtitle="Swipe to decide"
+                imageSrc={brand.logo_url}
+                imageAlt={brand.name}
+                title=""
+                subtitle={brand.name}
                 currentItem={index + 1}
                 totalItems={total}
                 className="w-full h-full cursor-grab active:cursor-grabbing"
@@ -245,8 +246,8 @@ export const TinderScreen: FC<TinderScreenProps> = ({ onBack, onContinue, brands
                                         <Polaroid
                                             imageSrc={brands[currentIndex + 1].logo_url}
                                             imageAlt={brands[currentIndex + 1].name}
-                                            title={brands[currentIndex + 1].name}
-                                            subtitle="Swipe to decide"
+                                            title=""
+                                            subtitle={brands[currentIndex + 1].name}
                                             currentItem={currentIndex + 2}
                                             totalItems={brands.length}
                                             className="w-full h-full"
@@ -257,7 +258,7 @@ export const TinderScreen: FC<TinderScreenProps> = ({ onBack, onContinue, brands
                                 {/* Current Card (Top) */}
                                 <ActiveCard
                                     key={currentIndex}
-                                    brand={brands[currentIndex].name}
+                                    brand={brands[currentIndex]}
                                     index={currentIndex}
                                     total={brands.length}
                                     onSwipe={handleSwipeComplete}
