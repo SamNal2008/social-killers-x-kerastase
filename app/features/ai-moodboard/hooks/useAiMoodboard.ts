@@ -303,6 +303,7 @@ export const useAiMoodboard = ({
   /**
    * Manually render polaroid to canvas for reliable mobile capture
    * Draws the complete polaroid structure including white frame and padding
+   * Uses actual DOM dimensions for pixel-perfect accuracy
    */
   const renderPolaroidToCanvas = async (element: HTMLElement): Promise<Blob> => {
     const imgElement = element.querySelector('img');
@@ -310,19 +311,36 @@ export const useAiMoodboard = ({
       throw new Error('No image found in polaroid');
     }
 
+    // Get the actual rendered dimensions from DOM
+    const polaroidRect = element.getBoundingClientRect();
+    const imageContainer = element.querySelector('.flex-1') as HTMLElement;
+    const textContainer = element.querySelector('.flex.items-center.justify-between') as HTMLElement;
+
+    if (!imageContainer || !textContainer) {
+      throw new Error('Could not find polaroid sections');
+    }
+
+    const imageContainerRect = imageContainer.getBoundingClientRect();
+    const textContainerRect = textContainer.getBoundingClientRect();
+
     // Get the text content
     const subtitle = element.querySelector('.text-neutral-gray')?.textContent || '';
     const dateText = element.querySelector('.text-neutral-dark')?.textContent || '';
 
-    // Define polaroid dimensions (matching component styling exactly)
+    // Use actual dimensions
     const scale = 3; // High quality
-    const padding = 24; // p-6 = 24px
-    const gap = 24; // gap-6 = 24px
+    const totalWidth = polaroidRect.width;
+    const totalHeight = polaroidRect.height;
     const borderRadius = 8; // rounded-lg
-    const textHeight = 24; // Approximate text line height
-    const textPaddingTop = 8; // pt-2 = 8px
-    const totalWidth = 343; // max-w-[343px] on mobile
-    const totalHeight = Math.floor(totalWidth * 4 / 3); // aspect-[3/4]
+
+    // Calculate positions relative to polaroid
+    const imageX = imageContainerRect.left - polaroidRect.left;
+    const imageY = imageContainerRect.top - polaroidRect.top;
+    const imageWidth = imageContainerRect.width;
+    const imageHeight = imageContainerRect.height;
+
+    const textX = textContainerRect.left - polaroidRect.left;
+    const textY = textContainerRect.top - polaroidRect.top;
 
     // Create canvas
     const canvas = document.createElement('canvas');
@@ -348,42 +366,35 @@ export const useAiMoodboard = ({
     ctx.fill();
     ctx.clip(); // Clip everything to rounded rect
 
-    // Calculate layout dimensions (matching flex layout)
-    const imageAreaX = padding;
-    const imageAreaY = padding;
-    const imageAreaWidth = totalWidth - (padding * 2);
-    // Image area takes remaining space: total - padding top - padding bottom - gap - text section
-    const actualImageAreaHeight = totalHeight - (padding * 2) - gap - (textPaddingTop + textHeight);
-
     // Draw gray background for image area
     ctx.fillStyle = '#E5E5E5'; // neutral-gray-200
-    ctx.fillRect(imageAreaX, imageAreaY, imageAreaWidth, actualImageAreaHeight);
+    ctx.fillRect(imageX, imageY, imageWidth, imageHeight);
 
     // Draw the image (maintaining aspect ratio, object-cover behavior)
     try {
       const imgAspect = imgElement.naturalWidth / imgElement.naturalHeight;
-      const areaAspect = imageAreaWidth / actualImageAreaHeight;
+      const areaAspect = imageWidth / imageHeight;
 
       let drawWidth, drawHeight, drawX, drawY;
 
       if (imgAspect > areaAspect) {
         // Image is wider - fit height
-        drawHeight = actualImageAreaHeight;
+        drawHeight = imageHeight;
         drawWidth = drawHeight * imgAspect;
-        drawX = imageAreaX - (drawWidth - imageAreaWidth) / 2;
-        drawY = imageAreaY;
+        drawX = imageX - (drawWidth - imageWidth) / 2;
+        drawY = imageY;
       } else {
         // Image is taller - fit width
-        drawWidth = imageAreaWidth;
+        drawWidth = imageWidth;
         drawHeight = drawWidth / imgAspect;
-        drawX = imageAreaX;
-        drawY = imageAreaY - (drawHeight - actualImageAreaHeight) / 2;
+        drawX = imageX;
+        drawY = imageY - (drawHeight - imageHeight) / 2;
       }
 
       // Clip to image area before drawing
       ctx.save();
       ctx.beginPath();
-      ctx.rect(imageAreaX, imageAreaY, imageAreaWidth, actualImageAreaHeight);
+      ctx.rect(imageX, imageY, imageWidth, imageHeight);
       ctx.clip();
       ctx.drawImage(imgElement, drawX, drawY, drawWidth, drawHeight);
       ctx.restore();
@@ -392,23 +403,24 @@ export const useAiMoodboard = ({
       throw new Error('Failed to render image on canvas');
     }
 
-    // Draw text section (with proper spacing from image)
-    // Text starts at: padding + imageAreaHeight + gap + textPaddingTop
-    const textY = padding + actualImageAreaHeight + gap + textPaddingTop + (textHeight / 2);
-
+    // Draw text section using actual position from DOM
     // Load font
     await document.fonts.ready;
+
+    // Calculate text baseline position (middle of text container)
+    const textBaselineY = textY + (textContainerRect.height / 2);
 
     // Draw subtitle (left side)
     ctx.fillStyle = '#737373'; // neutral-gray
     ctx.font = '14px Inter, -apple-system, system-ui, sans-serif';
     ctx.textBaseline = 'middle';
-    ctx.fillText(subtitle, padding, textY);
+    ctx.fillText(subtitle, textX, textBaselineY);
 
     // Draw date (right side)
     ctx.fillStyle = '#262626'; // neutral-dark
     const dateMetrics = ctx.measureText(dateText);
-    ctx.fillText(dateText, totalWidth - padding - dateMetrics.width, textY);
+    const dateX = textX + textContainerRect.width - dateMetrics.width;
+    ctx.fillText(dateText, dateX, textBaselineY);
 
     // Convert to blob
     return new Promise((resolve, reject) => {
