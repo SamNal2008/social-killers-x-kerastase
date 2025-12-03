@@ -362,16 +362,32 @@ export const useAiMoodboard = ({
 
       await Promise.all(imageConversionPromises);
 
-      // Show conversion status on mobile for debugging
-      if (isMobileDevice()) {
-        const message = `Images converted: ${conversionSuccess}/${images.length}\nFailed: ${conversionFailed}`;
-        console.log(message);
-        alert(message); // Temporary debugging - will show on mobile
-      }
+      // Log conversion status
+      console.log(`Images converted: ${conversionSuccess}/${images.length}, Failed: ${conversionFailed}`);
+
+      // Wait for data URL images to be fully loaded and rendered
+      // This is critical on mobile to prevent capture before rendering is complete
+      const dataUrlImageLoadPromises = Array.from(images).map((img) => {
+        // If image src is now a data URL, wait for it to be fully loaded
+        if (img.src.startsWith('data:')) {
+          return new Promise<void>((resolve) => {
+            if (verifyImageLoaded(img)) {
+              resolve();
+            } else {
+              img.onload = () => resolve();
+              // Fallback timeout
+              setTimeout(() => resolve(), 2000);
+            }
+          });
+        }
+        return Promise.resolve();
+      });
+
+      await Promise.all(dataUrlImageLoadPromises);
 
       // Extended delay for mobile to ensure rendering is complete
       // Mobile devices need more time to decode and render images
-      const renderDelay = isMobileDevice() ? 800 : 100;
+      const renderDelay = isMobileDevice() ? 1000 : 100;
       await new Promise(resolve => setTimeout(resolve, renderDelay));
 
       // Try 3x scale first (as requested), with automatic fallback
@@ -392,15 +408,7 @@ export const useAiMoodboard = ({
 
       // If all attempts failed, throw error
       if (!blob || !successfulScale) {
-        if (isMobileDevice()) {
-          alert('Capture failed at all scales (3x, 2x, 1.5x)');
-        }
         throw new Error('Unable to capture polaroid image. All scale attempts failed.');
-      }
-
-      // Show success on mobile
-      if (isMobileDevice()) {
-        alert(`Capture succeeded at ${successfulScale}x scale\nSize: ${blob.size} bytes`);
       }
 
       // Try to share on mobile, download on desktop
