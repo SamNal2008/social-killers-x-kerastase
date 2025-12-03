@@ -8,7 +8,11 @@ interface DatabaseUserResult {
   generated_image_url: string | null;
   created_at: string;
   users: { name: string } | null;
-  tribes: { name: string } | null;
+  tribes: {
+    tribe_subcultures: Array<{
+      subcultures: { name: string } | null;
+    }>;
+  } | null;
   generated_images: Array<{ image_url: string; image_index: number }>;
 }
 
@@ -23,7 +27,11 @@ export const dashboardService = {
         generated_image_url,
         created_at,
         users(name),
-        tribes(name),
+        tribes(
+          tribe_subcultures(
+            subcultures(name)
+          )
+        ),
         generated_images(image_url, image_index)
       `)
       .not('generated_image_url', 'is', null)
@@ -51,12 +59,16 @@ export const dashboardService = {
           ? [result.generated_image_url]
           : [];
 
+      // Extract subculture name from the nested structure
+      const subcultureName =
+        result.tribes?.tribe_subcultures?.[0]?.subcultures?.name || 'Unknown Subculture';
+
       return {
         id: result.id,
         userId: result.user_id,
         userName: result.users?.name || 'Unknown',
         tribeId: result.tribe_id,
-        tribeName: result.tribes?.name || 'Unknown Tribe',
+        subcultureName,
         generatedImageUrl: result.generated_image_url,
         imageUrls: finalImageUrls,
         createdAt: result.created_at,

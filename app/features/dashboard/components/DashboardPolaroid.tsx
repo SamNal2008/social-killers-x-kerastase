@@ -6,7 +6,7 @@ import { useImageRotation } from '../hooks/useImageRotation';
 
 export const DashboardPolaroid: FC<DashboardPolaroidProps> = ({
   userName,
-  tribeName,
+  subcultureName,
   imageUrls,
   timestamp,
   className = '',
@@ -40,7 +40,7 @@ export const DashboardPolaroid: FC<DashboardPolaroidProps> = ({
         {currentImageUrl && (
           <img
             src={currentImageUrl}
-            alt={`${userName} - ${tribeName}`}
+            alt={`${userName} - ${subcultureName}`}
             className="w-full h-full object-cover"
           />
         )}
@@ -52,7 +52,7 @@ export const DashboardPolaroid: FC<DashboardPolaroidProps> = ({
             {userName}
           </Title>
           <div
-            data-testid="tribe-badge"
+            data-testid="subculture-badge"
             className="
               bg-primary-light
               px-3
@@ -62,7 +62,7 @@ export const DashboardPolaroid: FC<DashboardPolaroidProps> = ({
             "
           >
             <Caption variant="1" className="text-primary">
-              {tribeName.toUpperCase()}
+              {subcultureName.toUpperCase()}
             </Caption>
           </div>
         </div>
