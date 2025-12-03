@@ -17,6 +17,7 @@
 
   /* Colors */
   --color-primary: #c9a961;
+  --color-primary-light: rgba(201, 169, 97, 0.2);
 
   --color-neutral-dark: #101828;
   --color-neutral-white: #ffffff;
