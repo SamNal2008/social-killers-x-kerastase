@@ -7,4 +7,5 @@ export default [
   route("details", "routes/details.tsx"),
   route("camera", "routes/camera.tsx"),
   route("ai-moodboard", "routes/ai-moodboard.tsx"),
+  route("dashboard", "routes/dashboard.tsx"),
 ] satisfies RouteConfig;

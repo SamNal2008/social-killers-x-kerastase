@@ -101,6 +101,17 @@ export default function Home() {
     setLoadingState({ status: 'loading' });
 
     try {
+      // Save name to database
+      const userId = localStorageUtils.getUserId();
+      if (!userId) {
+        throw new Error('User ID not found');
+      }
+
+      await userService.update(userId, name);
+
+      // Store name in localStorage for later use
+      localStorageUtils.setUserName(name);
+
       const data = await moodboardService.getAll();
       setMoodboards(data);
       setLoadingState({ status: 'idle' });
