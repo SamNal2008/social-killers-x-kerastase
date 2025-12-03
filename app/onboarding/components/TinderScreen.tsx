@@ -76,7 +76,6 @@ const SwipeableCard: FC<SwipeableCardProps> = ({ brand, index, total, onSwipe, i
                 currentItem={index + 1}
                 totalItems={total}
                 className={`w-full h-full ${isCurrent ? 'cursor-grab active:cursor-grabbing' : ''}`}
-                showDate={false}
             />
         </motion.div>
     );
@@ -143,7 +142,6 @@ const ActiveCard: FC<{
                 currentItem={index + 1}
                 totalItems={total}
                 className="w-full h-full cursor-grab active:cursor-grabbing"
-                showDate={false}
             />
         </motion.div>
     );
@@ -252,7 +250,6 @@ export const TinderScreen: FC<TinderScreenProps> = ({ onBack, onContinue, brands
                                             currentItem={currentIndex + 2}
                                             totalItems={brands.length}
                                             className="w-full h-full"
-                                            showDate={false}
                                         />
                                     </motion.div>
                                 )}

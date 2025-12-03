@@ -33,9 +33,12 @@ describe('TinderScreen', () => {
             expect(screen.getByText('Hermès')).toBeInTheDocument();
         });
 
-        it('should not render the date on polaroid cards', () => {
+        it('should display the brand counter instead of date on polaroid cards', () => {
             render(<TinderScreen {...defaultProps} />);
-            // Date should NOT be displayed on TinderScreen polaroids
+            // Counter should be displayed instead of date
+            // Should show "1 / 2" for first card of 2 brands
+            expect(screen.getByText('1 / 2')).toBeInTheDocument();
+            // Date should NOT be displayed
             const datePattern = /\d{2}\.\d{2}\.\d{2}/;
             const dates = screen.queryAllByText(datePattern);
             expect(dates.length).toBe(0);
