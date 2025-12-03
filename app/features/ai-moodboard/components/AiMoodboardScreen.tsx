@@ -163,17 +163,15 @@ export const AiMoodboardScreen: FC = () => {
           <div className="flex flex-col gap-6 w-full">
             {/* Polaroid Card */}
             <motion.div variants={staggerItemVariants}>
-              {/* Wrapper with background to ensure white frame is captured */}
-              <div ref={polaroidRef} style={{ backgroundColor: '#F5F5F5', padding: '20px', borderRadius: '12px' }}>
-                <Polaroid
-                  imageSrc={currentImage.url}
-                  imageAlt={`Moodboard ${currentImageIndex + 1}`}
-                  title=""
-                  subtitle="Tribes & Communities Day"
-                  className="w-full"
-                  onImageLoad={handleImageReady}
-                />
-              </div>
+              <Polaroid
+                ref={polaroidRef}
+                imageSrc={currentImage.url}
+                imageAlt={`Moodboard ${currentImageIndex + 1}`}
+                title=""
+                subtitle="Tribes & Communities Day"
+                className="w-full"
+                onImageLoad={handleImageReady}
+              />
             </motion.div>
 
             {/* Navigation Buttons */}

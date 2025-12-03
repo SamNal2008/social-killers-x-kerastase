@@ -301,28 +301,157 @@ export const useAiMoodboard = ({
   };
 
   /**
-   * Capture polaroid using html-to-image
-   * Now reliable because we ensure image is loaded via readiness tracking
+   * Manually render polaroid to canvas for reliable mobile capture
+   * Draws the complete polaroid structure including white frame and padding
+   */
+  const renderPolaroidToCanvas = async (element: HTMLElement): Promise<Blob> => {
+    const imgElement = element.querySelector('img');
+    if (!imgElement) {
+      throw new Error('No image found in polaroid');
+    }
+
+    // Get the text content
+    const subtitle = element.querySelector('.text-neutral-gray')?.textContent || '';
+    const dateText = element.querySelector('.text-neutral-dark')?.textContent || '';
+
+    // Define polaroid dimensions (matching component styling)
+    const scale = 3; // High quality
+    const padding = 24; // p-6 = 24px
+    const borderRadius = 8; // rounded-lg
+    const imageAreaHeight = 400; // Approximate flex-1 height
+    const textAreaHeight = 40; // Text section height
+    const totalWidth = 343; // max-w-[343px] on mobile
+    const totalHeight = Math.floor(totalWidth * 4 / 3); // aspect-[3/4]
+
+    // Create canvas
+    const canvas = document.createElement('canvas');
+    canvas.width = totalWidth * scale;
+    canvas.height = totalHeight * scale;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      throw new Error('Failed to get canvas context');
+    }
+
+    // Scale for high quality
+    ctx.scale(scale, scale);
+
+    // Enable better rendering
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
+    // Draw white background with rounded corners
+    ctx.fillStyle = '#FFFFFF';
+    ctx.beginPath();
+    ctx.roundRect(0, 0, totalWidth, totalHeight, borderRadius);
+    ctx.fill();
+    ctx.clip(); // Clip everything to rounded rect
+
+    // Calculate image area dimensions (inside padding)
+    const imageAreaX = padding;
+    const imageAreaY = padding;
+    const imageAreaWidth = totalWidth - (padding * 2);
+    const actualImageAreaHeight = totalHeight - (padding * 2) - textAreaHeight;
+
+    // Draw gray background for image area
+    ctx.fillStyle = '#E5E5E5'; // neutral-gray-200
+    ctx.fillRect(imageAreaX, imageAreaY, imageAreaWidth, actualImageAreaHeight);
+
+    // Draw the image (maintaining aspect ratio, object-cover behavior)
+    try {
+      const imgAspect = imgElement.naturalWidth / imgElement.naturalHeight;
+      const areaAspect = imageAreaWidth / actualImageAreaHeight;
+
+      let drawWidth, drawHeight, drawX, drawY;
+
+      if (imgAspect > areaAspect) {
+        // Image is wider - fit height
+        drawHeight = actualImageAreaHeight;
+        drawWidth = drawHeight * imgAspect;
+        drawX = imageAreaX - (drawWidth - imageAreaWidth) / 2;
+        drawY = imageAreaY;
+      } else {
+        // Image is taller - fit width
+        drawWidth = imageAreaWidth;
+        drawHeight = drawWidth / imgAspect;
+        drawX = imageAreaX;
+        drawY = imageAreaY - (drawHeight - actualImageAreaHeight) / 2;
+      }
+
+      // Clip to image area before drawing
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(imageAreaX, imageAreaY, imageAreaWidth, actualImageAreaHeight);
+      ctx.clip();
+      ctx.drawImage(imgElement, drawX, drawY, drawWidth, drawHeight);
+      ctx.restore();
+    } catch (error) {
+      console.error('Failed to draw image:', error);
+      throw new Error('Failed to render image on canvas');
+    }
+
+    // Draw text section
+    const textY = totalHeight - padding - textAreaHeight + 10;
+
+    // Load font
+    await document.fonts.ready;
+
+    // Draw subtitle (left side)
+    ctx.fillStyle = '#737373'; // neutral-gray
+    ctx.font = '14px Inter, -apple-system, system-ui, sans-serif';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(subtitle, padding, textY);
+
+    // Draw date (right side)
+    ctx.fillStyle = '#262626'; // neutral-dark
+    const dateMetrics = ctx.measureText(dateText);
+    ctx.fillText(dateText, totalWidth - padding - dateMetrics.width, textY);
+
+    // Convert to blob
+    return new Promise((resolve, reject) => {
+      canvas.toBlob((blob) => {
+        if (blob && blob.size > 10000) {
+          resolve(blob);
+        } else {
+          reject(new Error('Failed to create valid blob from canvas'));
+        }
+      }, 'image/png', 1.0);
+    });
+  };
+
+  /**
+   * Capture polaroid - Try canvas rendering, fallback to html-to-image
    */
   const capturePolaroid = async (element: HTMLElement): Promise<Blob> => {
-    const dataUrl = await toPng(element, {
-      pixelRatio: 3,
-      cacheBust: true,
-      skipFonts: false,
-    });
+    try {
+      // Try canvas rendering first (most reliable for polaroid structure)
+      console.log('Attempting canvas rendering...');
+      const blob = await renderPolaroidToCanvas(element);
+      console.log(`Canvas rendering successful (${blob.size} bytes)`);
+      return blob;
+    } catch (canvasError) {
+      // Fallback to html-to-image
+      console.warn('Canvas rendering failed, falling back to html-to-image:', canvasError);
 
-    if (!dataUrl || dataUrl === 'data:,') {
-      throw new Error('Capture produced empty result');
+      const dataUrl = await toPng(element, {
+        pixelRatio: 3,
+        cacheBust: true,
+        skipFonts: false,
+      });
+
+      if (!dataUrl || dataUrl === 'data:,') {
+        throw new Error('Both capture methods failed');
+      }
+
+      const response = await fetch(dataUrl);
+      const blob = await response.blob();
+
+      if (blob.size < 10000) {
+        throw new Error('Captured image is too small');
+      }
+
+      return blob;
     }
-
-    const response = await fetch(dataUrl);
-    const blob = await response.blob();
-
-    if (blob.size < 10000) {
-      throw new Error('Captured image is too small');
-    }
-
-    return blob;
   };
 
   /**
