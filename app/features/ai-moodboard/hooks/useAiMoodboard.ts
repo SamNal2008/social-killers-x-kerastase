@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import html2canvas from 'html2canvas';
+import { toPng } from 'html-to-image';
 import type { AiMoodboardState, TribePromptData, GeneratedImage, UseAiMoodboardReturn } from '../types';
 import { geminiImageService } from '../services/geminiImageService';
 import { supabase } from '~/shared/services/supabase';
@@ -199,7 +199,8 @@ export const useAiMoodboard = ({
 
   /**
    * Download Polaroid component as image
-   * Converts the Polaroid DOM element to a PNG with 2x scale for better quality
+   * Converts the Polaroid DOM element to a PNG using html-to-image
+   * Waits for fonts to load before capturing for accurate rendering
    */
   const downloadPolaroid = useCallback(async (element: HTMLElement, filename?: string) => {
     const finalFilename = filename || `polaroid-${Date.now()}.png`;
@@ -207,24 +208,19 @@ export const useAiMoodboard = ({
     try {
       setIsDownloading(true);
 
-      // Convert DOM element to canvas with 2x scale for better quality
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        backgroundColor: null, // Preserve transparency
-        logging: false,
-        useCORS: true, // Allow cross-origin images
+      // Wait for fonts to load before capturing
+      await document.fonts.ready;
+
+      // Convert DOM element to PNG data URL with 2x pixel ratio for quality
+      const dataUrl = await toPng(element, {
+        pixelRatio: 2,
+        backgroundColor: '#F5F5F5', // Light gray background matching surface-light
+        cacheBust: true, // Prevent caching issues with images
       });
 
-      // Convert canvas to blob
-      const blob = await new Promise<Blob>((resolve, reject) => {
-        canvas.toBlob((blob) => {
-          if (blob) {
-            resolve(blob);
-          } else {
-            reject(new Error('Failed to convert canvas to blob'));
-          }
-        }, 'image/png');
-      });
+      // Convert data URL to blob
+      const response = await fetch(dataUrl);
+      const blob = await response.blob();
 
       // Try to share on mobile, download on desktop
       if (isMobileDevice() && navigator.share && navigator.canShare) {

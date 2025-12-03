@@ -23,7 +23,6 @@ export const AiMoodboardScreen: FC = () => {
   const location = useLocation();
   const locationState = location.state as LocationState;
   const polaroidRef = useRef<HTMLDivElement>(null);
-  const exportRef = useRef<HTMLDivElement>(null);
 
   // Get data from location state or localStorage
   const userPhoto = locationState?.userPhoto;
@@ -55,11 +54,11 @@ export const AiMoodboardScreen: FC = () => {
   };
 
   const handleDownload = async () => {
-    if (exportRef.current && state.status === 'success') {
+    if (polaroidRef.current && state.status === 'success') {
       try {
         const subcultureName = state.tribe.subcultureName.toLowerCase().replace(/\s+/g, '-');
         const filename = `${userName}-polaroid-${subcultureName}.png`;
-        await downloadPolaroid(exportRef.current, filename);
+        await downloadPolaroid(polaroidRef.current, filename);
       } catch (error) {
         console.error('Download failed:', error);
         alert('Failed to download polaroid. Please try again.');
@@ -208,28 +207,6 @@ export const AiMoodboardScreen: FC = () => {
             </motion.div>
           </div>
         </motion.div>
-
-        {/* Hidden Export Container - Fixed 3:4 Ratio (450px x 600px) */}
-        <div
-          style={{
-            position: 'fixed',
-            left: '-9999px',
-            top: 0,
-            width: '450px',
-            height: '600px',
-            zIndex: -1
-          }}
-        >
-          <div ref={exportRef} className="w-full h-full">
-            <Polaroid
-              imageSrc={currentImage.url}
-              imageAlt={`Moodboard ${currentImageIndex + 1}`}
-              title=""
-              subtitle="Tribes & Communities Day"
-              className="!w-full !h-full !max-w-none !mx-0 !aspect-auto !shadow-none [&>div:first-child]:!flex-none [&>div:first-child]:!h-[480px]"
-            />
-          </div>
-        </div>
       </div>
     );
   }

@@ -22,7 +22,7 @@
     "@react-router/serve": "^7.9.2",
     "@supabase/supabase-js": "^2.84.0",
     "framer-motion": "^12.23.24",
-    "html2canvas": "^1.4.1",
+    "html-to-image": "^1.11.13",
     "isbot": "^5.1.31",
     "lucide-react": "^0.555.0",
     "react": "^19.1.1",
