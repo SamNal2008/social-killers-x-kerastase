@@ -314,12 +314,13 @@ export const useAiMoodboard = ({
     const subtitle = element.querySelector('.text-neutral-gray')?.textContent || '';
     const dateText = element.querySelector('.text-neutral-dark')?.textContent || '';
 
-    // Define polaroid dimensions (matching component styling)
+    // Define polaroid dimensions (matching component styling exactly)
     const scale = 3; // High quality
     const padding = 24; // p-6 = 24px
+    const gap = 24; // gap-6 = 24px
     const borderRadius = 8; // rounded-lg
-    const imageAreaHeight = 400; // Approximate flex-1 height
-    const textAreaHeight = 40; // Text section height
+    const textHeight = 24; // Approximate text line height
+    const textPaddingTop = 8; // pt-2 = 8px
     const totalWidth = 343; // max-w-[343px] on mobile
     const totalHeight = Math.floor(totalWidth * 4 / 3); // aspect-[3/4]
 
@@ -347,11 +348,12 @@ export const useAiMoodboard = ({
     ctx.fill();
     ctx.clip(); // Clip everything to rounded rect
 
-    // Calculate image area dimensions (inside padding)
+    // Calculate layout dimensions (matching flex layout)
     const imageAreaX = padding;
     const imageAreaY = padding;
     const imageAreaWidth = totalWidth - (padding * 2);
-    const actualImageAreaHeight = totalHeight - (padding * 2) - textAreaHeight;
+    // Image area takes remaining space: total - padding top - padding bottom - gap - text section
+    const actualImageAreaHeight = totalHeight - (padding * 2) - gap - (textPaddingTop + textHeight);
 
     // Draw gray background for image area
     ctx.fillStyle = '#E5E5E5'; // neutral-gray-200
@@ -390,8 +392,9 @@ export const useAiMoodboard = ({
       throw new Error('Failed to render image on canvas');
     }
 
-    // Draw text section
-    const textY = totalHeight - padding - textAreaHeight + 10;
+    // Draw text section (with proper spacing from image)
+    // Text starts at: padding + imageAreaHeight + gap + textPaddingTop
+    const textY = padding + actualImageAreaHeight + gap + textPaddingTop + (textHeight / 2);
 
     // Load font
     await document.fonts.ready;
