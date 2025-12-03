@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { AiMoodboardState, TribePromptData, GeneratedImage } from '../types';
+import html2canvas from 'html2canvas';
+import type { AiMoodboardState, TribePromptData, GeneratedImage, UseAiMoodboardReturn } from '../types';
 import { geminiImageService } from '../services/geminiImageService';
 import { supabase } from '~/shared/services/supabase';
 
@@ -8,16 +9,6 @@ interface UseAiMoodboardParams {
   userPhoto: string;
 }
 
-interface UseAiMoodboardReturn {
-  state: AiMoodboardState;
-  currentImageIndex: number;
-  currentImage: GeneratedImage | null;
-  nextImage: () => void;
-  previousImage: () => void;
-  downloadImage: (imageUrl: string, filename?: string) => Promise<void>;
-  canGoNext: boolean;
-  canGoPrevious: boolean;
-}
 
 /**
  * Hook for managing AI moodboard state and interactions
@@ -29,6 +20,8 @@ export const useAiMoodboard = ({
 }: UseAiMoodboardParams): UseAiMoodboardReturn => {
   const [state, setState] = useState<AiMoodboardState>({ status: 'idle' });
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isDownloading, setIsDownloading] = useState(false);
+
 
   /**
    * Fetch user result and tribe data
@@ -204,6 +197,74 @@ export const useAiMoodboard = ({
     }
   }, [fallbackDownload, isMobileDevice]);
 
+  /**
+   * Download Polaroid component as image
+   * Converts the Polaroid DOM element to a PNG with 2x scale for better quality
+   */
+  const downloadPolaroid = useCallback(async (element: HTMLElement, filename?: string) => {
+    const finalFilename = filename || `polaroid-${Date.now()}.png`;
+
+    try {
+      setIsDownloading(true);
+
+      // Convert DOM element to canvas with 2x scale for better quality
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        backgroundColor: null, // Preserve transparency
+        logging: false,
+        useCORS: true, // Allow cross-origin images
+      });
+
+      // Convert canvas to blob
+      const blob = await new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob((blob) => {
+          if (blob) {
+            resolve(blob);
+          } else {
+            reject(new Error('Failed to convert canvas to blob'));
+          }
+        }, 'image/png');
+      });
+
+      // Try to share on mobile, download on desktop
+      if (isMobileDevice() && navigator.share && navigator.canShare) {
+        const file = new File([blob], finalFilename, { type: 'image/png' });
+
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            title: 'My Signature Polaroid',
+            text: 'Check out my signature polaroid!',
+          });
+          console.log('Polaroid shared successfully');
+          return;
+        }
+      }
+
+      // Desktop or fallback: Download directly
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = finalFilename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      // If user cancels share dialog, don't treat it as an error
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.log('Share cancelled by user');
+        return;
+      }
+
+      console.error('Error downloading polaroid:', error);
+      throw new Error('Failed to download polaroid');
+    } finally {
+      setIsDownloading(false);
+    }
+  }, [isMobileDevice]);
+
+
   // Compute derived values
   const currentImage = state.status === 'success' ? state.images[currentImageIndex] : null;
   const canGoNext = state.status === 'success' && currentImageIndex < state.images.length - 1;
@@ -216,6 +277,8 @@ export const useAiMoodboard = ({
     nextImage,
     previousImage,
     downloadImage,
+    downloadPolaroid,
+    isDownloading,
     canGoNext,
     canGoPrevious,
   };
