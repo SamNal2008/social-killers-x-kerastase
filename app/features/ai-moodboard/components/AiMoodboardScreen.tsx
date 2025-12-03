@@ -1,6 +1,8 @@
 import type { FC } from 'react';
+import { useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import { motion } from 'framer-motion';
+import { LoaderCircle } from 'lucide-react';
 import { useAiMoodboard } from '../hooks/useAiMoodboard';
 import { Polaroid } from '~/shared/components/Polaroid';
 import { CircleButton } from '~/shared/components/CircleButton';
@@ -8,6 +10,7 @@ import { Button } from '~/shared/components/Button';
 import { Title, Body, Caption } from '~/shared/components/Typography';
 import { staggerContainerVariants, staggerItemVariants } from '~/shared/animations/transitions';
 import { localStorageUtils } from '~/shared/utils/localStorage';
+
 
 interface LocationState {
   userPhoto?: string;
@@ -19,6 +22,7 @@ export const AiMoodboardScreen: FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const locationState = location.state as LocationState;
+  const polaroidRef = useRef<HTMLDivElement>(null);
 
   // Get data from location state or localStorage
   const userPhoto = locationState?.userPhoto;
@@ -39,6 +43,8 @@ export const AiMoodboardScreen: FC = () => {
     nextImage,
     previousImage,
     downloadImage,
+    downloadPolaroid,
+    isDownloading,
     canGoNext,
     canGoPrevious,
   } = useAiMoodboard({ userResultId, userPhoto });
@@ -48,15 +54,18 @@ export const AiMoodboardScreen: FC = () => {
   };
 
   const handleDownload = async () => {
-    if (currentImage) {
+    if (polaroidRef.current && state.status === 'success') {
       try {
-        await downloadImage(currentImage.url, `${userName}-moodboard-${currentImageIndex + 1}.jpg`);
+        const subcultureName = state.tribe.subcultureName.toLowerCase().replace(/\s+/g, '-');
+        const filename = `${userName}-polaroid-${subcultureName}.png`;
+        await downloadPolaroid(polaroidRef.current, filename);
       } catch (error) {
         console.error('Download failed:', error);
-        alert('Failed to download image. Please try again.');
+        alert('Failed to download polaroid. Please try again.');
       }
     }
   };
+
 
   // Loading state
   if (state.status === 'idle' || state.status === 'loading-tribe' || state.status === 'generating') {
@@ -152,13 +161,15 @@ export const AiMoodboardScreen: FC = () => {
           <div className="flex flex-col gap-6 w-full">
             {/* Polaroid Card */}
             <motion.div variants={staggerItemVariants}>
-              <Polaroid
-                imageSrc={currentImage.url}
-                imageAlt={`Moodboard ${currentImageIndex + 1}`}
-                title=""
-                subtitle="Tribes & Communities Day"
-                className="w-full"
-              />
+              <div ref={polaroidRef} className="rounded-lg overflow-hidden w-fit mx-auto">
+                <Polaroid
+                  imageSrc={currentImage.url}
+                  imageAlt={`Moodboard ${currentImageIndex + 1}`}
+                  title=""
+                  subtitle="Tribes & Communities Day"
+                  className="w-full"
+                />
+              </div>
             </motion.div>
 
             {/* Navigation Buttons */}
@@ -184,8 +195,14 @@ export const AiMoodboardScreen: FC = () => {
 
             {/* Download Button */}
             <motion.div variants={staggerItemVariants} className="w-full">
-              <Button variant="primary" onClick={handleDownload} className="w-full">
-                Download this picture
+              <Button
+                variant="primary"
+                onClick={handleDownload}
+                disabled={isDownloading}
+                className="w-full h-[52px] flex items-center justify-center gap-2"
+              >
+                {isDownloading && <LoaderCircle className="w-5 h-5 animate-spin" />}
+                Download Polaroid
               </Button>
             </motion.div>
           </div>

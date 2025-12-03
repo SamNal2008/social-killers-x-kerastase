@@ -59,3 +59,20 @@ export interface GeminiGenerateImageResponse {
     message: string;
   };
 }
+
+/**
+ * Return type for useAiMoodboard hook
+ */
+export interface UseAiMoodboardReturn {
+  state: AiMoodboardState;
+  currentImageIndex: number;
+  currentImage: GeneratedImage | null;
+  nextImage: () => void;
+  previousImage: () => void;
+  downloadImage: (imageUrl: string, filename?: string) => Promise<void>;
+  downloadPolaroid: (element: HTMLElement, filename?: string) => Promise<void>;
+  isDownloading: boolean;
+  canGoNext: boolean;
+  canGoPrevious: boolean;
+}
+
