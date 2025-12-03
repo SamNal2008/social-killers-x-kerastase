@@ -277,11 +277,9 @@ export const useAiMoodboard = ({
   };
 
   /**
-   * Canvas-based capture: Manually draw polaroid to canvas
-   * This is more reliable than html-to-image on mobile
+   * Verify image is ready for capture
    */
-  const captureWithCanvas = async (element: HTMLElement, expectedImageUrl: string): Promise<Blob> => {
-    // Find the image element
+  const verifyImageReady = (element: HTMLElement, expectedImageUrl: string): void => {
     const imgElement = element.querySelector('img');
     if (!imgElement) {
       throw new Error('No image found in polaroid');
@@ -300,117 +298,22 @@ export const useAiMoodboard = ({
     if (!imgElement.complete || imgElement.naturalWidth === 0) {
       throw new Error('Image not fully loaded');
     }
-
-    // Get element dimensions
-    const rect = element.getBoundingClientRect();
-    const scale = 3; // High quality
-    const canvas = document.createElement('canvas');
-    canvas.width = rect.width * scale;
-    canvas.height = rect.height * scale;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) {
-      throw new Error('Failed to get canvas context');
-    }
-
-    // Scale context for high quality
-    ctx.scale(scale, scale);
-
-    // Fill background (white for polaroid)
-    ctx.fillStyle = '#FFFFFF';
-    ctx.fillRect(0, 0, rect.width, rect.height);
-
-    // Get computed styles for accurate rendering
-    const computedStyle = window.getComputedStyle(element);
-    const padding = parseInt(computedStyle.paddingTop) || 24;
-    const borderRadius = parseInt(computedStyle.borderRadius) || 8;
-
-    // Apply border radius
-    ctx.beginPath();
-    ctx.roundRect(0, 0, rect.width, rect.height, borderRadius);
-    ctx.clip();
-    ctx.fill();
-
-    // Draw the image container background
-    const imageContainer = element.querySelector('div > div') as HTMLElement;
-    if (imageContainer) {
-      const imageContainerRect = imageContainer.getBoundingClientRect();
-      const relativeTop = imageContainerRect.top - rect.top;
-      const relativeLeft = imageContainerRect.left - rect.left;
-
-      // Background for image area
-      ctx.fillStyle = '#E5E5E5'; // neutral-gray-200
-      ctx.fillRect(
-        relativeLeft,
-        relativeTop,
-        imageContainerRect.width,
-        imageContainerRect.height
-      );
-
-      // Draw the actual image
-      try {
-        ctx.drawImage(
-          imgElement,
-          relativeLeft,
-          relativeTop,
-          imageContainerRect.width,
-          imageContainerRect.height
-        );
-      } catch (error) {
-        console.error('Failed to draw image to canvas:', error);
-        throw new Error('Failed to render image on canvas');
-      }
-    }
-
-    // Draw text elements (subtitle and date)
-    const textContainer = element.querySelector('.flex.items-center.justify-between') as HTMLElement;
-    if (textContainer) {
-      const textRect = textContainer.getBoundingClientRect();
-      const textTop = textRect.top - rect.top;
-
-      // Get text content
-      const subtitle = textContainer.querySelector('.text-neutral-gray')?.textContent || '';
-      const dateOrCounter = textContainer.querySelector('.text-neutral-dark')?.textContent || '';
-
-      // Set font styles
-      ctx.fillStyle = '#737373'; // neutral-gray
-      ctx.font = '14px Inter, system-ui, sans-serif';
-      ctx.textBaseline = 'top';
-
-      // Draw subtitle (left)
-      ctx.fillText(subtitle, padding, textTop);
-
-      // Draw date/counter (right)
-      ctx.fillStyle = '#262626'; // neutral-dark
-      const dateMetrics = ctx.measureText(dateOrCounter);
-      ctx.fillText(dateOrCounter, rect.width - padding - dateMetrics.width, textTop);
-    }
-
-    // Convert canvas to blob
-    return new Promise((resolve, reject) => {
-      canvas.toBlob((blob) => {
-        if (blob) {
-          resolve(blob);
-        } else {
-          reject(new Error('Failed to create blob from canvas'));
-        }
-      }, 'image/png', 1.0);
-    });
   };
 
   /**
-   * Fallback: Use html-to-image library
+   * Capture polaroid using html-to-image
+   * Now reliable because we ensure image is loaded via readiness tracking
    */
-  const captureWithHtmlToImage = async (element: HTMLElement): Promise<Blob> => {
+  const capturePolaroid = async (element: HTMLElement): Promise<Blob> => {
     const dataUrl = await toPng(element, {
       pixelRatio: 3,
-      backgroundColor: '#FFFFFF',
+      backgroundColor: '#F5F5F5', // Match page background
       cacheBust: true,
       skipFonts: false,
     });
 
     if (!dataUrl || dataUrl === 'data:,') {
-      throw new Error('html-to-image produced empty result');
+      throw new Error('Capture produced empty result');
     }
 
     const response = await fetch(dataUrl);
@@ -425,7 +328,7 @@ export const useAiMoodboard = ({
 
   /**
    * Download Polaroid - Bulletproof implementation
-   * Uses canvas-based capture with html-to-image fallback
+   * Relies on image readiness tracking + html-to-image for accurate capture
    */
   const downloadPolaroid = useCallback(async (element: HTMLElement, filename?: string) => {
     const finalFilename = filename || `polaroid-${Date.now()}.png`;
@@ -437,28 +340,22 @@ export const useAiMoodboard = ({
     try {
       setIsDownloading(true);
 
-      // Wait for element to be ready
-      await waitForElementReady();
-
       // Get current image URL to verify
       const currentImage = state.status === 'success' ? state.images[currentImageIndex] : null;
       if (!currentImage) {
         throw new Error('No image selected');
       }
 
-      let blob: Blob;
+      // Verify image is ready and matches expected URL
+      verifyImageReady(element, currentImage.url);
 
-      try {
-        // Try canvas-based capture first (most reliable on mobile)
-        console.log('Attempting canvas-based capture...');
-        blob = await captureWithCanvas(element, currentImage.url);
-        console.log(`Canvas capture successful (${blob.size} bytes)`);
-      } catch (canvasError) {
-        // Fallback to html-to-image
-        console.warn('Canvas capture failed, falling back to html-to-image:', canvasError);
-        blob = await captureWithHtmlToImage(element);
-        console.log(`html-to-image capture successful (${blob.size} bytes)`);
-      }
+      // Wait for element to be ready for capture
+      await waitForElementReady();
+
+      // Capture the polaroid (includes frame, padding, styling, etc.)
+      console.log('Capturing polaroid with html-to-image...');
+      const blob = await capturePolaroid(element);
+      console.log(`Polaroid captured successfully (${blob.size} bytes)`);
 
       // Try to share on mobile, download on desktop
       if (isMobileDevice() && navigator.share && navigator.canShare) {

@@ -1,5 +1,4 @@
-import type { FC } from "react";
-import { useState, useEffect } from "react";
+import { forwardRef, useState, useEffect } from "react";
 import { Title, Body, Caption } from "~/shared/components/Typography";
 
 export interface PolaroidProps {
@@ -23,7 +22,7 @@ const formatDate = (): string => {
   return `${day}.${month}.${year}`;
 };
 
-export const Polaroid: FC<PolaroidProps> = ({
+export const Polaroid = forwardRef<HTMLDivElement, PolaroidProps>(({
   imageSrc,
   imageAlt,
   title,
@@ -34,7 +33,7 @@ export const Polaroid: FC<PolaroidProps> = ({
   showDate = true,
   onImageLoad,
   onImageError,
-}) => {
+}, ref) => {
   const [imageLoaded, setImageLoaded] = useState(false);
 
   // Reset loaded state when image source changes
@@ -57,6 +56,7 @@ export const Polaroid: FC<PolaroidProps> = ({
   const showCounter = currentItem !== undefined && totalItems !== undefined;
   return (
     <div
+      ref={ref}
       className={`
         bg-neutral-white
         rounded-lg
@@ -114,4 +114,6 @@ export const Polaroid: FC<PolaroidProps> = ({
       </div>
     </div>
   );
-};
+});
+
+Polaroid.displayName = 'Polaroid';
