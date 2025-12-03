@@ -78,7 +78,7 @@ export const useAiMoodboard = ({
   }, [userResultId]);
 
   /**
-   * Generate images on mount
+   * Generate images on mount and pre-convert to data URLs for mobile compatibility
    */
   useEffect(() => {
     const generateImages = async () => {
@@ -95,7 +95,22 @@ export const useAiMoodboard = ({
           numberOfImages: 3,
         });
 
-        setState({ status: 'success', images, tribe: tribeData });
+        // Convert all image URLs to data URLs to avoid CORS issues during capture
+        // This is done once upfront rather than during download for reliability
+        const imagesWithDataUrls = await Promise.all(
+          images.map(async (image) => {
+            try {
+              const dataUrl = await convertImageUrlToDataUrl(image.url);
+              return { ...image, url: dataUrl };
+            } catch (error) {
+              console.error('Failed to convert image to data URL, keeping original:', error);
+              // Keep original URL if conversion fails
+              return image;
+            }
+          })
+        );
+
+        setState({ status: 'success', images: imagesWithDataUrls, tribe: tribeData });
       } catch (error) {
         console.error('Error generating images:', error);
         const errorObj = error instanceof Error ? error : new Error('Failed to generate images');
@@ -289,12 +304,10 @@ export const useAiMoodboard = ({
    * Converts the Polaroid DOM element to a PNG using html-to-image
    * Waits for fonts and images to load before capturing for accurate rendering
    * Uses 3x scale with automatic fallback to 2x and 1.5x on failure
-   * Converts cross-origin images to data URLs to avoid CORS issues on mobile Safari
+   * Images are already data URLs from generation, avoiding CORS issues
    */
   const downloadPolaroid = useCallback(async (element: HTMLElement, filename?: string) => {
     const finalFilename = filename || `polaroid-${Date.now()}.png`;
-    // Store original sources to restore after capture
-    const originalSources = new Map<HTMLImageElement, string>();
 
     try {
       setIsDownloading(true);
@@ -318,7 +331,7 @@ export const useAiMoodboard = ({
             }
           };
           img.onerror = () => reject(new Error(`Failed to load image: ${img.src}`));
-          // Timeout after 10 seconds (increased from 5s for mobile)
+          // Timeout after 10 seconds
           setTimeout(() => {
             if (verifyImageLoaded(img)) {
               resolve(undefined);
@@ -331,63 +344,8 @@ export const useAiMoodboard = ({
 
       await Promise.all(imageLoadPromises);
 
-      // Convert all images to data URLs to avoid CORS issues
-      // This is especially important for mobile Safari which is strict about cross-origin images
-      console.log('Converting images to data URLs to avoid CORS issues...');
-
-      let conversionSuccess = 0;
-      let conversionFailed = 0;
-
-      const imageConversionPromises = Array.from(images).map(async (img) => {
-        try {
-          const originalSrc = img.src;
-          const dataUrl = await convertImageUrlToDataUrl(originalSrc);
-
-          // Store original src for restoration
-          originalSources.set(img, originalSrc);
-          // Replace image src with data URL
-          img.src = dataUrl;
-
-          conversionSuccess++;
-          console.log('Successfully converted image to data URL:', {
-            originalSrc,
-            dataUrlLength: dataUrl.length
-          });
-        } catch (error) {
-          conversionFailed++;
-          console.error('Failed to convert image to data URL:', error);
-          // Don't throw - let the capture attempt proceed with original image
-        }
-      });
-
-      await Promise.all(imageConversionPromises);
-
-      // Log conversion status
-      console.log(`Images converted: ${conversionSuccess}/${images.length}, Failed: ${conversionFailed}`);
-
-      // Wait for data URL images to be fully loaded and rendered
-      // This is critical on mobile to prevent capture before rendering is complete
-      const dataUrlImageLoadPromises = Array.from(images).map((img) => {
-        // If image src is now a data URL, wait for it to be fully loaded
-        if (img.src.startsWith('data:')) {
-          return new Promise<void>((resolve) => {
-            if (verifyImageLoaded(img)) {
-              resolve();
-            } else {
-              img.onload = () => resolve();
-              // Fallback timeout
-              setTimeout(() => resolve(), 2000);
-            }
-          });
-        }
-        return Promise.resolve();
-      });
-
-      await Promise.all(dataUrlImageLoadPromises);
-
-      // Extended delay for mobile to ensure rendering is complete
-      // Mobile devices need more time to decode and render images
-      const renderDelay = isMobileDevice() ? 1000 : 100;
+      // Short delay to ensure rendering is complete
+      const renderDelay = isMobileDevice() ? 500 : 100;
       await new Promise(resolve => setTimeout(resolve, renderDelay));
 
       // Try 3x scale first (as requested), with automatic fallback
@@ -463,11 +421,6 @@ export const useAiMoodboard = ({
       // User-friendly error message
       throw new Error('Unable to download polaroid. Please ensure you have a stable connection and try again.');
     } finally {
-      // Restore original image sources
-      originalSources.forEach((originalSrc, img) => {
-        img.src = originalSrc;
-      });
-
       setIsDownloading(false);
     }
   }, [isMobileDevice]);
