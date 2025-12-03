@@ -9,27 +9,28 @@ const corsHeaders = {
 interface GenerateImageRequest {
   userResultId: string;
   userPhoto: string;
-  prompt?: string;
-  numberOfImages?: number;
-}
-
-interface GeneratedImageData {
-  url: string;
-  prompt: string;
+  imageIndex: number;
 }
 
 interface GenerateImageResponse {
   success: boolean;
   data?: {
-    imageUrl?: string;
-    userResultId: string;
-    images?: GeneratedImageData[];
+    imageUrl: string;
+    prompt: string;
+    imageIndex: number;
   };
   error?: {
     code: string;
     message: string;
+    isRetryable: boolean;
   };
 }
+
+const RETRYABLE_ERROR_CODES = ['RATE_LIMITED', 'SERVER_ERROR'];
+
+const isRetryableErrorCode = (code: string): boolean => {
+  return RETRYABLE_ERROR_CODES.includes(code);
+};
 
 const buildErrorResponse = (
   code: string,
@@ -42,6 +43,7 @@ const buildErrorResponse = (
       error: {
         code,
         message,
+        isRetryable: isRetryableErrorCode(code),
       },
     } satisfies GenerateImageResponse),
     {
@@ -53,14 +55,11 @@ const buildErrorResponse = (
 
 /**
  * Fetches the image generation prompt for the user's tribe
- * Queries the database to get the tribe associated with the user result
- * and returns the tribe's image_generation_prompt
  */
 const fetchTribePrompt = async (
   supabase: ReturnType<typeof createClient>,
   userResultId: string
 ): Promise<string> => {
-
   const { data, error } = await supabase
     .from('user_results')
     .select(`
@@ -82,7 +81,6 @@ const fetchTribePrompt = async (
     throw new Error(`User result not found: ${userResultId}`);
   }
 
-
   const tribeData = data.tribes as { name: string; image_generation_prompt: string | null };
 
   if (!tribeData.image_generation_prompt) {
@@ -93,7 +91,6 @@ const fetchTribePrompt = async (
   return tribeData.image_generation_prompt;
 };
 
-
 /**
  * Helper function to add delay between API calls
  */
@@ -103,7 +100,6 @@ const delay = (ms: number): Promise<void> => {
 
 /**
  * Retry wrapper with exponential backoff
- * Handles 429 (Too Many Requests) errors by retrying with increasing delays
  */
 const retryWithBackoff = async <T>(
   fn: () => Promise<T>,
@@ -118,15 +114,12 @@ const retryWithBackoff = async <T>(
     } catch (error) {
       lastError = error instanceof Error ? error : new Error('Unknown error');
 
-
       const is429Error = lastError.message.includes('429') ||
         lastError.message.includes('Too Many Requests');
-
 
       if (attempt === maxRetries - 1 || !is429Error) {
         throw lastError;
       }
-
 
       const delayMs = initialDelayMs * Math.pow(2, attempt);
       console.log(`Rate limit hit. Retrying in ${delayMs}ms (attempt ${attempt + 1}/${maxRetries})...`);
@@ -137,11 +130,13 @@ const retryWithBackoff = async <T>(
   throw lastError!;
 };
 
+/**
+ * Calls Gemini API to generate an image
+ * Returns base64-encoded image data
+ */
 const callGeminiAPI = async (userPhoto: string, prompt: string): Promise<string> => {
-
   const geminiApiEndpoint = Deno.env.get('GEMINI_API_ENDPOINT') || "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent";
   const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
-
 
   if (!geminiApiEndpoint) {
     throw new Error('GEMINI_API_ENDPOINT environment variable is not set');
@@ -151,13 +146,11 @@ const callGeminiAPI = async (userPhoto: string, prompt: string): Promise<string>
     throw new Error('GEMINI_API_KEY environment variable is not set');
   }
 
-
   const base64Image = userPhoto.replace(/^data:image\/\w+;base64,/, '');
 
   console.log(`Calling Gemini API with prompt: "${prompt.substring(0, 50)}..."`);
 
   try {
-
     const response = await fetch(geminiApiEndpoint, {
       method: 'POST',
       headers: {
@@ -187,7 +180,6 @@ const callGeminiAPI = async (userPhoto: string, prompt: string): Promise<string>
       }),
     });
 
-
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Gemini API error:', {
@@ -195,18 +187,25 @@ const callGeminiAPI = async (userPhoto: string, prompt: string): Promise<string>
         statusText: response.statusText,
         body: errorText,
       });
-      throw new Error(`Gemini API request failed: ${response.status} ${response.statusText}`);
+
+      if (response.status === 429) {
+        throw new Error(`RATE_LIMITED: Too many requests to Gemini API`);
+      }
+      if (response.status >= 500) {
+        throw new Error(`SERVER_ERROR: Gemini API server error (${response.status})`);
+      }
+      if (response.status >= 400) {
+        throw new Error(`GENERATION_FAILED: Gemini API request failed (${response.status})`);
+      }
+      throw new Error(`GENERATION_FAILED: ${response.status} ${response.statusText}`);
     }
 
-
     const data = await response.json();
-
 
     if (!data.candidates || !Array.isArray(data.candidates) || data.candidates.length === 0) {
       console.error('Invalid API response structure:', data);
       throw new Error('Invalid response from Gemini API: missing candidates');
     }
-
 
     const candidate = data.candidates[0];
     const parts = candidate?.content?.parts;
@@ -215,7 +214,6 @@ const callGeminiAPI = async (userPhoto: string, prompt: string): Promise<string>
       console.error('No parts in candidate:', candidate);
       throw new Error('No parts returned from Gemini API');
     }
-
 
     const imagePart = parts.find((part: { inlineData?: { mimeType: string; data: string } }) =>
       part.inlineData?.mimeType?.startsWith('image/')
@@ -232,13 +230,11 @@ const callGeminiAPI = async (userPhoto: string, prompt: string): Promise<string>
 
     return generatedImageBase64;
   } catch (error) {
-
     console.error('Gemini API call failed:', {
       error: error instanceof Error ? error.message : 'Unknown error',
       prompt: prompt.substring(0, 100),
       endpoint: geminiApiEndpoint.substring(0, 50) + '...',
     });
-
 
     if (error instanceof Error) {
       throw new Error(`Failed to generate image: ${error.message}`);
@@ -247,16 +243,22 @@ const callGeminiAPI = async (userPhoto: string, prompt: string): Promise<string>
   }
 };
 
+/**
+ * Uploads base64 image to Supabase Storage
+ * Returns public URL
+ */
 const uploadToStorage = async (
   supabase: ReturnType<typeof createClient>,
-  imageData: string,
+  imageBase64: string,
   userResultId: string,
   imageIndex: number
 ): Promise<string> => {
-  const binaryData = Uint8Array.from(atob(imageData), c => c.charCodeAt(0));
+  // Convert base64 to binary
+  const binaryData = Uint8Array.from(atob(imageBase64), c => c.charCodeAt(0));
   const blob = new Blob([binaryData], { type: 'image/jpeg' });
   const filename = `${userResultId}-${Date.now()}-${imageIndex}.jpg`;
 
+  // Upload to storage
   const { error: uploadError } = await supabase.storage
     .from('generated-images')
     .upload(filename, blob, {
@@ -265,37 +267,35 @@ const uploadToStorage = async (
     });
 
   if (uploadError) {
-    throw new Error(`Failed to upload image: ${uploadError.message}`);
+    throw new Error(`UPLOAD_FAILED: ${uploadError.message}`);
   }
 
-  // Get the public URL
-  const { data: { publicUrl } } = supabase.storage
+  // Get public URL
+  const { data } = supabase.storage
     .from('generated-images')
     .getPublicUrl(filename);
 
-  // Replace internal Kong URL with public-facing URL for local development
-  // In production, this will use the actual Supabase URL
-  const publicFacingUrl = Deno.env.get('PUBLIC_SUPABASE_URL') || Deno.env.get('SUPABASE_URL') || '';
-  const correctedUrl = publicUrl.replace('http://kong:8000', publicFacingUrl);
+  let publicUrl = data.publicUrl;
 
-  console.log(`Original URL: ${publicUrl}`);
-  console.log(`Corrected URL: ${correctedUrl}`);
+  // Replace Kong URL with public-facing URL for local development
+  if (publicUrl.includes('kong:8000')) {
+    publicUrl = publicUrl.replace('http://kong:8000', 'http://127.0.0.1:54321');
+    console.log('Replaced Kong URL with local URL:', publicUrl.substring(0, 80));
+  }
 
-  return correctedUrl;
+  console.log(`Image uploaded: ${publicUrl.substring(0, 60)}...`);
+  return publicUrl;
 };
 
 Deno.serve(async (req) => {
-
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
   try {
-
     if (req.method !== 'POST') {
       return buildErrorResponse('METHOD_NOT_ALLOWED', 'Only POST method is allowed', 405);
     }
-
 
     let requestBody: GenerateImageRequest;
     try {
@@ -304,29 +304,22 @@ Deno.serve(async (req) => {
       return buildErrorResponse('INVALID_JSON', 'Request body must be valid JSON', 400);
     }
 
-
     if (!requestBody.userResultId || typeof requestBody.userResultId !== 'string') {
       return buildErrorResponse('INVALID_REQUEST', 'userResultId is required and must be a string', 400);
     }
-
 
     if (!requestBody.userPhoto || typeof requestBody.userPhoto !== 'string') {
       return buildErrorResponse('INVALID_REQUEST', 'userPhoto is required and must be a base64 string', 400);
     }
 
+    if (requestBody.imageIndex === undefined || typeof requestBody.imageIndex !== 'number') {
+      return buildErrorResponse('INVALID_REQUEST', 'imageIndex is required and must be a number', 400);
+    }
 
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!uuidRegex.test(requestBody.userResultId)) {
       return buildErrorResponse('INVALID_REQUEST', 'userResultId must be a valid UUID', 400);
     }
-
-
-    const numberOfImages = requestBody.numberOfImages || 1;
-    if (numberOfImages < 1 || numberOfImages > 10) {
-      return buildErrorResponse('INVALID_REQUEST', 'numberOfImages must be between 1 and 10', 400);
-    }
-
-
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
@@ -344,93 +337,33 @@ Deno.serve(async (req) => {
       }
     });
 
-    // Get or fetch prompt from tribe
+    // Fetch prompt from tribe
     const prompt = await fetchTribePrompt(supabase, requestBody.userResultId);
-    console.log(`Generating ${numberOfImages} image(s) for user result: ${requestBody.userResultId}`);
+    console.log(`Generating image for user result: ${requestBody.userResultId}, index: ${requestBody.imageIndex}`);
 
+    // Generate image with retry logic
+    const imageBase64 = await retryWithBackoff(
+      () => callGeminiAPI(requestBody.userPhoto, prompt)
+    );
 
+    console.log(`Successfully generated image ${requestBody.imageIndex}`);
 
-    const generatedImages = [];
-    const DELAY_BETWEEN_CALLS_MS = 2000;
+    // Upload to storage
+    const imageUrl = await uploadToStorage(
+      supabase,
+      imageBase64,
+      requestBody.userResultId,
+      requestBody.imageIndex
+    );
 
-    for (let index = 0; index < numberOfImages; index++) {
-      try {
-
-        if (index > 0) {
-          console.log(`Waiting ${DELAY_BETWEEN_CALLS_MS}ms before generating image ${index + 1}...`);
-          await delay(DELAY_BETWEEN_CALLS_MS);
-        }
-
-        console.log(`Generating image ${index + 1}/${numberOfImages}...`);
-
-
-        const generatedImageData = await retryWithBackoff(
-          () => callGeminiAPI(requestBody.userPhoto, prompt)
-        );
-
-
-        const publicUrl = await uploadToStorage(supabase, generatedImageData, requestBody.userResultId, index);
-
-        console.log(`Image ${index + 1}/${numberOfImages} uploaded: ${publicUrl}`);
-
-        generatedImages.push({
-          url: publicUrl,
-          prompt,
-        });
-      } catch (error) {
-        console.error(`Error generating image ${index + 1}:`, error);
-        throw error;
-      }
-    }
-
-    console.log(`Successfully generated ${generatedImages.length} image(s)`);
-
-    // Save all generated images to the database
-    const imagesToInsert = generatedImages.map((image, index) => ({
-      user_result_id: requestBody.userResultId,
-      image_url: image.url,
-      prompt: image.prompt,
-      image_index: index,
-      is_primary: index === 0, // First image is the primary
-    }));
-
-    const { error: upsertError } = await supabase
-      .from('generated_images')
-      .upsert(imagesToInsert, {
-        onConflict: 'user_result_id,image_index',
-        ignoreDuplicates: false, // Update existing records if they exist
-      });
-
-    if (upsertError) {
-      console.error('Error saving images to database:', upsertError);
-      return buildErrorResponse('DATABASE_ERROR', `Failed to save images: ${upsertError.message}`, 500);
-    }
-
-    console.log(`Saved ${generatedImages.length} image(s) to database`);
-
-    // Update user_results with the first generated image URL for backward compatibility
-    const { error: updateError } = await supabase
-      .from('user_results')
-      .update({ generated_image_url: generatedImages[0].url })
-      .eq('id', requestBody.userResultId);
-
-    if (updateError) {
-      console.error('Database update error:', updateError);
-      return buildErrorResponse('DATABASE_ERROR', `Failed to update user result: ${updateError.message}`, 500);
-    }
-
-    console.log('Database updated successfully with first image URL');
-
-
-
-
+    // Return image URL (frontend will handle database save)
     return new Response(
       JSON.stringify({
         success: true,
         data: {
-          ...(numberOfImages === 1 && { imageUrl: generatedImages[0].url }),
-          userResultId: requestBody.userResultId,
-          images: generatedImages,
+          imageUrl,
+          prompt,
+          imageIndex: requestBody.imageIndex,
         },
       } satisfies GenerateImageResponse),
       {
@@ -441,6 +374,11 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('Unexpected error:', error);
     const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
-    return buildErrorResponse('INTERNAL_ERROR', errorMessage, 500);
+
+    const errorCode = errorMessage.includes('RATE_LIMITED') ? 'RATE_LIMITED' :
+      errorMessage.includes('SERVER_ERROR') ? 'SERVER_ERROR' :
+        'GENERATION_FAILED';
+
+    return buildErrorResponse(errorCode, errorMessage, 500);
   }
 });

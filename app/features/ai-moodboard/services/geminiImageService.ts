@@ -1,75 +1,151 @@
 import { supabase } from '~/shared/services/supabase';
-import type { GeminiGenerateImageRequest, GeminiGenerateImageResponse, GeneratedImage } from '../types';
+import { databaseService } from './databaseService';
+import type {
+  GeneratedImage,
+  ImageGenerationError,
+} from '../types';
+import { mapErrorCodeToType, isRetryableError } from '../types';
+
+interface GenerateSingleImageRequest {
+  userPhoto: string;
+  userResultId: string;
+  imageIndex: number;
+}
 
 /**
- * Service for generating AI moodboard images using Gemini
- * Communicates with Supabase Edge Function for secure API access
+ * Edge function response interface
+ */
+interface EdgeFunctionResponse {
+  success: boolean;
+  data?: {
+    imageUrl: string;
+    prompt: string;
+    imageIndex: number;
+  };
+  error?: {
+    code: string;
+    message: string;
+    isRetryable: boolean;
+  };
+}
+
+/**
+ * Creates a standardized image generation error
+ */
+const createImageGenerationError = (
+  code: string,
+  message: string
+): ImageGenerationError => {
+  const errorCode = mapErrorCodeToType(code);
+  return {
+    code: errorCode,
+    message,
+    isRetryable: isRetryableError(errorCode),
+  };
+};
+
+/**
+ * Service for generating AI images using Gemini API
+ * Orchestrates edge function calls, storage uploads, and database operations
  */
 export const geminiImageService = {
   /**
-   * Generate multiple AI images based on prompt and user photo
-   * @throws Error if validation fails or generation fails
+   * Fetches existing generated images for a user result from database
+   *
+   * @param userResultId - User result ID
+   * @returns Array of generated images
    */
-  async generateImages(request: GeminiGenerateImageRequest): Promise<GeneratedImage[]> {
+  async fetchExistingImages(userResultId: string): Promise<GeneratedImage[]> {
+    return databaseService.fetchExistingImages(userResultId);
+  },
 
-    if (!request.userPhoto || request.userPhoto.trim().length === 0) {
-      throw new Error('User photo is required');
-    }
-
-    if (!request.userResultId || request.userResultId.trim().length === 0) {
-      throw new Error('User result ID is required');
-    }
-
-    if (request.numberOfImages < 1) {
-      throw new Error('Number of images must be at least 1');
-    }
-
+  /**
+   * Generates a single AI image
+   * Calls edge function (which generates + uploads) → saves to database
+   *
+   * @param request - Generation request with user photo, result ID, and image index
+   * @returns Generated image with public URL
+   */
+  async generateSingleImage(
+    request: GenerateSingleImageRequest
+  ): Promise<GeneratedImage> {
     try {
-      // Call Supabase Edge Function (consolidated generate-image function)
-      const { data, error } = await supabase.functions.invoke<GeminiGenerateImageResponse>(
+      // Step 1: Call edge function (generates image + uploads to storage)
+      console.log(`Calling edge function for image ${request.imageIndex}...`);
+      const { data, error } = await supabase.functions.invoke<EdgeFunctionResponse>(
         'generate-image',
         {
           body: {
             userPhoto: request.userPhoto,
             userResultId: request.userResultId,
-            numberOfImages: request.numberOfImages,
+            imageIndex: request.imageIndex,
           },
         }
       );
 
-      // Handle Edge Function errors
       if (error) {
         console.error('Edge function error:', error);
-        throw new Error(`Failed to generate images: ${error.message}`);
+        throw createImageGenerationError('NETWORK_ERROR', error.message);
       }
 
-      // Handle missing response
       if (!data) {
-        throw new Error('No response from image generation service');
+        throw createImageGenerationError('UNKNOWN', 'No response from image generation service');
       }
 
-      // Handle unsuccessful generation
       if (!data.success) {
+        const errorCode = data.error?.code || 'UNKNOWN';
         const errorMessage = data.error?.message || 'Unknown error';
-        throw new Error(errorMessage);
+        throw createImageGenerationError(errorCode, errorMessage);
       }
 
-      // Handle missing data or images
-      if (!data.data || !data.data.images || data.data.images.length === 0) {
-        throw new Error('No images returned from generation service');
+      if (!data.data || !data.data.imageUrl) {
+        throw createImageGenerationError('UNKNOWN', 'No image URL returned from generation service');
       }
 
-      // Transform response to GeneratedImage format
-      const timestamp = Date.now();
-      return data.data.images.map((image, index) => ({
-        id: `${request.userResultId}-${timestamp}-${index}`,
-        url: image.url,
-        prompt: image.prompt,
-        timestamp,
-      }));
+      const publicUrl = data.data.imageUrl;
+
+      // Step 2: Save to database
+      console.log(`Saving image ${request.imageIndex} to database...`);
+      await databaseService.saveGeneratedImage(
+        request.userResultId,
+        publicUrl,
+        data.data.prompt,
+        request.imageIndex
+      );
+
+      // Step 4: Return generated image
+      return {
+        id: `${request.userResultId}-${Date.now()}-${request.imageIndex}`,
+        url: publicUrl,
+        prompt: data.data.prompt,
+        timestamp: Date.now(),
+        imageIndex: request.imageIndex,
+      };
     } catch (error) {
-      console.error('Error generating images:', error);
-      throw error instanceof Error ? error : new Error('Failed to generate images');
+      console.error(`Error generating image ${request.imageIndex}:`, error);
+
+      // If already an ImageGenerationError, rethrow
+      if ((error as ImageGenerationError).code) {
+        throw error;
+      }
+
+      // Otherwise, wrap in standard error
+      throw createImageGenerationError(
+        'UNKNOWN',
+        error instanceof Error ? error.message : 'Failed to generate image'
+      );
     }
+  },
+
+  /**
+   * Retries generation of a failed image
+   *
+   * @param request - Generation request
+   * @returns Generated image
+   */
+  async retryFailedImage(
+    request: GenerateSingleImageRequest
+  ): Promise<GeneratedImage> {
+    return this.generateSingleImage(request);
   },
 };

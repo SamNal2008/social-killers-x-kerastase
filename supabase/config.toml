@@ -338,6 +338,7 @@ verify_jwt = false
 
 [edge_runtime.secrets]
 GEMINI_API_KEY = "env(GEMINI_API_KEY)"
+SUPABASE_URL = "env(VITE_SUPABASE_URL)"
 
 [analytics]
 enabled = true

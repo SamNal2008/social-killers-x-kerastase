@@ -12,6 +12,12 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const WEIGHTS = {
+  MOODBOARD: 2,
+  KEYWORDS: 1,
+  BRANDS: 1,
+};
+
 interface TribeScore {
   points: number;
   name: string;
@@ -116,7 +122,7 @@ const calculateTribeScores = (
       if (!tribeScores[item.tribe.id]) {
         tribeScores[item.tribe.id] = { points: 0, name: item.tribe.name };
       }
-      tribeScores[item.tribe.id].points += 2;
+      tribeScores[item.tribe.id].points += WEIGHTS.MOODBOARD;
     }
   });
 
@@ -126,7 +132,7 @@ const calculateTribeScores = (
       if (!tribeScores[item.tribe.id]) {
         tribeScores[item.tribe.id] = { points: 0, name: item.tribe.name };
       }
-      tribeScores[item.tribe.id].points += 1;
+      tribeScores[item.tribe.id].points += WEIGHTS.KEYWORDS;
     }
   });
 
@@ -136,7 +142,7 @@ const calculateTribeScores = (
       if (!tribeScores[item.tribe.id]) {
         tribeScores[item.tribe.id] = { points: 0, name: item.tribe.name };
       }
-      tribeScores[item.tribe.id].points += 1;
+      tribeScores[item.tribe.id].points += WEIGHTS.BRANDS;
     }
   });
 

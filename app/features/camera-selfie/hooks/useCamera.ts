@@ -62,7 +62,7 @@ export const useCamera = (): UseCameraReturn => {
 
   /**
    * Capture a photo from the video stream
-   * Uses canvas to extract frame from video element
+   * Resizes to max 1024x1024 and compresses to JPEG for efficiency
    */
   const capturePhoto = useCallback(
     async (videoElement: HTMLVideoElement): Promise<void> => {
@@ -70,28 +70,48 @@ export const useCamera = (): UseCameraReturn => {
         throw new Error('Invalid video element');
       }
 
+      // Calculate target dimensions (max 1024x1024, maintain aspect ratio)
+      const maxDimension = 1024;
+      let targetWidth = videoElement.videoWidth;
+      let targetHeight = videoElement.videoHeight;
+
+      if (targetWidth > maxDimension || targetHeight > maxDimension) {
+        const scale = maxDimension / Math.max(targetWidth, targetHeight);
+        targetWidth = Math.floor(targetWidth * scale);
+        targetHeight = Math.floor(targetHeight * scale);
+      }
+
       const canvas = document.createElement('canvas');
-      canvas.width = videoElement.videoWidth;
-      canvas.height = videoElement.videoHeight;
+      canvas.width = targetWidth;
+      canvas.height = targetHeight;
 
       const context = canvas.getContext('2d');
       if (!context) {
         throw new Error('Failed to get canvas context');
       }
 
+      // Mirror horizontally
       context.translate(canvas.width, 0);
       context.scale(-1, 1);
+
+      // Draw with resizing
       context.drawImage(
         videoElement,
         0,
         0,
         videoElement.videoWidth,
-        videoElement.videoHeight
+        videoElement.videoHeight,
+        0,
+        0,
+        targetWidth,
+        targetHeight
       );
 
-      const dataUrl = canvas.toDataURL('image/png');
+      // Export as JPEG 80% quality (much smaller than PNG)
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
       const timestamp = Date.now();
 
+      console.log(`Photo captured: ${targetWidth}x${targetHeight}, JPEG 80%`);
       setCapturedPhoto({ dataUrl, timestamp });
     },
     []
