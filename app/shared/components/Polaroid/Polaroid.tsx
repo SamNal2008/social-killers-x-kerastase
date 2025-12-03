@@ -1,4 +1,4 @@
-import type { FC } from "react";
+import { forwardRef, useState, useEffect } from "react";
 import { Title, Body, Caption } from "~/shared/components/Typography";
 
 export interface PolaroidProps {
@@ -10,6 +10,8 @@ export interface PolaroidProps {
   totalItems?: number;
   className?: string;
   showDate?: boolean;
+  onImageLoad?: () => void;
+  onImageError?: () => void;
 }
 
 const formatDate = (): string => {
@@ -20,7 +22,7 @@ const formatDate = (): string => {
   return `${day}.${month}.${year}`;
 };
 
-export const Polaroid: FC<PolaroidProps> = ({
+export const Polaroid = forwardRef<HTMLDivElement, PolaroidProps>(({
   imageSrc,
   imageAlt,
   title,
@@ -29,10 +31,32 @@ export const Polaroid: FC<PolaroidProps> = ({
   totalItems,
   className = "",
   showDate = true,
-}) => {
+  onImageLoad,
+  onImageError,
+}, ref) => {
+  const [imageLoaded, setImageLoaded] = useState(false);
+
+  // Reset loaded state when image source changes
+  useEffect(() => {
+    if (imageSrc) {
+      setImageLoaded(false);
+    }
+  }, [imageSrc]);
+
+  const handleImageLoad = () => {
+    setImageLoaded(true);
+    onImageLoad?.();
+  };
+
+  const handleImageError = () => {
+    setImageLoaded(false);
+    onImageError?.();
+  };
+
   const showCounter = currentItem !== undefined && totalItems !== undefined;
   return (
     <div
+      ref={ref}
       className={`
         bg-neutral-white
         rounded-lg
@@ -48,13 +72,25 @@ export const Polaroid: FC<PolaroidProps> = ({
         ${className}
       `}
     >
-      <div className="flex-1 bg-neutral-gray-200 rounded overflow-hidden flex items-center justify-center min-h-0">
+      <div className="flex-1 bg-neutral-gray-200 rounded overflow-hidden flex items-center justify-center min-h-0 relative">
         {imageSrc ? (
-          <img
-            src={imageSrc}
-            alt={imageAlt}
-            className="w-full h-full object-cover"
-          />
+          <>
+            <img
+              key={imageSrc}
+              src={imageSrc}
+              alt={imageAlt}
+              className="w-full h-full object-cover"
+              crossOrigin="anonymous"
+              onLoad={handleImageLoad}
+              onError={handleImageError}
+              loading="eager"
+            />
+            {!imageLoaded && (
+              <div className="absolute inset-0 flex items-center justify-center bg-neutral-gray-200">
+                <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+              </div>
+            )}
+          </>
         ) : (
           <Title variant="h1" className="text-neutral-dark text-center px-4">
             {title}
@@ -78,4 +114,6 @@ export const Polaroid: FC<PolaroidProps> = ({
       </div>
     </div>
   );
-};
+});
+
+Polaroid.displayName = 'Polaroid';

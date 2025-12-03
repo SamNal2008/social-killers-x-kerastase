@@ -45,6 +45,8 @@ export const AiMoodboardScreen: FC = () => {
     downloadImage,
     downloadPolaroid,
     isDownloading,
+    isImageReady,
+    handleImageReady,
     canGoNext,
     canGoPrevious,
   } = useAiMoodboard({ userResultId, userPhoto });
@@ -161,15 +163,15 @@ export const AiMoodboardScreen: FC = () => {
           <div className="flex flex-col gap-6 w-full">
             {/* Polaroid Card */}
             <motion.div variants={staggerItemVariants}>
-              <div ref={polaroidRef} className="rounded-lg overflow-hidden w-fit mx-auto">
-                <Polaroid
-                  imageSrc={currentImage.url}
-                  imageAlt={`Moodboard ${currentImageIndex + 1}`}
-                  title=""
-                  subtitle="Tribes & Communities Day"
-                  className="w-full"
-                />
-              </div>
+              <Polaroid
+                ref={polaroidRef}
+                imageSrc={currentImage.url}
+                imageAlt={`Moodboard ${currentImageIndex + 1}`}
+                title=""
+                subtitle="Tribes & Communities Day"
+                className="w-full"
+                onImageLoad={handleImageReady}
+              />
             </motion.div>
 
             {/* Navigation Buttons */}
@@ -198,11 +200,11 @@ export const AiMoodboardScreen: FC = () => {
               <Button
                 variant="primary"
                 onClick={handleDownload}
-                disabled={isDownloading}
+                disabled={isDownloading || !isImageReady}
                 className="w-full h-[52px] flex items-center justify-center gap-2"
               >
                 {isDownloading && <LoaderCircle className="w-5 h-5 animate-spin" />}
-                Download Polaroid
+                {!isImageReady && !isDownloading ? 'Preparing image...' : 'Download Polaroid'}
               </Button>
             </motion.div>
           </div>

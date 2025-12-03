@@ -72,6 +72,8 @@ export interface UseAiMoodboardReturn {
   downloadImage: (imageUrl: string, filename?: string) => Promise<void>;
   downloadPolaroid: (element: HTMLElement, filename?: string) => Promise<void>;
   isDownloading: boolean;
+  isImageReady: boolean;
+  handleImageReady: () => void;
   canGoNext: boolean;
   canGoPrevious: boolean;
 }

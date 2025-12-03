@@ -98,12 +98,12 @@ export const DetailsScreen: FC<DetailsScreenProps> = ({ userResultId }) => {
           {/* Subtitle and Description Section */}
           <motion.div
             variants={staggerItemVariants}
-            className="flex w-full flex-col gap-6 items-start"
+            className="flex w-full flex-col gap-6 items-center"
           >
             {/* Subtitle */}
             <Title
               variant="h2"
-              className="text-center text-neutral-dark w-[322px]"
+              className="text-center text-neutral-dark"
             >
               "{tribeData.subtitle}"
             </Title>
@@ -111,7 +111,7 @@ export const DetailsScreen: FC<DetailsScreenProps> = ({ userResultId }) => {
             {/* Description */}
             <Body
               variant="1"
-              className="text-center text-neutral-dark leading-[170%] w-[322px]"
+              className="text-center text-neutral-dark leading-[170%]"
             >
               {tribeData.description}
             </Body>
