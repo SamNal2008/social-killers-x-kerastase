@@ -147,10 +147,35 @@ describe('Polaroid', () => {
       // For 2030-06-20, expect "20.06.30" (not "20.06.2030")
       expect(screen.getByText('20.06.30')).toBeInTheDocument();
     });
+
+    it('should hide date when showDate is false', () => {
+      render(
+        <Polaroid
+          imageAlt="Test image"
+          title="Test"
+          showDate={false}
+        />
+      );
+
+      // Date should not be displayed
+      expect(screen.queryByText('03.12.25')).not.toBeInTheDocument();
+    });
+
+    it('should show date by default (showDate defaults to true)', () => {
+      render(
+        <Polaroid
+          imageAlt="Test image"
+          title="Test"
+        />
+      );
+
+      // Date should be displayed by default
+      expect(screen.getByText('03.12.25')).toBeInTheDocument();
+    });
   });
 
-  describe('Counter Removal (Deprecated Feature)', () => {
-    it('should NOT display counter even when currentItem and totalItems are provided', () => {
+  describe('Counter Display', () => {
+    it('should display counter when currentItem and totalItems are provided', () => {
       render(
         <Polaroid
           imageAlt="Test image"
@@ -160,11 +185,13 @@ describe('Polaroid', () => {
         />
       );
 
-      // Counter should no longer be displayed
-      expect(screen.queryByText('1/3')).not.toBeInTheDocument();
+      // Counter should be displayed
+      expect(screen.getByText('1 / 3')).toBeInTheDocument();
+      // Date should NOT be displayed when counter is shown
+      expect(screen.queryByText('03.12.25')).not.toBeInTheDocument();
     });
 
-    it('should NOT display counter with different values', () => {
+    it('should display counter with different values', () => {
       render(
         <Polaroid
           imageAlt="Test image"
@@ -174,21 +201,21 @@ describe('Polaroid', () => {
         />
       );
 
-      expect(screen.queryByText('2/5')).not.toBeInTheDocument();
+      expect(screen.getByText('2 / 5')).toBeInTheDocument();
     });
 
-    it('should accept currentItem and totalItems props without breaking (backward compatibility)', () => {
-      // Should not throw error even if props are still passed
-      expect(() => {
-        render(
-          <Polaroid
-            imageAlt="Test image"
-            title="Test"
-            currentItem={1}
-            totalItems={3}
-          />
-        );
-      }).not.toThrow();
+    it('should show date when counter props are not provided', () => {
+      render(
+        <Polaroid
+          imageAlt="Test image"
+          title="Test"
+        />
+      );
+
+      // Date should be displayed when no counter props
+      expect(screen.getByText('03.12.25')).toBeInTheDocument();
+      // Counter should NOT be displayed
+      expect(screen.queryByText(/\d+ \/ \d+/)).not.toBeInTheDocument();
     });
   });
 
