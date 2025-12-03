@@ -325,10 +325,76 @@ export const useAiMoodboard = ({
   };
 
   /**
+   * Comprehensive wait for element to be fully ready for capture
+   * Checks fonts, images, canvas-ready state, and rendering stability
+   */
+  const waitForElementReady = async (element: HTMLElement): Promise<void> => {
+    console.log('Starting comprehensive ready check...');
+
+    // Step 1: Wait for fonts
+    await document.fonts.ready;
+    console.log('✓ Fonts ready');
+
+    // Step 2: Get all images
+    const images = element.querySelectorAll('img');
+    console.log(`Found ${images.length} images`);
+
+    // Step 3: Wait for images to load
+    await Promise.all(
+      Array.from(images).map((img) => {
+        if (verifyImageLoaded(img)) return Promise.resolve();
+
+        return new Promise<void>((resolve) => {
+          img.onload = () => resolve();
+          img.onerror = () => resolve(); // Don't fail, just continue
+          setTimeout(() => resolve(), 10000); // 10s timeout
+        });
+      })
+    );
+    console.log('✓ Images loaded');
+
+    // Step 4: Wait for images to be canvas-ready with extended timeout
+    const maxWaitTime = 10000; // 10 seconds for mobile
+    const checkInterval = 300; // Check every 300ms
+    const startTime = Date.now();
+
+    while (Date.now() - startTime < maxWaitTime) {
+      const allReady = Array.from(images).every(img => verifyImageCanvasReady(img));
+
+      if (allReady) {
+        const elapsed = Date.now() - startTime;
+        console.log(`✓ All images canvas-ready after ${elapsed}ms`);
+        break;
+      }
+
+      await new Promise(resolve => setTimeout(resolve, checkInterval));
+    }
+
+    // Step 5: Wait for rendering to stabilize using requestAnimationFrame
+    // This ensures the browser has fully painted the element
+    await new Promise(resolve => requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(resolve);
+      });
+    }));
+    console.log('✓ Rendering stable');
+
+    // Step 6: Final delay for mobile to ensure everything is settled
+    if (isMobileDevice()) {
+      await new Promise(resolve => setTimeout(resolve, 800));
+      console.log('✓ Mobile settle time complete');
+    } else {
+      await new Promise(resolve => setTimeout(resolve, 200));
+      console.log('✓ Desktop settle time complete');
+    }
+
+    console.log('✓ Element fully ready for capture');
+  };
+
+  /**
    * Download Polaroid component as image
    * Converts the Polaroid DOM element to a PNG using html-to-image
-   * Waits for fonts and images to load before capturing for accurate rendering
-   * Uses 3x scale with automatic fallback to 2x and 1.5x on failure
+   * Uses comprehensive ready check and 3x scale with automatic fallback
    * Images are already data URLs from generation, avoiding CORS issues
    */
   const downloadPolaroid = useCallback(async (element: HTMLElement, filename?: string) => {
@@ -337,58 +403,8 @@ export const useAiMoodboard = ({
     try {
       setIsDownloading(true);
 
-      // Wait for fonts to load
-      await document.fonts.ready;
-
-      // Wait for all images within the element to load
-      const images = element.querySelectorAll('img');
-      const imageLoadPromises = Array.from(images).map((img) => {
-        // Check if image is truly loaded with naturalWidth/naturalHeight
-        if (verifyImageLoaded(img)) return Promise.resolve();
-
-        return new Promise((resolve, reject) => {
-          img.onload = () => {
-            // Double-check after load event
-            if (verifyImageLoaded(img)) {
-              resolve(undefined);
-            } else {
-              reject(new Error(`Image loaded but has invalid dimensions: ${img.src}`));
-            }
-          };
-          img.onerror = () => reject(new Error(`Failed to load image: ${img.src}`));
-          // Timeout after 10 seconds
-          setTimeout(() => {
-            if (verifyImageLoaded(img)) {
-              resolve(undefined);
-            } else {
-              reject(new Error(`Image load timeout: ${img.src}`));
-            }
-          }, 10000);
-        });
-      });
-
-      await Promise.all(imageLoadPromises);
-
-      // Wait for images to be canvas-ready (especially important for data URLs on mobile)
-      // Data URLs need time to be decoded before they can be drawn to canvas
-      const maxWaitTime = 5000; // Maximum 5 seconds
-      const checkInterval = 200; // Check every 200ms
-      const startTime = Date.now();
-
-      while (Date.now() - startTime < maxWaitTime) {
-        const allReady = Array.from(images).every(img => verifyImageCanvasReady(img));
-
-        if (allReady) {
-          console.log(`All images canvas-ready after ${Date.now() - startTime}ms`);
-          break;
-        }
-
-        // Wait before checking again
-        await new Promise(resolve => setTimeout(resolve, checkInterval));
-      }
-
-      // Small additional delay to ensure rendering is complete
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Comprehensive wait for everything to be ready
+      await waitForElementReady(element);
 
       // Try 3x scale first (as requested), with automatic fallback
       const scaleAttempts = [3, 2, 1.5];
