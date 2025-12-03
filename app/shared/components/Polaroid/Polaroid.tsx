@@ -9,6 +9,7 @@ export interface PolaroidProps {
   currentItem?: number; // Deprecated - kept for backward compatibility
   totalItems?: number; // Deprecated - kept for backward compatibility
   className?: string;
+  showDate?: boolean;
 }
 
 const formatDate = (): string => {
@@ -25,6 +26,7 @@ export const Polaroid: FC<PolaroidProps> = ({
   title,
   subtitle = "Swipe to decide",
   className = "",
+  showDate = true,
 }) => {
   return (
     <div
@@ -61,9 +63,11 @@ export const Polaroid: FC<PolaroidProps> = ({
         <Body variant="2" className="text-neutral-gray">
           {subtitle}
         </Body>
-        <Caption variant="2" className="text-neutral-dark">
-          {formatDate()}
-        </Caption>
+        {showDate && (
+          <Caption variant="2" className="text-neutral-dark">
+            {formatDate()}
+          </Caption>
+        )}
       </div>
     </div>
   );

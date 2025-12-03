@@ -147,6 +147,31 @@ describe('Polaroid', () => {
       // For 2030-06-20, expect "20.06.30" (not "20.06.2030")
       expect(screen.getByText('20.06.30')).toBeInTheDocument();
     });
+
+    it('should hide date when showDate is false', () => {
+      render(
+        <Polaroid
+          imageAlt="Test image"
+          title="Test"
+          showDate={false}
+        />
+      );
+
+      // Date should not be displayed
+      expect(screen.queryByText('03.12.25')).not.toBeInTheDocument();
+    });
+
+    it('should show date by default (showDate defaults to true)', () => {
+      render(
+        <Polaroid
+          imageAlt="Test image"
+          title="Test"
+        />
+      );
+
+      // Date should be displayed by default
+      expect(screen.getByText('03.12.25')).toBeInTheDocument();
+    });
   });
 
   describe('Counter Removal (Deprecated Feature)', () => {

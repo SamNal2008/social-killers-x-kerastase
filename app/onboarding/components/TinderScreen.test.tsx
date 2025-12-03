@@ -33,14 +33,12 @@ describe('TinderScreen', () => {
             expect(screen.getByText('Hermès')).toBeInTheDocument();
         });
 
-        it('should render the current date in DD.MM.YY format', () => {
+        it('should not render the date on polaroid cards', () => {
             render(<TinderScreen {...defaultProps} />);
-            // Date format: DD.MM.YY (e.g., "03.12.25")
-            // Check that date-like strings are present (matches DD.MM.YY pattern)
-            // Multiple cards may be present (stacked), so use getAllByText
+            // Date should NOT be displayed on TinderScreen polaroids
             const datePattern = /\d{2}\.\d{2}\.\d{2}/;
-            const dates = screen.getAllByText(datePattern);
-            expect(dates.length).toBeGreaterThan(0);
+            const dates = screen.queryAllByText(datePattern);
+            expect(dates.length).toBe(0);
         });
 
         it('should render Like and Pass buttons', () => {
