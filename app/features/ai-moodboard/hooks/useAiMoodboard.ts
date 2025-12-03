@@ -211,9 +211,9 @@ export const useAiMoodboard = ({
       // Wait for fonts to load before capturing
       await document.fonts.ready;
 
-      // Convert DOM element to PNG data URL with 2x pixel ratio for quality
+      // Convert DOM element to PNG data URL with 3x pixel ratio for quality
       const dataUrl = await toPng(element, {
-        pixelRatio: 2,
+        pixelRatio: 3,
         backgroundColor: '#F5F5F5', // Light gray background matching surface-light
         cacheBust: true, // Prevent caching issues with images
       });

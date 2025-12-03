@@ -161,7 +161,7 @@ export const AiMoodboardScreen: FC = () => {
           <div className="flex flex-col gap-6 w-full">
             {/* Polaroid Card */}
             <motion.div variants={staggerItemVariants}>
-              <div ref={polaroidRef}>
+              <div ref={polaroidRef} className="rounded-lg overflow-hidden w-fit mx-auto">
                 <Polaroid
                   imageSrc={currentImage.url}
                   imageAlt={`Moodboard ${currentImageIndex + 1}`}
