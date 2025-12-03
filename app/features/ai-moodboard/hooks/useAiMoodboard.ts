@@ -200,7 +200,7 @@ export const useAiMoodboard = ({
   /**
    * Download Polaroid component as image
    * Converts the Polaroid DOM element to a PNG using html-to-image
-   * Waits for fonts to load before capturing for accurate rendering
+   * Waits for fonts and images to load before capturing for accurate rendering
    */
   const downloadPolaroid = useCallback(async (element: HTMLElement, filename?: string) => {
     const finalFilename = filename || `polaroid-${Date.now()}.png`;
@@ -208,19 +208,49 @@ export const useAiMoodboard = ({
     try {
       setIsDownloading(true);
 
-      // Wait for fonts to load before capturing
+      // Wait for fonts to load
       await document.fonts.ready;
 
-      // Convert DOM element to PNG data URL with 3x pixel ratio for quality
+      // Wait for all images within the element to load
+      const images = element.querySelectorAll('img');
+      const imageLoadPromises = Array.from(images).map((img) => {
+        if (img.complete) return Promise.resolve();
+        return new Promise((resolve, reject) => {
+          img.onload = () => resolve(undefined);
+          img.onerror = () => reject(new Error(`Failed to load image: ${img.src}`));
+          // Timeout after 5 seconds
+          setTimeout(() => resolve(undefined), 5000);
+        });
+      });
+      await Promise.all(imageLoadPromises);
+
+      // Small delay to ensure rendering is complete (especially important on mobile)
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Use lower pixelRatio on mobile for better memory management
+      const pixelRatio = isMobileDevice() ? 2 : 3;
+
+      // Convert DOM element to PNG data URL
       const dataUrl = await toPng(element, {
-        pixelRatio: 3,
+        pixelRatio,
         backgroundColor: '#F5F5F5', // Light gray background matching surface-light
         cacheBust: true, // Prevent caching issues with images
+        skipFonts: false, // Ensure fonts are included
       });
+
+      // Verify we got a valid data URL
+      if (!dataUrl || dataUrl === 'data:,') {
+        throw new Error('Generated empty image data');
+      }
 
       // Convert data URL to blob
       const response = await fetch(dataUrl);
       const blob = await response.blob();
+
+      // Verify blob has content
+      if (blob.size === 0) {
+        throw new Error('Generated empty blob');
+      }
 
       // Try to share on mobile, download on desktop
       if (isMobileDevice() && navigator.share && navigator.canShare) {
@@ -253,7 +283,16 @@ export const useAiMoodboard = ({
         return;
       }
 
-      console.error('Error downloading polaroid:', error);
+      // Log detailed error information for debugging
+      console.error('Error downloading polaroid:', {
+        error,
+        isMobile: isMobileDevice(),
+        elementDimensions: {
+          width: element.offsetWidth,
+          height: element.offsetHeight,
+        },
+        hasImages: element.querySelectorAll('img').length > 0,
+      });
       throw new Error('Failed to download polaroid');
     } finally {
       setIsDownloading(false);
