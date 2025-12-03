@@ -221,6 +221,31 @@ export const useAiMoodboard = ({
   };
 
   /**
+   * Verify that an image is ready for canvas rendering
+   * Tests by actually drawing to a test canvas - more reliable than just checking complete
+   */
+  const verifyImageCanvasReady = (img: HTMLImageElement): boolean => {
+    try {
+      // Create a small test canvas
+      const testCanvas = document.createElement('canvas');
+      testCanvas.width = 1;
+      testCanvas.height = 1;
+      const ctx = testCanvas.getContext('2d');
+
+      if (!ctx) return false;
+
+      // Try to draw the image - this will fail if image isn't ready
+      ctx.drawImage(img, 0, 0, 1, 1);
+
+      // If we got here, image is canvas-ready
+      return true;
+    } catch (error) {
+      // Drawing failed - image not ready yet
+      return false;
+    }
+  };
+
+  /**
    * Convert an image URL to a data URL by fetching it as a blob first
    * This solves CORS issues on mobile Safari by bypassing the image element entirely
    */
@@ -344,9 +369,26 @@ export const useAiMoodboard = ({
 
       await Promise.all(imageLoadPromises);
 
-      // Short delay to ensure rendering is complete
-      const renderDelay = isMobileDevice() ? 500 : 100;
-      await new Promise(resolve => setTimeout(resolve, renderDelay));
+      // Wait for images to be canvas-ready (especially important for data URLs on mobile)
+      // Data URLs need time to be decoded before they can be drawn to canvas
+      const maxWaitTime = 5000; // Maximum 5 seconds
+      const checkInterval = 200; // Check every 200ms
+      const startTime = Date.now();
+
+      while (Date.now() - startTime < maxWaitTime) {
+        const allReady = Array.from(images).every(img => verifyImageCanvasReady(img));
+
+        if (allReady) {
+          console.log(`All images canvas-ready after ${Date.now() - startTime}ms`);
+          break;
+        }
+
+        // Wait before checking again
+        await new Promise(resolve => setTimeout(resolve, checkInterval));
+      }
+
+      // Small additional delay to ensure rendering is complete
+      await new Promise(resolve => setTimeout(resolve, 100));
 
       // Try 3x scale first (as requested), with automatic fallback
       const scaleAttempts = [3, 2, 1.5];
