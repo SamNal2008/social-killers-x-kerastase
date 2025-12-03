@@ -246,4 +246,78 @@ describe('TinderScreen', () => {
             expect(card).toBeInTheDocument();
         });
     });
+
+    describe('Brand Logo Display', () => {
+        it('should display brand logo on active card', () => {
+            render(<TinderScreen {...defaultProps} />);
+
+            // Active card should have an image with the brand logo URL
+            const images = screen.getAllByRole('img');
+            const activeCardImage = images.find(img => img.getAttribute('src') === 'url1');
+            expect(activeCardImage).toBeInTheDocument();
+            expect(activeCardImage).toHaveAttribute('alt', 'Hermès');
+        });
+
+        it('should display brand name as subtitle instead of "Swipe to decide"', () => {
+            render(<TinderScreen {...defaultProps} />);
+
+            // Brand name should be visible as subtitle
+            expect(screen.getByText('Hermès')).toBeInTheDocument();
+
+            // "Swipe to decide" should NOT be present
+            expect(screen.queryByText('Swipe to decide')).not.toBeInTheDocument();
+        });
+
+        it('should update logo when swiping to next card', async () => {
+            jest.useFakeTimers();
+            try {
+                render(<TinderScreen {...defaultProps} />);
+
+                // Initial state - first brand logo
+                let images = screen.getAllByRole('img');
+                let activeCardImage = images.find(img => img.getAttribute('src') === 'url1');
+                expect(activeCardImage).toBeInTheDocument();
+
+                // Swipe to next card
+                const likeButton = screen.getByRole('button', { name: /like/i });
+                fireEvent.click(likeButton);
+
+                await act(async () => {
+                    jest.advanceTimersByTime(450);
+                });
+
+                // Second brand logo should now be displayed
+                images = screen.getAllByRole('img');
+                activeCardImage = images.find(img => img.getAttribute('src') === 'url2');
+                expect(activeCardImage).toBeInTheDocument();
+                expect(activeCardImage).toHaveAttribute('alt', 'Cartier');
+            } finally {
+                jest.useRealTimers();
+            }
+        });
+
+        it('should show brand name as subtitle on each card', async () => {
+            jest.useFakeTimers();
+            try {
+                render(<TinderScreen {...defaultProps} />);
+
+                // First card subtitle
+                expect(screen.getByText('Hermès')).toBeInTheDocument();
+
+                // Swipe to next card
+                const likeButton = screen.getByRole('button', { name: /like/i });
+                fireEvent.click(likeButton);
+
+                await act(async () => {
+                    jest.advanceTimersByTime(450);
+                });
+
+                // Second card subtitle
+                expect(screen.getByText('Cartier')).toBeInTheDocument();
+                expect(screen.queryByText('Hermès')).not.toBeInTheDocument();
+            } finally {
+                jest.useRealTimers();
+            }
+        });
+    });
 });

@@ -35,21 +35,35 @@ export const Polaroid = forwardRef<HTMLDivElement, PolaroidProps>(({
   onImageError,
 }, ref) => {
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [showLoader, setShowLoader] = useState(false);
+  const [currentSrc, setCurrentSrc] = useState<string | undefined>(imageSrc);
 
-  // Reset loaded state when image source changes
+  // Handle image source changes with delayed loader
   useEffect(() => {
-    if (imageSrc) {
+    if (imageSrc !== currentSrc) {
       setImageLoaded(false);
+      setCurrentSrc(imageSrc);
+
+      // Only show loader if image takes more than 150ms to load
+      const loaderTimeout = setTimeout(() => {
+        if (!imageLoaded) {
+          setShowLoader(true);
+        }
+      }, 150);
+
+      return () => clearTimeout(loaderTimeout);
     }
-  }, [imageSrc]);
+  }, [imageSrc, currentSrc, imageLoaded]);
 
   const handleImageLoad = () => {
     setImageLoaded(true);
+    setShowLoader(false);
     onImageLoad?.();
   };
 
   const handleImageError = () => {
     setImageLoaded(false);
+    setShowLoader(false);
     onImageError?.();
   };
 
@@ -85,7 +99,7 @@ export const Polaroid = forwardRef<HTMLDivElement, PolaroidProps>(({
               onError={handleImageError}
               loading="eager"
             />
-            {!imageLoaded && (
+            {showLoader && (
               <div className="absolute inset-0 flex items-center justify-center bg-neutral-gray-200">
                 <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
               </div>
