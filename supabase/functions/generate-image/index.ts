@@ -394,13 +394,16 @@ Deno.serve(async (req) => {
       is_primary: index === 0, // First image is the primary
     }));
 
-    const { error: insertError } = await supabase
+    const { error: upsertError } = await supabase
       .from('generated_images')
-      .insert(imagesToInsert);
+      .upsert(imagesToInsert, {
+        onConflict: 'user_result_id,image_index',
+        ignoreDuplicates: false, // Update existing records if they exist
+      });
 
-    if (insertError) {
-      console.error('Error saving images to database:', insertError);
-      return buildErrorResponse('DATABASE_ERROR', `Failed to save images: ${insertError.message}`, 500);
+    if (upsertError) {
+      console.error('Error saving images to database:', upsertError);
+      return buildErrorResponse('DATABASE_ERROR', `Failed to save images: ${upsertError.message}`, 500);
     }
 
     console.log(`Saved ${generatedImages.length} image(s) to database`);
