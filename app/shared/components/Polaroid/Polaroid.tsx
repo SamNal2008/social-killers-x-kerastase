@@ -54,6 +54,7 @@ export const Polaroid: FC<PolaroidProps> = ({
             src={imageSrc}
             alt={imageAlt}
             className="w-full h-full object-cover"
+            crossOrigin="anonymous"
           />
         ) : (
           <Title variant="h1" className="text-neutral-dark text-center px-4">
