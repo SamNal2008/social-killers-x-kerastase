@@ -1,12 +1,10 @@
 import { renderHook, waitFor } from '@testing-library/react';
 import { act } from 'react';
-import { toPng } from 'html-to-image';
 import { useAiMoodboard } from './useAiMoodboard';
 import { geminiImageService } from '../services/geminiImageService';
 import { supabase } from '~/shared/services/supabase';
 
 // Mock dependencies
-jest.mock('html-to-image');
 jest.mock('../services/geminiImageService');
 jest.mock('~/shared/services/supabase');
 
@@ -57,6 +55,182 @@ describe('useAiMoodboard', () => {
     Object.defineProperty(document, 'fonts', {
       value: { ready: Promise.resolve() },
       writable: true,
+    });
+  });
+
+  describe('renderPolaroidToCanvas', () => {
+    // Test the DOM dimension measurement logic introduced in latest commit
+    it('should use getBoundingClientRect to get actual DOM dimensions', async () => {
+      // Store original createElement
+      const originalCreateElement = document.createElement.bind(document);
+
+      // Mock canvas and context
+      const mockCanvas = originalCreateElement('canvas');
+      const mockContext = {
+        scale: jest.fn(),
+        imageSmoothingEnabled: true,
+        imageSmoothingQuality: 'high',
+        fillStyle: '',
+        beginPath: jest.fn(),
+        roundRect: jest.fn(),
+        fill: jest.fn(),
+        clip: jest.fn(),
+        fillRect: jest.fn(),
+        save: jest.fn(),
+        rect: jest.fn(),
+        drawImage: jest.fn(),
+        restore: jest.fn(),
+        font: '',
+        textBaseline: '',
+        fillText: jest.fn(),
+        measureText: jest.fn(() => ({ width: 50 })),
+      } as unknown as CanvasRenderingContext2D;
+
+      const createElementSpy = jest.spyOn(document, 'createElement').mockImplementation((tagName) => {
+        if (tagName === 'canvas') {
+          mockCanvas.getContext = jest.fn((contextId: string) => {
+            if (contextId === '2d') return mockContext;
+            return null;
+          }) as typeof mockCanvas.getContext;
+          mockCanvas.toBlob = jest.fn((callback) => {
+            callback?.(new Blob(['test'], { type: 'image/png' }));
+          });
+          return mockCanvas;
+        }
+        return originalCreateElement(tagName);
+      });
+
+      // Mock DOM elements with getBoundingClientRect
+      const mockImage = originalCreateElement('img');
+      Object.defineProperty(mockImage, 'complete', { value: true });
+      Object.defineProperty(mockImage, 'naturalWidth', { value: 800 });
+      Object.defineProperty(mockImage, 'naturalHeight', { value: 600 });
+      // Use the first mock image URL to match what the hook generates
+      Object.defineProperty(mockImage, 'src', { value: mockImages[0].url });
+
+      const mockImageContainer = originalCreateElement('div');
+      const mockTextContainer = originalCreateElement('div');
+      const mockSubtitle = originalCreateElement('div');
+      const mockDate = originalCreateElement('div');
+
+      mockSubtitle.textContent = 'Test subtitle';
+      mockDate.textContent = '03.12.25';
+
+      const mockElement = originalCreateElement('div');
+      mockElement.appendChild(mockImage);
+      mockElement.appendChild(mockImageContainer);
+      mockElement.appendChild(mockTextContainer);
+      mockTextContainer.appendChild(mockSubtitle);
+      mockTextContainer.appendChild(mockDate);
+
+      // Mock getBoundingClientRect for all elements
+      const mockGetBoundingClientRect = jest.fn();
+
+      // Polaroid dimensions
+      mockGetBoundingClientRect.mockReturnValueOnce({
+        width: 343,
+        height: 457,
+        left: 0,
+        top: 0,
+      } as DOMRect);
+
+      // Image container dimensions
+      mockGetBoundingClientRect.mockReturnValueOnce({
+        width: 295,
+        height: 360,
+        left: 24,
+        top: 24,
+      } as DOMRect);
+
+      // Text container dimensions
+      mockGetBoundingClientRect.mockReturnValueOnce({
+        width: 295,
+        height: 25,
+        left: 24,
+        top: 408,
+      } as DOMRect);
+
+      mockElement.getBoundingClientRect = mockGetBoundingClientRect;
+      mockImageContainer.getBoundingClientRect = mockGetBoundingClientRect;
+      mockTextContainer.getBoundingClientRect = mockGetBoundingClientRect;
+
+      // Add query selectors
+      mockImageContainer.classList.add('flex-1');
+      mockTextContainer.classList.add('flex', 'items-center', 'justify-between');
+      mockSubtitle.classList.add('text-neutral-gray');
+      mockDate.classList.add('text-neutral-dark');
+
+      // Mock querySelector to return the right elements
+      mockElement.querySelector = jest.fn((selector: string) => {
+        if (selector === 'img') return mockImage;
+        if (selector === '.flex-1') return mockImageContainer;
+        if (selector === '.flex.items-center.justify-between') return mockTextContainer;
+        if (selector === '.text-neutral-gray') return mockSubtitle;
+        if (selector === '.text-neutral-dark') return mockDate;
+        return null;
+      }) as typeof mockElement.querySelector;
+
+      // Initialize hook
+      const { result } = renderHook(() =>
+        useAiMoodboard({ userResultId: mockUserResultId, userPhoto: mockUserPhoto })
+      );
+
+      await waitFor(() => {
+        expect(result.current.state.status).toBe('success');
+      });
+
+      // Set image ready
+      act(() => {
+        result.current.handleImageReady();
+      });
+
+      // Call downloadPolaroid (but don't await - we're just testing the canvas rendering part)
+      try {
+        await act(async () => {
+          await result.current.downloadPolaroid(mockElement);
+        });
+      } catch {
+        // Ignore download errors - we're testing canvas rendering logic
+      }
+
+      // Verify getBoundingClientRect was called
+      expect(mockGetBoundingClientRect).toHaveBeenCalled();
+
+      // Verify canvas dimensions were set based on actual DOM measurements
+      expect(mockCanvas.width).toBe(343 * 3); // 343px width * 3 scale
+      expect(mockCanvas.height).toBe(457 * 3); // 457px height * 3 scale
+
+      // Verify context scale was set
+      expect(mockContext.scale).toHaveBeenCalledWith(3, 3);
+
+      // Restore original implementation
+      createElementSpy.mockRestore();
+    });
+
+    it('should throw error if polaroid sections are not found', async () => {
+      // Create minimal mock element without required sections
+      const mockElement = document.createElement('div');
+      const mockImage = document.createElement('img');
+      mockElement.appendChild(mockImage);
+
+      const { result } = renderHook(() =>
+        useAiMoodboard({ userResultId: mockUserResultId, userPhoto: mockUserPhoto })
+      );
+
+      await waitFor(() => {
+        expect(result.current.state.status).toBe('success');
+      });
+
+      act(() => {
+        result.current.handleImageReady();
+      });
+
+      // Should throw error when polaroid sections are missing
+      await expect(
+        act(async () => {
+          await result.current.downloadPolaroid(mockElement);
+        })
+      ).rejects.toThrow();
     });
   });
 
