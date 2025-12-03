@@ -198,9 +198,58 @@ export const useAiMoodboard = ({
   }, [fallbackDownload, isMobileDevice]);
 
   /**
+   * Verify that an image is truly loaded and accessible
+   * Checks both complete status and natural dimensions
+   */
+  const verifyImageLoaded = (img: HTMLImageElement): boolean => {
+    return img.complete && img.naturalWidth > 0 && img.naturalHeight > 0;
+  };
+
+  /**
+   * Attempt to capture element with specified pixel ratio
+   * Returns null if capture fails or produces empty result
+   */
+  const attemptCapture = async (
+    element: HTMLElement,
+    pixelRatio: number
+  ): Promise<Blob | null> => {
+    try {
+      const dataUrl = await toPng(element, {
+        pixelRatio,
+        backgroundColor: '#F5F5F5', // Light gray background matching surface-light
+        cacheBust: true, // Prevent caching issues with images
+        skipFonts: false, // Ensure fonts are included
+      });
+
+      // Verify we got a valid data URL
+      if (!dataUrl || dataUrl === 'data:,') {
+        console.warn(`Capture at ${pixelRatio}x produced empty data URL`);
+        return null;
+      }
+
+      // Convert data URL to blob
+      const response = await fetch(dataUrl);
+      const blob = await response.blob();
+
+      // Verify blob has meaningful content (at least 10KB)
+      // A polaroid with image should be much larger than 10KB
+      if (blob.size < 10000) {
+        console.warn(`Capture at ${pixelRatio}x produced suspiciously small blob: ${blob.size} bytes`);
+        return null;
+      }
+
+      return blob;
+    } catch (error) {
+      console.warn(`Capture failed at ${pixelRatio}x:`, error);
+      return null;
+    }
+  };
+
+  /**
    * Download Polaroid component as image
    * Converts the Polaroid DOM element to a PNG using html-to-image
    * Waits for fonts and images to load before capturing for accurate rendering
+   * Uses 3x scale with automatic fallback to 2x and 1.5x on failure
    */
   const downloadPolaroid = useCallback(async (element: HTMLElement, filename?: string) => {
     const finalFilename = filename || `polaroid-${Date.now()}.png`;
@@ -214,42 +263,56 @@ export const useAiMoodboard = ({
       // Wait for all images within the element to load
       const images = element.querySelectorAll('img');
       const imageLoadPromises = Array.from(images).map((img) => {
-        if (img.complete) return Promise.resolve();
+        // Check if image is truly loaded with naturalWidth/naturalHeight
+        if (verifyImageLoaded(img)) return Promise.resolve();
+
         return new Promise((resolve, reject) => {
-          img.onload = () => resolve(undefined);
+          img.onload = () => {
+            // Double-check after load event
+            if (verifyImageLoaded(img)) {
+              resolve(undefined);
+            } else {
+              reject(new Error(`Image loaded but has invalid dimensions: ${img.src}`));
+            }
+          };
           img.onerror = () => reject(new Error(`Failed to load image: ${img.src}`));
-          // Timeout after 5 seconds
-          setTimeout(() => resolve(undefined), 5000);
+          // Timeout after 10 seconds (increased from 5s for mobile)
+          setTimeout(() => {
+            if (verifyImageLoaded(img)) {
+              resolve(undefined);
+            } else {
+              reject(new Error(`Image load timeout: ${img.src}`));
+            }
+          }, 10000);
         });
       });
+
       await Promise.all(imageLoadPromises);
 
-      // Small delay to ensure rendering is complete (especially important on mobile)
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Extended delay for mobile to ensure rendering is complete
+      // Mobile devices need more time to decode and render images
+      const renderDelay = isMobileDevice() ? 800 : 100;
+      await new Promise(resolve => setTimeout(resolve, renderDelay));
 
-      // Use lower pixelRatio on mobile for better memory management
-      const pixelRatio = isMobileDevice() ? 2 : 3;
+      // Try 3x scale first (as requested), with automatic fallback
+      const scaleAttempts = [3, 2, 1.5];
+      let blob: Blob | null = null;
+      let successfulScale: number | null = null;
 
-      // Convert DOM element to PNG data URL
-      const dataUrl = await toPng(element, {
-        pixelRatio,
-        backgroundColor: '#F5F5F5', // Light gray background matching surface-light
-        cacheBust: true, // Prevent caching issues with images
-        skipFonts: false, // Ensure fonts are included
-      });
+      for (const scale of scaleAttempts) {
+        console.log(`Attempting capture at ${scale}x scale...`);
+        blob = await attemptCapture(element, scale);
 
-      // Verify we got a valid data URL
-      if (!dataUrl || dataUrl === 'data:,') {
-        throw new Error('Generated empty image data');
+        if (blob) {
+          successfulScale = scale;
+          console.log(`Successfully captured at ${scale}x scale (${blob.size} bytes)`);
+          break;
+        }
       }
 
-      // Convert data URL to blob
-      const response = await fetch(dataUrl);
-      const blob = await response.blob();
-
-      // Verify blob has content
-      if (blob.size === 0) {
-        throw new Error('Generated empty blob');
+      // If all attempts failed, throw error
+      if (!blob || !successfulScale) {
+        throw new Error('Unable to capture polaroid image. All scale attempts failed.');
       }
 
       // Try to share on mobile, download on desktop
@@ -284,6 +347,7 @@ export const useAiMoodboard = ({
       }
 
       // Log detailed error information for debugging
+      const images = element.querySelectorAll('img');
       console.error('Error downloading polaroid:', {
         error,
         isMobile: isMobileDevice(),
@@ -291,9 +355,17 @@ export const useAiMoodboard = ({
           width: element.offsetWidth,
           height: element.offsetHeight,
         },
-        hasImages: element.querySelectorAll('img').length > 0,
+        imageCount: images.length,
+        imageStates: Array.from(images).map(img => ({
+          src: img.src,
+          complete: img.complete,
+          naturalWidth: img.naturalWidth,
+          naturalHeight: img.naturalHeight,
+        })),
       });
-      throw new Error('Failed to download polaroid');
+
+      // User-friendly error message
+      throw new Error('Unable to download polaroid. Please ensure you have a stable connection and try again.');
     } finally {
       setIsDownloading(false);
     }
