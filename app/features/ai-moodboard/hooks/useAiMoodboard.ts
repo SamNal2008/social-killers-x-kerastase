@@ -206,38 +206,42 @@ export const useAiMoodboard = ({
   };
 
   /**
-   * Convert an image element to a data URL
-   * This solves CORS issues on mobile Safari by ensuring the image is accessible to canvas
+   * Convert an image URL to a data URL by fetching it as a blob first
+   * This solves CORS issues on mobile Safari by bypassing the image element entirely
    */
-  const convertImageToDataUrl = async (img: HTMLImageElement): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      try {
-        // Create a canvas with the image dimensions
-        const canvas = document.createElement('canvas');
-        canvas.width = img.naturalWidth;
-        canvas.height = img.naturalHeight;
+  const convertImageUrlToDataUrl = async (imageUrl: string): Promise<string> => {
+    try {
+      // Fetch the image as a blob with CORS mode
+      const response = await fetch(imageUrl, {
+        mode: 'cors',
+        credentials: 'omit',
+      });
 
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-          reject(new Error('Failed to get canvas context'));
-          return;
-        }
-
-        // Draw the image to canvas
-        ctx.drawImage(img, 0, 0);
-
-        // Convert canvas to data URL
-        try {
-          const dataUrl = canvas.toDataURL('image/png');
-          resolve(dataUrl);
-        } catch (error) {
-          // If toDataURL fails due to tainted canvas, the image has CORS issues
-          reject(new Error('Failed to convert image to data URL - CORS issue'));
-        }
-      } catch (error) {
-        reject(error);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`);
       }
-    });
+
+      const blob = await response.blob();
+
+      // Convert blob to data URL using FileReader
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const dataUrl = reader.result as string;
+          if (dataUrl) {
+            resolve(dataUrl);
+          } else {
+            reject(new Error('FileReader returned empty result'));
+          }
+        };
+        reader.onerror = () => {
+          reject(new Error('FileReader failed to read blob'));
+        };
+        reader.readAsDataURL(blob);
+      });
+    } catch (error) {
+      throw new Error(`Failed to convert image URL to data URL: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   };
 
   /**
@@ -331,24 +335,39 @@ export const useAiMoodboard = ({
       // This is especially important for mobile Safari which is strict about cross-origin images
       console.log('Converting images to data URLs to avoid CORS issues...');
 
+      let conversionSuccess = 0;
+      let conversionFailed = 0;
+
       const imageConversionPromises = Array.from(images).map(async (img) => {
         try {
-          const dataUrl = await convertImageToDataUrl(img);
+          const originalSrc = img.src;
+          const dataUrl = await convertImageUrlToDataUrl(originalSrc);
+
           // Store original src for restoration
-          originalSources.set(img, img.src);
+          originalSources.set(img, originalSrc);
           // Replace image src with data URL
           img.src = dataUrl;
+
+          conversionSuccess++;
           console.log('Successfully converted image to data URL:', {
-            originalSrc: originalSources.get(img),
+            originalSrc,
             dataUrlLength: dataUrl.length
           });
         } catch (error) {
+          conversionFailed++;
           console.error('Failed to convert image to data URL:', error);
           // Don't throw - let the capture attempt proceed with original image
         }
       });
 
       await Promise.all(imageConversionPromises);
+
+      // Show conversion status on mobile for debugging
+      if (isMobileDevice()) {
+        const message = `Images converted: ${conversionSuccess}/${images.length}\nFailed: ${conversionFailed}`;
+        console.log(message);
+        alert(message); // Temporary debugging - will show on mobile
+      }
 
       // Extended delay for mobile to ensure rendering is complete
       // Mobile devices need more time to decode and render images
@@ -373,7 +392,15 @@ export const useAiMoodboard = ({
 
       // If all attempts failed, throw error
       if (!blob || !successfulScale) {
+        if (isMobileDevice()) {
+          alert('Capture failed at all scales (3x, 2x, 1.5x)');
+        }
         throw new Error('Unable to capture polaroid image. All scale attempts failed.');
+      }
+
+      // Show success on mobile
+      if (isMobileDevice()) {
+        alert(`Capture succeeded at ${successfulScale}x scale\nSize: ${blob.size} bytes`);
       }
 
       // Try to share on mobile, download on desktop
