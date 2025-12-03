@@ -226,7 +226,7 @@ export const AiMoodboardScreen: FC = () => {
               imageAlt={`Moodboard ${currentImageIndex + 1}`}
               title=""
               subtitle="Tribes & Communities Day"
-              className="!w-full !h-full !max-w-none !mx-0 !aspect-auto !shadow-none"
+              className="!w-full !h-full !max-w-none !mx-0 !aspect-auto !shadow-none [&>div:first-child]:!flex-none [&>div:first-child]:!h-[480px]"
             />
           </div>
         </div>
