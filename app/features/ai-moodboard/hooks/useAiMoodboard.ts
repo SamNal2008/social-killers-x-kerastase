@@ -206,6 +206,41 @@ export const useAiMoodboard = ({
   };
 
   /**
+   * Convert an image element to a data URL
+   * This solves CORS issues on mobile Safari by ensuring the image is accessible to canvas
+   */
+  const convertImageToDataUrl = async (img: HTMLImageElement): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      try {
+        // Create a canvas with the image dimensions
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          reject(new Error('Failed to get canvas context'));
+          return;
+        }
+
+        // Draw the image to canvas
+        ctx.drawImage(img, 0, 0);
+
+        // Convert canvas to data URL
+        try {
+          const dataUrl = canvas.toDataURL('image/png');
+          resolve(dataUrl);
+        } catch (error) {
+          // If toDataURL fails due to tainted canvas, the image has CORS issues
+          reject(new Error('Failed to convert image to data URL - CORS issue'));
+        }
+      } catch (error) {
+        reject(error);
+      }
+    });
+  };
+
+  /**
    * Attempt to capture element with specified pixel ratio
    * Returns null if capture fails or produces empty result
    */
@@ -250,9 +285,12 @@ export const useAiMoodboard = ({
    * Converts the Polaroid DOM element to a PNG using html-to-image
    * Waits for fonts and images to load before capturing for accurate rendering
    * Uses 3x scale with automatic fallback to 2x and 1.5x on failure
+   * Converts cross-origin images to data URLs to avoid CORS issues on mobile Safari
    */
   const downloadPolaroid = useCallback(async (element: HTMLElement, filename?: string) => {
     const finalFilename = filename || `polaroid-${Date.now()}.png`;
+    // Store original sources to restore after capture
+    const originalSources = new Map<HTMLImageElement, string>();
 
     try {
       setIsDownloading(true);
@@ -288,6 +326,29 @@ export const useAiMoodboard = ({
       });
 
       await Promise.all(imageLoadPromises);
+
+      // Convert all images to data URLs to avoid CORS issues
+      // This is especially important for mobile Safari which is strict about cross-origin images
+      console.log('Converting images to data URLs to avoid CORS issues...');
+
+      const imageConversionPromises = Array.from(images).map(async (img) => {
+        try {
+          const dataUrl = await convertImageToDataUrl(img);
+          // Store original src for restoration
+          originalSources.set(img, img.src);
+          // Replace image src with data URL
+          img.src = dataUrl;
+          console.log('Successfully converted image to data URL:', {
+            originalSrc: originalSources.get(img),
+            dataUrlLength: dataUrl.length
+          });
+        } catch (error) {
+          console.error('Failed to convert image to data URL:', error);
+          // Don't throw - let the capture attempt proceed with original image
+        }
+      });
+
+      await Promise.all(imageConversionPromises);
 
       // Extended delay for mobile to ensure rendering is complete
       // Mobile devices need more time to decode and render images
@@ -367,6 +428,11 @@ export const useAiMoodboard = ({
       // User-friendly error message
       throw new Error('Unable to download polaroid. Please ensure you have a stable connection and try again.');
     } finally {
+      // Restore original image sources
+      originalSources.forEach((originalSrc, img) => {
+        img.src = originalSrc;
+      });
+
       setIsDownloading(false);
     }
   }, [isMobileDevice]);
