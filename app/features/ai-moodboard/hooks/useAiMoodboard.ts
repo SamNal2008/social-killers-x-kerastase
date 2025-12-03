@@ -21,6 +21,7 @@ export const useAiMoodboard = ({
   const [state, setState] = useState<AiMoodboardState>({ status: 'idle' });
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isImageReady, setIsImageReady] = useState(false);
 
 
   /**
@@ -122,16 +123,25 @@ export const useAiMoodboard = ({
   }, [userResultId, userPhoto, fetchTribeData]);
 
   /**
-   * Navigation handlers
+   * Navigation handlers - Reset image ready state when changing images
    */
   const nextImage = useCallback(() => {
     if (state.status === 'success') {
+      setIsImageReady(false);
       setCurrentImageIndex((prev) => Math.min(prev + 1, state.images.length - 1));
     }
   }, [state]);
 
   const previousImage = useCallback(() => {
+    setIsImageReady(false);
     setCurrentImageIndex((prev) => Math.max(prev - 1, 0));
+  }, []);
+
+  /**
+   * Handle image load event from Polaroid component
+   */
+  const handleImageReady = useCallback(() => {
+    setIsImageReady(true);
   }, []);
 
   /**
@@ -213,39 +223,6 @@ export const useAiMoodboard = ({
   }, [fallbackDownload, isMobileDevice]);
 
   /**
-   * Verify that an image is truly loaded and accessible
-   * Checks both complete status and natural dimensions
-   */
-  const verifyImageLoaded = (img: HTMLImageElement): boolean => {
-    return img.complete && img.naturalWidth > 0 && img.naturalHeight > 0;
-  };
-
-  /**
-   * Verify that an image is ready for canvas rendering
-   * Tests by actually drawing to a test canvas - more reliable than just checking complete
-   */
-  const verifyImageCanvasReady = (img: HTMLImageElement): boolean => {
-    try {
-      // Create a small test canvas
-      const testCanvas = document.createElement('canvas');
-      testCanvas.width = 1;
-      testCanvas.height = 1;
-      const ctx = testCanvas.getContext('2d');
-
-      if (!ctx) return false;
-
-      // Try to draw the image - this will fail if image isn't ready
-      ctx.drawImage(img, 0, 0, 1, 1);
-
-      // If we got here, image is canvas-ready
-      return true;
-    } catch (error) {
-      // Drawing failed - image not ready yet
-      return false;
-    }
-  };
-
-  /**
    * Convert an image URL to a data URL by fetching it as a blob first
    * This solves CORS issues on mobile Safari by bypassing the image element entirely
    */
@@ -285,146 +262,202 @@ export const useAiMoodboard = ({
   };
 
   /**
-   * Attempt to capture element with specified pixel ratio
-   * Returns null if capture fails or produces empty result
+   * Wait for element to be ready for capture
+   * Simplified approach: just wait for fonts and a brief settle time
    */
-  const attemptCapture = async (
-    element: HTMLElement,
-    pixelRatio: number
-  ): Promise<Blob | null> => {
-    try {
-      const dataUrl = await toPng(element, {
-        pixelRatio,
-        backgroundColor: '#F5F5F5', // Light gray background matching surface-light
-        cacheBust: true, // Prevent caching issues with images
-        skipFonts: false, // Ensure fonts are included
-      });
-
-      // Verify we got a valid data URL
-      if (!dataUrl || dataUrl === 'data:,') {
-        console.warn(`Capture at ${pixelRatio}x produced empty data URL`);
-        return null;
-      }
-
-      // Convert data URL to blob
-      const response = await fetch(dataUrl);
-      const blob = await response.blob();
-
-      // Verify blob has meaningful content (at least 10KB)
-      // A polaroid with image should be much larger than 10KB
-      if (blob.size < 10000) {
-        console.warn(`Capture at ${pixelRatio}x produced suspiciously small blob: ${blob.size} bytes`);
-        return null;
-      }
-
-      return blob;
-    } catch (error) {
-      console.warn(`Capture failed at ${pixelRatio}x:`, error);
-      return null;
-    }
-  };
-
-  /**
-   * Comprehensive wait for element to be fully ready for capture
-   * Checks fonts, images, canvas-ready state, and rendering stability
-   */
-  const waitForElementReady = async (element: HTMLElement): Promise<void> => {
-    console.log('Starting comprehensive ready check...');
-
-    // Step 1: Wait for fonts
+  const waitForElementReady = async (): Promise<void> => {
+    // Wait for fonts
     await document.fonts.ready;
-    console.log('✓ Fonts ready');
 
-    // Step 2: Get all images
-    const images = element.querySelectorAll('img');
-    console.log(`Found ${images.length} images`);
+    // Wait for next frame to ensure rendering is complete
+    await new Promise(resolve => requestAnimationFrame(resolve));
 
-    // Step 3: Wait for images to load
-    await Promise.all(
-      Array.from(images).map((img) => {
-        if (verifyImageLoaded(img)) return Promise.resolve();
-
-        return new Promise<void>((resolve) => {
-          img.onload = () => resolve();
-          img.onerror = () => resolve(); // Don't fail, just continue
-          setTimeout(() => resolve(), 10000); // 10s timeout
-        });
-      })
-    );
-    console.log('✓ Images loaded');
-
-    // Step 4: Wait for images to be canvas-ready with extended timeout
-    const maxWaitTime = 10000; // 10 seconds for mobile
-    const checkInterval = 300; // Check every 300ms
-    const startTime = Date.now();
-
-    while (Date.now() - startTime < maxWaitTime) {
-      const allReady = Array.from(images).every(img => verifyImageCanvasReady(img));
-
-      if (allReady) {
-        const elapsed = Date.now() - startTime;
-        console.log(`✓ All images canvas-ready after ${elapsed}ms`);
-        break;
-      }
-
-      await new Promise(resolve => setTimeout(resolve, checkInterval));
-    }
-
-    // Step 5: Wait for rendering to stabilize using requestAnimationFrame
-    // This ensures the browser has fully painted the element
-    await new Promise(resolve => requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        requestAnimationFrame(resolve);
-      });
-    }));
-    console.log('✓ Rendering stable');
-
-    // Step 6: Final delay for mobile to ensure everything is settled
-    if (isMobileDevice()) {
-      await new Promise(resolve => setTimeout(resolve, 800));
-      console.log('✓ Mobile settle time complete');
-    } else {
-      await new Promise(resolve => setTimeout(resolve, 200));
-      console.log('✓ Desktop settle time complete');
-    }
-
-    console.log('✓ Element fully ready for capture');
+    // Small additional delay for stability
+    await new Promise(resolve => setTimeout(resolve, 100));
   };
 
   /**
-   * Download Polaroid component as image
-   * Converts the Polaroid DOM element to a PNG using html-to-image
-   * Uses comprehensive ready check and 3x scale with automatic fallback
-   * Images are already data URLs from generation, avoiding CORS issues
+   * Canvas-based capture: Manually draw polaroid to canvas
+   * This is more reliable than html-to-image on mobile
+   */
+  const captureWithCanvas = async (element: HTMLElement, expectedImageUrl: string): Promise<Blob> => {
+    // Find the image element
+    const imgElement = element.querySelector('img');
+    if (!imgElement) {
+      throw new Error('No image found in polaroid');
+    }
+
+    // Verify the image URL matches expected (prevents wrong image capture)
+    if (imgElement.src !== expectedImageUrl) {
+      console.warn('Image URL mismatch:', {
+        expected: expectedImageUrl.substring(0, 100),
+        actual: imgElement.src.substring(0, 100)
+      });
+      throw new Error('Image not ready - URL mismatch');
+    }
+
+    // Verify image is loaded
+    if (!imgElement.complete || imgElement.naturalWidth === 0) {
+      throw new Error('Image not fully loaded');
+    }
+
+    // Get element dimensions
+    const rect = element.getBoundingClientRect();
+    const scale = 3; // High quality
+    const canvas = document.createElement('canvas');
+    canvas.width = rect.width * scale;
+    canvas.height = rect.height * scale;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      throw new Error('Failed to get canvas context');
+    }
+
+    // Scale context for high quality
+    ctx.scale(scale, scale);
+
+    // Fill background (white for polaroid)
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(0, 0, rect.width, rect.height);
+
+    // Get computed styles for accurate rendering
+    const computedStyle = window.getComputedStyle(element);
+    const padding = parseInt(computedStyle.paddingTop) || 24;
+    const borderRadius = parseInt(computedStyle.borderRadius) || 8;
+
+    // Apply border radius
+    ctx.beginPath();
+    ctx.roundRect(0, 0, rect.width, rect.height, borderRadius);
+    ctx.clip();
+    ctx.fill();
+
+    // Draw the image container background
+    const imageContainer = element.querySelector('div > div') as HTMLElement;
+    if (imageContainer) {
+      const imageContainerRect = imageContainer.getBoundingClientRect();
+      const relativeTop = imageContainerRect.top - rect.top;
+      const relativeLeft = imageContainerRect.left - rect.left;
+
+      // Background for image area
+      ctx.fillStyle = '#E5E5E5'; // neutral-gray-200
+      ctx.fillRect(
+        relativeLeft,
+        relativeTop,
+        imageContainerRect.width,
+        imageContainerRect.height
+      );
+
+      // Draw the actual image
+      try {
+        ctx.drawImage(
+          imgElement,
+          relativeLeft,
+          relativeTop,
+          imageContainerRect.width,
+          imageContainerRect.height
+        );
+      } catch (error) {
+        console.error('Failed to draw image to canvas:', error);
+        throw new Error('Failed to render image on canvas');
+      }
+    }
+
+    // Draw text elements (subtitle and date)
+    const textContainer = element.querySelector('.flex.items-center.justify-between') as HTMLElement;
+    if (textContainer) {
+      const textRect = textContainer.getBoundingClientRect();
+      const textTop = textRect.top - rect.top;
+
+      // Get text content
+      const subtitle = textContainer.querySelector('.text-neutral-gray')?.textContent || '';
+      const dateOrCounter = textContainer.querySelector('.text-neutral-dark')?.textContent || '';
+
+      // Set font styles
+      ctx.fillStyle = '#737373'; // neutral-gray
+      ctx.font = '14px Inter, system-ui, sans-serif';
+      ctx.textBaseline = 'top';
+
+      // Draw subtitle (left)
+      ctx.fillText(subtitle, padding, textTop);
+
+      // Draw date/counter (right)
+      ctx.fillStyle = '#262626'; // neutral-dark
+      const dateMetrics = ctx.measureText(dateOrCounter);
+      ctx.fillText(dateOrCounter, rect.width - padding - dateMetrics.width, textTop);
+    }
+
+    // Convert canvas to blob
+    return new Promise((resolve, reject) => {
+      canvas.toBlob((blob) => {
+        if (blob) {
+          resolve(blob);
+        } else {
+          reject(new Error('Failed to create blob from canvas'));
+        }
+      }, 'image/png', 1.0);
+    });
+  };
+
+  /**
+   * Fallback: Use html-to-image library
+   */
+  const captureWithHtmlToImage = async (element: HTMLElement): Promise<Blob> => {
+    const dataUrl = await toPng(element, {
+      pixelRatio: 3,
+      backgroundColor: '#FFFFFF',
+      cacheBust: true,
+      skipFonts: false,
+    });
+
+    if (!dataUrl || dataUrl === 'data:,') {
+      throw new Error('html-to-image produced empty result');
+    }
+
+    const response = await fetch(dataUrl);
+    const blob = await response.blob();
+
+    if (blob.size < 10000) {
+      throw new Error('Captured image is too small');
+    }
+
+    return blob;
+  };
+
+  /**
+   * Download Polaroid - Bulletproof implementation
+   * Uses canvas-based capture with html-to-image fallback
    */
   const downloadPolaroid = useCallback(async (element: HTMLElement, filename?: string) => {
     const finalFilename = filename || `polaroid-${Date.now()}.png`;
 
+    if (!isImageReady) {
+      throw new Error('Please wait for the image to fully load before downloading');
+    }
+
     try {
       setIsDownloading(true);
 
-      // Comprehensive wait for everything to be ready
-      await waitForElementReady(element);
+      // Wait for element to be ready
+      await waitForElementReady();
 
-      // Try 3x scale first (as requested), with automatic fallback
-      const scaleAttempts = [3, 2, 1.5];
-      let blob: Blob | null = null;
-      let successfulScale: number | null = null;
-
-      for (const scale of scaleAttempts) {
-        console.log(`Attempting capture at ${scale}x scale...`);
-        blob = await attemptCapture(element, scale);
-
-        if (blob) {
-          successfulScale = scale;
-          console.log(`Successfully captured at ${scale}x scale (${blob.size} bytes)`);
-          break;
-        }
+      // Get current image URL to verify
+      const currentImage = state.status === 'success' ? state.images[currentImageIndex] : null;
+      if (!currentImage) {
+        throw new Error('No image selected');
       }
 
-      // If all attempts failed, throw error
-      if (!blob || !successfulScale) {
-        throw new Error('Unable to capture polaroid image. All scale attempts failed.');
+      let blob: Blob;
+
+      try {
+        // Try canvas-based capture first (most reliable on mobile)
+        console.log('Attempting canvas-based capture...');
+        blob = await captureWithCanvas(element, currentImage.url);
+        console.log(`Canvas capture successful (${blob.size} bytes)`);
+      } catch (canvasError) {
+        // Fallback to html-to-image
+        console.warn('Canvas capture failed, falling back to html-to-image:', canvasError);
+        blob = await captureWithHtmlToImage(element);
+        console.log(`html-to-image capture successful (${blob.size} bytes)`);
       }
 
       // Try to share on mobile, download on desktop
@@ -451,6 +484,7 @@ export const useAiMoodboard = ({
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
+      console.log('Polaroid downloaded successfully');
     } catch (error) {
       // If user cancels share dialog, don't treat it as an error
       if (error instanceof Error && error.name === 'AbortError') {
@@ -458,30 +492,16 @@ export const useAiMoodboard = ({
         return;
       }
 
-      // Log detailed error information for debugging
-      const images = element.querySelectorAll('img');
-      console.error('Error downloading polaroid:', {
-        error,
-        isMobile: isMobileDevice(),
-        elementDimensions: {
-          width: element.offsetWidth,
-          height: element.offsetHeight,
-        },
-        imageCount: images.length,
-        imageStates: Array.from(images).map(img => ({
-          src: img.src,
-          complete: img.complete,
-          naturalWidth: img.naturalWidth,
-          naturalHeight: img.naturalHeight,
-        })),
-      });
-
-      // User-friendly error message
-      throw new Error('Unable to download polaroid. Please ensure you have a stable connection and try again.');
+      console.error('Error downloading polaroid:', error);
+      throw new Error(
+        error instanceof Error
+          ? error.message
+          : 'Unable to download polaroid. Please try again.'
+      );
     } finally {
       setIsDownloading(false);
     }
-  }, [isMobileDevice]);
+  }, [isImageReady, state, currentImageIndex, isMobileDevice]);
 
 
   // Compute derived values
@@ -498,6 +518,8 @@ export const useAiMoodboard = ({
     downloadImage,
     downloadPolaroid,
     isDownloading,
+    isImageReady,
+    handleImageReady,
     canGoNext,
     canGoPrevious,
   };

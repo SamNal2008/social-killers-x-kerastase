@@ -45,6 +45,8 @@ export const AiMoodboardScreen: FC = () => {
     downloadImage,
     downloadPolaroid,
     isDownloading,
+    isImageReady,
+    handleImageReady,
     canGoNext,
     canGoPrevious,
   } = useAiMoodboard({ userResultId, userPhoto });
@@ -168,6 +170,7 @@ export const AiMoodboardScreen: FC = () => {
                   title=""
                   subtitle="Tribes & Communities Day"
                   className="w-full"
+                  onImageLoad={handleImageReady}
                 />
               </div>
             </motion.div>
@@ -198,11 +201,11 @@ export const AiMoodboardScreen: FC = () => {
               <Button
                 variant="primary"
                 onClick={handleDownload}
-                disabled={isDownloading}
+                disabled={isDownloading || !isImageReady}
                 className="w-full h-[52px] flex items-center justify-center gap-2"
               >
                 {isDownloading && <LoaderCircle className="w-5 h-5 animate-spin" />}
-                Download Polaroid
+                {!isImageReady && !isDownloading ? 'Preparing image...' : 'Download Polaroid'}
               </Button>
             </motion.div>
           </div>
