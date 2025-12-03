@@ -307,7 +307,6 @@ export const useAiMoodboard = ({
   const capturePolaroid = async (element: HTMLElement): Promise<Blob> => {
     const dataUrl = await toPng(element, {
       pixelRatio: 3,
-      backgroundColor: '#F5F5F5', // Match page background
       cacheBust: true,
       skipFonts: false,
     });
