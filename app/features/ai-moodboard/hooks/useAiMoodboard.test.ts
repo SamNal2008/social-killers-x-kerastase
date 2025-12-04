@@ -3,10 +3,14 @@ import { act } from 'react';
 import { useAiMoodboard } from './useAiMoodboard';
 import { geminiImageService } from '../services/geminiImageService';
 import { supabase } from '~/shared/services/supabase';
+import { useImagePolling } from './useImagePolling';
+import { imagePollingService } from '../services/imagePollingService';
 
 // Mock dependencies
 jest.mock('../services/geminiImageService');
 jest.mock('~/shared/services/supabase');
+jest.mock('./useImagePolling');
+jest.mock('../services/imagePollingService');
 
 // Mock fetch
 global.fetch = jest.fn();
@@ -48,8 +52,26 @@ describe('useAiMoodboard', () => {
       }),
     });
 
-    // Mock image generation
+    // Mock image generation (fire and forget, doesn't block)
     (geminiImageService.generateImages as jest.Mock).mockResolvedValue(mockImages);
+
+    // Mock useImagePolling to simulate immediate completion with all images
+    (useImagePolling as jest.Mock).mockImplementation(({ onImagesUpdate, onComplete, enabled }) => {
+      // Simulate polling returning images immediately when enabled
+      if (enabled) {
+        setTimeout(() => {
+          onImagesUpdate(mockImages);
+          onComplete();
+        }, 0);
+      }
+      return { isPolling: false, error: null };
+    });
+
+    // Mock imagePollingService
+    (imagePollingService.pollGeneratedImages as jest.Mock).mockResolvedValue({
+      images: mockImages,
+      isComplete: true,
+    });
 
     // Mock document.fonts.ready
     Object.defineProperty(document, 'fonts', {
@@ -176,7 +198,7 @@ describe('useAiMoodboard', () => {
       );
 
       await waitFor(() => {
-        expect(result.current.state.status).toBe('success');
+        expect(result.current.state.status).toBe('complete');
       });
 
       // Set image ready
@@ -218,7 +240,7 @@ describe('useAiMoodboard', () => {
       );
 
       await waitFor(() => {
-        expect(result.current.state.status).toBe('success');
+        expect(result.current.state.status).toBe('complete');
       });
 
       act(() => {
@@ -308,7 +330,7 @@ describe('useAiMoodboard', () => {
       );
 
       await waitFor(() => {
-        expect(result.current.state.status).toBe('success');
+        expect(result.current.state.status).toBe('complete');
       });
 
       expect(result.current.currentImageIndex).toBe(0);
@@ -327,7 +349,7 @@ describe('useAiMoodboard', () => {
       );
 
       await waitFor(() => {
-        expect(result.current.state.status).toBe('success');
+        expect(result.current.state.status).toBe('complete');
       });
 
       act(() => {
@@ -350,7 +372,7 @@ describe('useAiMoodboard', () => {
       );
 
       await waitFor(() => {
-        expect(result.current.state.status).toBe('success');
+        expect(result.current.state.status).toBe('complete');
       });
 
       act(() => {
@@ -369,7 +391,7 @@ describe('useAiMoodboard', () => {
       );
 
       await waitFor(() => {
-        expect(result.current.state.status).toBe('success');
+        expect(result.current.state.status).toBe('complete');
       });
 
       act(() => {

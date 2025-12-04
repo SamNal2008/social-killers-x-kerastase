@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { toPng } from 'html-to-image';
-import type { AiMoodboardState, TribePromptData, GeneratedImage, UseAiMoodboardReturn } from '../types';
+import type { AiMoodboardState, TribePromptData, GeneratedImage, UseAiMoodboardReturn, ImageSlot } from '../types';
 import { geminiImageService } from '../services/geminiImageService';
+import { useImagePolling } from './useImagePolling';
 import { supabase } from '~/shared/services/supabase';
 
 interface UseAiMoodboardParams {
@@ -79,56 +80,120 @@ export const useAiMoodboard = ({
   }, [userResultId]);
 
   /**
-   * Generate images on mount and pre-convert to data URLs for mobile compatibility
+   * Handle images update from polling
+   */
+  const handleImagesUpdate = useCallback((images: GeneratedImage[]) => {
+    setState((prevState) => {
+      if (prevState.status !== 'generating') return prevState;
+
+      const updatedSlots: [ImageSlot, ImageSlot, ImageSlot] = [
+        { status: 'pending' },
+        { status: 'pending' },
+        { status: 'pending' },
+      ];
+
+      images.forEach((image, index) => {
+        if (index < 3) {
+          updatedSlots[index] = {
+            status: 'ready',
+            image,
+          };
+        }
+      });
+
+      return {
+        ...prevState,
+        imageSlots: updatedSlots,
+      };
+    });
+  }, []);
+
+  /**
+   * Handle polling completion
+   */
+  const handlePollingComplete = useCallback(() => {
+    setState((prevState) => {
+      if (prevState.status !== 'generating') return prevState;
+
+      const readyImages = prevState.imageSlots
+        .filter((slot) => slot.status === 'ready' && slot.image)
+        .map((slot) => slot.image!);
+
+      if (readyImages.length > 0) {
+        return {
+          status: 'complete',
+          images: readyImages,
+          tribe: prevState.tribe,
+        };
+      }
+
+      return prevState;
+    });
+  }, []);
+
+  /**
+   * Start polling for images
+   */
+  const { isPolling } = useImagePolling({
+    userResultId,
+    enabled: state.status === 'generating',
+    onImagesUpdate: handleImagesUpdate,
+    onComplete: handlePollingComplete,
+  });
+
+  /**
+   * Generate images on mount and start polling
    */
   useEffect(() => {
-    const generateImages = async () => {
+    const startGeneration = async () => {
       try {
         // Fetch tribe data first
         setState({ status: 'loading-tribe' });
         const tribeData = await fetchTribeData();
 
-        // Then generate images
-        setState({ status: 'generating' });
-        const images = await geminiImageService.generateImages({
+        // Initialize generating state with empty slots
+        setState({
+          status: 'generating',
+          imageSlots: [
+            { status: 'pending' },
+            { status: 'pending' },
+            { status: 'pending' },
+          ],
+          tribe: tribeData,
+        });
+
+        // Start image generation in background (non-blocking)
+        geminiImageService.generateImages({
           userPhoto,
           userResultId,
           numberOfImages: 3,
+        }).catch((error) => {
+          console.error('Error generating images:', error);
+          const errorObj = error instanceof Error ? error : new Error('Failed to generate images');
+          setState({ status: 'error', error: errorObj });
         });
-
-        // Convert all image URLs to data URLs to avoid CORS issues during capture
-        // This is done once upfront rather than during download for reliability
-        const imagesWithDataUrls = await Promise.all(
-          images.map(async (image) => {
-            try {
-              const dataUrl = await convertImageUrlToDataUrl(image.url);
-              return { ...image, url: dataUrl };
-            } catch (error) {
-              console.error('Failed to convert image to data URL, keeping original:', error);
-              // Keep original URL if conversion fails
-              return image;
-            }
-          })
-        );
-
-        setState({ status: 'success', images: imagesWithDataUrls, tribe: tribeData });
       } catch (error) {
-        console.error('Error generating images:', error);
-        const errorObj = error instanceof Error ? error : new Error('Failed to generate images');
+        console.error('Error fetching tribe data:', error);
+        const errorObj = error instanceof Error ? error : new Error('Failed to fetch tribe data');
         setState({ status: 'error', error: errorObj });
       }
     };
 
-    generateImages();
+    startGeneration();
   }, [userResultId, userPhoto, fetchTribeData]);
 
   /**
    * Navigation handlers - Reset image ready state when changing images
    */
   const nextImage = useCallback(() => {
-    if (state.status === 'success') {
+    if (state.status === 'complete') {
       setIsImageReady(false);
       setCurrentImageIndex((prev) => Math.min(prev + 1, state.images.length - 1));
+    } else if (state.status === 'generating') {
+      // Allow navigation to all slots, not just ready ones
+      // This enables progressive display with loaders for pending slots
+      setIsImageReady(false);
+      setCurrentImageIndex((prev) => Math.min(prev + 1, state.imageSlots.length - 1));
     }
   }, [state]);
 
@@ -484,13 +549,20 @@ export const useAiMoodboard = ({
       setIsDownloading(true);
 
       // Get current image URL to verify
-      const currentImage = state.status === 'success' ? state.images[currentImageIndex] : null;
-      if (!currentImage) {
+      let currentImageUrl: string | null = null;
+      if (state.status === 'complete') {
+        currentImageUrl = state.images[currentImageIndex]?.url || null;
+      } else if (state.status === 'generating') {
+        const slot = state.imageSlots[currentImageIndex];
+        currentImageUrl = slot?.status === 'ready' ? slot.image?.url || null : null;
+      }
+
+      if (!currentImageUrl) {
         throw new Error('No image selected');
       }
 
       // Verify image is ready and matches expected URL
-      verifyImageReady(element, currentImage.url);
+      verifyImageReady(element, currentImageUrl);
 
       // Wait for element to be ready for capture
       await waitForElementReady();
@@ -545,8 +617,27 @@ export const useAiMoodboard = ({
 
 
   // Compute derived values
-  const currentImage = state.status === 'success' ? state.images[currentImageIndex] : null;
-  const canGoNext = state.status === 'success' && currentImageIndex < state.images.length - 1;
+  const currentImage = (() => {
+    if (state.status === 'complete') {
+      return state.images[currentImageIndex] || null;
+    } else if (state.status === 'generating') {
+      const readySlot = state.imageSlots[currentImageIndex];
+      return readySlot?.status === 'ready' ? readySlot.image || null : null;
+    }
+    return null;
+  })();
+
+  const canGoNext = (() => {
+    if (state.status === 'complete') {
+      return currentImageIndex < state.images.length - 1;
+    } else if (state.status === 'generating') {
+      // Allow navigation to next slot even if it's still generating
+      // This enables progressive display with loaders for pending slots
+      return currentImageIndex < state.imageSlots.length - 1;
+    }
+    return false;
+  })();
+
   const canGoPrevious = currentImageIndex > 0;
 
   return {

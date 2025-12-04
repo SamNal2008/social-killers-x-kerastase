@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from 'react-router';
 import { motion } from 'framer-motion';
 import { LoaderCircle } from 'lucide-react';
 import { useAiMoodboard } from '../hooks/useAiMoodboard';
-import { Polaroid } from '~/shared/components/Polaroid';
+import { Polaroid, PolaroidLoader } from '~/shared/components/Polaroid';
 import { CircleButton } from '~/shared/components/CircleButton';
 import { Button } from '~/shared/components/Button';
 import { Title, Body, Caption } from '~/shared/components/Typography';
@@ -56,7 +56,7 @@ export const AiMoodboardScreen: FC = () => {
   };
 
   const handleDownload = async () => {
-    if (polaroidRef.current && state.status === 'success') {
+    if (polaroidRef.current && (state.status === 'complete' || state.status === 'generating')) {
       try {
         const subcultureName = state.tribe.subcultureName.toLowerCase().replace(/\s+/g, '-');
         const filename = `${userName}-polaroid-${subcultureName}.png`;
@@ -68,9 +68,19 @@ export const AiMoodboardScreen: FC = () => {
     }
   };
 
+  // Check if we have at least one ready image during generating state
+  const hasReadyImage = state.status === 'generating'
+    ? state.imageSlots.some(slot => slot.status === 'ready')
+    : false;
 
-  // Loading state
-  if (state.status === 'idle' || state.status === 'loading-tribe' || state.status === 'generating') {
+  // Get the first ready image index for generating state
+  const firstReadyIndex = state.status === 'generating'
+    ? state.imageSlots.findIndex(slot => slot.status === 'ready')
+    : -1;
+
+
+  // Loading state (only for idle and loading-tribe, not generating with images)
+  if (state.status === 'idle' || state.status === 'loading-tribe' || (state.status === 'generating' && !hasReadyImage)) {
     return (
       <div className="bg-surface-light min-h-screen flex items-center justify-center p-6">
         <div className="flex flex-col items-center gap-4">
@@ -104,8 +114,12 @@ export const AiMoodboardScreen: FC = () => {
     );
   }
 
-  // Success state
-  if (state.status === 'success' && currentImage) {
+  // Get current slot for generating state
+  const currentSlot = state.status === 'generating' ? state.imageSlots[currentImageIndex] : null;
+  const isCurrentSlotReady = currentSlot?.status === 'ready';
+
+  // Success/Generating state with at least one image ready
+  if ((state.status === 'complete' && currentImage) || (state.status === 'generating' && hasReadyImage)) {
     return (
       <div className="bg-surface-light min-h-screen p-6 md:p-8">
         <motion.div
@@ -161,17 +175,23 @@ export const AiMoodboardScreen: FC = () => {
 
           {/* Content */}
           <div className="flex flex-col gap-6 w-full">
-            {/* Polaroid Card */}
+            {/* Polaroid Card or Loader */}
             <motion.div variants={staggerItemVariants}>
-              <Polaroid
-                ref={polaroidRef}
-                imageSrc={currentImage.url}
-                imageAlt={`Moodboard ${currentImageIndex + 1}`}
-                title=""
-                subtitle="Tribes & Communities Day"
-                className="w-full"
-                onImageLoad={handleImageReady}
-              />
+              {/* Show Polaroid if current slot is ready or in complete state */}
+              {(state.status === 'complete' && currentImage) || (state.status === 'generating' && isCurrentSlotReady && currentSlot?.image) ? (
+                <Polaroid
+                  ref={polaroidRef}
+                  imageSrc={state.status === 'complete' ? currentImage!.url : currentSlot!.image!.url}
+                  imageAlt={`Moodboard ${currentImageIndex + 1}`}
+                  title=""
+                  subtitle="Tribes & Communities Day"
+                  className="w-full"
+                  onImageLoad={handleImageReady}
+                />
+              ) : (
+                /* Show loader for pending/generating slots */
+                <PolaroidLoader imageNumber={currentImageIndex + 1} className="w-full" />
+              )}
             </motion.div>
 
             {/* Navigation Buttons */}
@@ -200,7 +220,7 @@ export const AiMoodboardScreen: FC = () => {
               <Button
                 variant="primary"
                 onClick={handleDownload}
-                disabled={isDownloading || !isImageReady}
+                disabled={isDownloading || !isImageReady || !isCurrentSlotReady && state.status === 'generating'}
                 className="w-full h-[52px] flex items-center justify-center gap-2"
               >
                 {isDownloading && <LoaderCircle className="w-5 h-5 animate-spin" />}

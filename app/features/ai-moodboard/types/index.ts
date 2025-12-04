@@ -14,14 +14,28 @@ export interface GeneratedImage {
 }
 
 /**
+ * Image generation status for each slot
+ */
+export type ImageSlotStatus = 'pending' | 'generating' | 'ready' | 'error';
+
+/**
+ * Individual image slot state
+ */
+export interface ImageSlot {
+  status: ImageSlotStatus;
+  image?: GeneratedImage;
+  error?: Error;
+}
+
+/**
  * AI Moodboard state using discriminated union pattern
  * Ensures type safety and prevents invalid state combinations
  */
 export type AiMoodboardState =
   | { status: 'idle' }
   | { status: 'loading-tribe' }
-  | { status: 'generating' }
-  | { status: 'success'; images: GeneratedImage[]; tribe: TribePromptData }
+  | { status: 'generating'; imageSlots: [ImageSlot, ImageSlot, ImageSlot]; tribe: TribePromptData }
+  | { status: 'complete'; images: GeneratedImage[]; tribe: TribePromptData }
   | { status: 'error'; error: Error };
 
 /**
