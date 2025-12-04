@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { toPng } from 'html-to-image';
 import type { AiMoodboardState, TribePromptData, GeneratedImage, UseAiMoodboardReturn, ImageSlot } from '../types';
 import { geminiImageService } from '../services/geminiImageService';
+import { imagePollingService } from '../services/imagePollingService';
 import { useImagePolling } from './useImagePolling';
 import { supabase } from '~/shared/services/supabase';
 
@@ -23,6 +24,7 @@ export const useAiMoodboard = ({
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isDownloading, setIsDownloading] = useState(false);
   const [isImageReady, setIsImageReady] = useState(false);
+  const generationStartedRef = useRef(false);
 
 
   /**
@@ -134,53 +136,67 @@ export const useAiMoodboard = ({
   /**
    * Start polling for images
    */
-  const { isPolling } = useImagePolling({
+  const { isPolling, resetPolling } = useImagePolling({
     userResultId,
     enabled: state.status === 'generating',
     onImagesUpdate: handleImagesUpdate,
     onComplete: handlePollingComplete,
   });
 
-  /**
-   * Generate images on mount and start polling
-   */
-  useEffect(() => {
-    const startGeneration = async () => {
+  const startGeneration = useCallback(async () => {
+    try {
+      setState({ status: 'loading-tribe' });
+
+      // Delete old generated images before starting new generation
       try {
-        // Fetch tribe data first
-        setState({ status: 'loading-tribe' });
-        const tribeData = await fetchTribeData();
-
-        // Initialize generating state with empty slots
-        setState({
-          status: 'generating',
-          imageSlots: [
-            { status: 'pending' },
-            { status: 'pending' },
-            { status: 'pending' },
-          ],
-          tribe: tribeData,
-        });
-
-        // Start image generation in background (non-blocking)
-        geminiImageService.generateImages({
-          userPhoto,
-          userResultId,
-          numberOfImages: 3,
-        }).catch((error) => {
-          console.error('Error generating images:', error);
-          const errorObj = error instanceof Error ? error : new Error('Failed to generate images');
-          setState({ status: 'error', error: errorObj });
-        });
-      } catch (error) {
-        console.error('Error fetching tribe data:', error);
-        const errorObj = error instanceof Error ? error : new Error('Failed to fetch tribe data');
-        setState({ status: 'error', error: errorObj });
+        await imagePollingService.deleteGeneratedImages(userResultId);
+      } catch (deleteError) {
+        console.warn('Failed to delete old images, continuing with generation:', deleteError);
       }
-    };
 
+      const tribeData = await fetchTribeData();
+
+      setState({
+        status: 'generating',
+        imageSlots: [
+          { status: 'pending' },
+          { status: 'pending' },
+          { status: 'pending' },
+        ],
+        tribe: tribeData,
+      });
+
+      geminiImageService.generateImages({
+        userPhoto,
+        userResultId,
+        numberOfImages: 3,
+      }).catch((error) => {
+        console.error('Error generating images:', error);
+        const errorObj = error instanceof Error ? error : new Error('Failed to generate images');
+        setState({ status: 'error', error: errorObj });
+      });
+    } catch (error) {
+      console.error('Error fetching tribe data:', error);
+      const errorObj = error instanceof Error ? error : new Error('Failed to fetch tribe data');
+      setState({ status: 'error', error: errorObj });
+    }
+  }, [fetchTribeData, userPhoto, userResultId]);
+
+  const retryGeneration = useCallback(() => {
+    generationStartedRef.current = false;
+    setCurrentImageIndex(0);
+    setIsImageReady(false);
+    resetPolling();
     startGeneration();
-  }, [userResultId, userPhoto, fetchTribeData]);
+  }, [startGeneration, resetPolling]);
+
+  useEffect(() => {
+    if (generationStartedRef.current) {
+      return;
+    }
+    generationStartedRef.current = true;
+    startGeneration();
+  }, [startGeneration]);
 
   /**
    * Navigation handlers - Reset image ready state when changing images
@@ -653,5 +669,6 @@ export const useAiMoodboard = ({
     handleImageReady,
     canGoNext,
     canGoPrevious,
+    retryGeneration,
   };
 };

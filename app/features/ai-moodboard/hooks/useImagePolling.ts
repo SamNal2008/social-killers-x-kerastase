@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { imagePollingService } from '../services/imagePollingService';
 import type { GeneratedImage } from '../types';
 
@@ -12,6 +12,7 @@ interface UseImagePollingProps {
 interface UseImagePollingReturn {
   isPolling: boolean;
   error: Error | null;
+  resetPolling: () => void;
 }
 
 const POLLING_INTERVAL = 1000;
@@ -96,8 +97,18 @@ export const useImagePolling = ({
     };
   }, [enabled, userResultId, onImagesUpdate, onComplete]);
 
+  const resetPolling = useCallback(() => {
+    isCompleteRef.current = false;
+    setError(null);
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  }, []);
+
   return {
     isPolling: enabled && !isCompleteRef.current,
     error,
+    resetPolling,
   };
 };
