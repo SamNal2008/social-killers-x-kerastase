@@ -190,9 +190,10 @@ export const useAiMoodboard = ({
       setIsImageReady(false);
       setCurrentImageIndex((prev) => Math.min(prev + 1, state.images.length - 1));
     } else if (state.status === 'generating') {
-      const readyImages = state.imageSlots.filter((slot) => slot.status === 'ready');
+      // Allow navigation to all slots, not just ready ones
+      // This enables progressive display with loaders for pending slots
       setIsImageReady(false);
-      setCurrentImageIndex((prev) => Math.min(prev + 1, readyImages.length - 1));
+      setCurrentImageIndex((prev) => Math.min(prev + 1, state.imageSlots.length - 1));
     }
   }, [state]);
 
@@ -630,8 +631,9 @@ export const useAiMoodboard = ({
     if (state.status === 'complete') {
       return currentImageIndex < state.images.length - 1;
     } else if (state.status === 'generating') {
-      const readyImages = state.imageSlots.filter((slot) => slot.status === 'ready');
-      return currentImageIndex < readyImages.length - 1;
+      // Allow navigation to next slot even if it's still generating
+      // This enables progressive display with loaders for pending slots
+      return currentImageIndex < state.imageSlots.length - 1;
     }
     return false;
   })();
