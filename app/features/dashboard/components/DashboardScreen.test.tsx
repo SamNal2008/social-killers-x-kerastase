@@ -1,6 +1,6 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { DashboardScreen } from './DashboardScreen';
-import { dashboardService } from '../services/dashboardService';
+import { dashboardService, ResultNotFoundError } from '../services/dashboardService';
 import type { DashboardUserResult } from '../types';
 
 jest.mock('../services/dashboardService');
@@ -46,7 +46,7 @@ describe('DashboardScreen', () => {
 
   it('should display loading state initially', () => {
     (dashboardService.getUserResults as jest.Mock).mockImplementation(
-      () => new Promise(() => {})
+      () => new Promise(() => { })
     );
 
     render(<DashboardScreen />);
@@ -126,5 +126,139 @@ describe('DashboardScreen', () => {
 
     const divider = container.querySelector('[data-testid="header-divider"]');
     expect(divider).toHaveClass('bg-primary');
+  });
+
+  describe('delete functionality', () => {
+    it('should render delete buttons for each result', async () => {
+      (dashboardService.getUserResults as jest.Mock).mockResolvedValue(mockResults);
+
+      render(<DashboardScreen />);
+
+      await waitFor(() => {
+        const deleteButtons = screen.getAllByRole('button', { name: /delete/i });
+        expect(deleteButtons).toHaveLength(2);
+      });
+    });
+
+    it('should open confirmation dialog when delete button is clicked', async () => {
+      (dashboardService.getUserResults as jest.Mock).mockResolvedValue(mockResults);
+
+      render(<DashboardScreen />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Romain Lagrange')).toBeInTheDocument();
+      });
+
+      const deleteButtons = screen.getAllByRole('button', { name: /delete/i });
+      fireEvent.click(deleteButtons[0]);
+
+      await waitFor(() => {
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
+        expect(screen.getByText('Delete Result')).toBeInTheDocument();
+      });
+    });
+
+    it('should close confirmation dialog when cancel is clicked', async () => {
+      (dashboardService.getUserResults as jest.Mock).mockResolvedValue(mockResults);
+
+      render(<DashboardScreen />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Romain Lagrange')).toBeInTheDocument();
+      });
+
+      const deleteButtons = screen.getAllByRole('button', { name: /delete/i });
+      fireEvent.click(deleteButtons[0]);
+
+      await waitFor(() => {
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByRole('button', { name: /cancel/i }));
+
+      await waitFor(() => {
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      });
+    });
+
+    it('should remove result from list after successful deletion', async () => {
+      (dashboardService.getUserResults as jest.Mock).mockResolvedValue(mockResults);
+      (dashboardService.deleteResult as jest.Mock).mockResolvedValue(undefined);
+
+      render(<DashboardScreen />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Romain Lagrange')).toBeInTheDocument();
+      });
+
+      const deleteButtons = screen.getAllByRole('button', { name: /delete/i });
+      fireEvent.click(deleteButtons[0]);
+
+      await waitFor(() => {
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
+      });
+
+      const confirmButton = screen.getByRole('button', { name: /^delete$/i });
+      fireEvent.click(confirmButton);
+
+      await waitFor(() => {
+        expect(screen.queryByText('Romain Lagrange')).not.toBeInTheDocument();
+        expect(screen.getByText('Jane Doe')).toBeInTheDocument();
+      });
+    });
+
+    it('should handle ResultNotFoundError by triggering page refresh', async () => {
+      (dashboardService.getUserResults as jest.Mock).mockResolvedValue(mockResults);
+      (dashboardService.deleteResult as jest.Mock).mockRejectedValue(
+        new ResultNotFoundError()
+      );
+
+      render(<DashboardScreen />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Romain Lagrange')).toBeInTheDocument();
+      });
+
+      const deleteButtons = screen.getAllByRole('button', { name: /delete/i });
+      fireEvent.click(deleteButtons[0]);
+
+      await waitFor(() => {
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
+      });
+
+      const confirmButton = screen.getByRole('button', { name: /^delete$/i });
+      fireEvent.click(confirmButton);
+
+      await waitFor(() => {
+        expect(dashboardService.deleteResult).toHaveBeenCalledWith('result-1');
+      });
+    });
+
+    it('should show error message on deletion failure', async () => {
+      (dashboardService.getUserResults as jest.Mock).mockResolvedValue(mockResults);
+      (dashboardService.deleteResult as jest.Mock).mockRejectedValue(
+        new Error('Database connection failed')
+      );
+
+      render(<DashboardScreen />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Romain Lagrange')).toBeInTheDocument();
+      });
+
+      const deleteButtons = screen.getAllByRole('button', { name: /delete/i });
+      fireEvent.click(deleteButtons[0]);
+
+      await waitFor(() => {
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
+      });
+
+      const confirmButton = screen.getByRole('button', { name: /^delete$/i });
+      fireEvent.click(confirmButton);
+
+      await waitFor(() => {
+        expect(screen.getByText(/failed to delete/i)).toBeInTheDocument();
+      });
+    });
   });
 });

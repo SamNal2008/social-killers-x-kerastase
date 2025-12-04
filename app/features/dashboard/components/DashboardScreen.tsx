@@ -5,14 +5,29 @@ import { Title, Body } from '~/shared/components/Typography';
 import { Button } from '~/shared/components/Button';
 import { DashboardPolaroid } from './DashboardPolaroid';
 import { MoodboardImportDialog } from './MoodboardImportDialog';
-import { dashboardService } from '../services/dashboardService';
+import { DeleteConfirmationDialog } from './DeleteConfirmationDialog';
+import { dashboardService, ResultNotFoundError } from '../services/dashboardService';
 import type { DashboardUserResult } from '../types';
+
+interface DeleteState {
+  isOpen: boolean;
+  resultId: string | null;
+  userName: string;
+  isDeleting: boolean;
+}
 
 export const DashboardScreen: FC = () => {
   const [results, setResults] = useState<DashboardUserResult[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+  const [deleteState, setDeleteState] = useState<DeleteState>({
+    isOpen: false,
+    resultId: null,
+    userName: '',
+    isDeleting: false,
+  });
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchResults = async () => {
@@ -33,6 +48,49 @@ export const DashboardScreen: FC = () => {
 
   const handleImportSuccess = () => {
     setIsImportDialogOpen(false);
+  };
+
+  const handleDeleteClick = (resultId: string, userName: string) => {
+    setDeleteError(null);
+    setDeleteState({
+      isOpen: true,
+      resultId,
+      userName,
+      isDeleting: false,
+    });
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteState({
+      isOpen: false,
+      resultId: null,
+      userName: '',
+      isDeleting: false,
+    });
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteState.resultId) return;
+
+    setDeleteState((prev) => ({ ...prev, isDeleting: true }));
+
+    try {
+      await dashboardService.deleteResult(deleteState.resultId);
+      setResults((prev) => prev.filter((r) => r.id !== deleteState.resultId));
+      setDeleteState({
+        isOpen: false,
+        resultId: null,
+        userName: '',
+        isDeleting: false,
+      });
+    } catch (err) {
+      if (err instanceof ResultNotFoundError) {
+        window.location.reload();
+        return;
+      }
+      setDeleteError('Failed to delete result. Please try again.');
+      setDeleteState((prev) => ({ ...prev, isDeleting: false }));
+    }
   };
 
   if (isLoading) {
@@ -101,15 +159,30 @@ export const DashboardScreen: FC = () => {
               subcultureName={result.subcultureName}
               imageUrls={result.imageUrls}
               timestamp={result.createdAt}
+              onDelete={() => handleDeleteClick(result.id, result.userName)}
             />
           ))}
         </section>
+
+        {deleteError && (
+          <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-feedback-error text-white px-6 py-3 rounded-lg shadow-lg">
+            <Body variant="2">{deleteError}</Body>
+          </div>
+        )}
       </div>
 
       <MoodboardImportDialog
         isOpen={isImportDialogOpen}
         onClose={() => setIsImportDialogOpen(false)}
         onSuccess={handleImportSuccess}
+      />
+
+      <DeleteConfirmationDialog
+        isOpen={deleteState.isOpen}
+        userName={deleteState.userName}
+        isDeleting={deleteState.isDeleting}
+        onConfirm={handleDeleteConfirm}
+        onCancel={handleDeleteCancel}
       />
     </main>
   );

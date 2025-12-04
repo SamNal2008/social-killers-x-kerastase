@@ -1,4 +1,5 @@
 import type { FC } from 'react';
+import { Trash2 } from 'lucide-react';
 import { Title, Caption } from '~/shared/components/Typography';
 import type { DashboardPolaroidProps } from '../types';
 import { formatTimestamp } from '../utils/formatTimestamp';
@@ -10,6 +11,7 @@ export const DashboardPolaroid: FC<DashboardPolaroidProps> = ({
   imageUrls,
   timestamp,
   className = '',
+  onDelete,
 }) => {
   const formattedTime = formatTimestamp(timestamp);
   const currentImageUrl = useImageRotation(imageUrls, 3000);
@@ -67,10 +69,29 @@ export const DashboardPolaroid: FC<DashboardPolaroidProps> = ({
           </div>
         </div>
 
-        <div className="h-6 w-full flex items-center justify-center">
+        <div className="h-6 w-full flex items-center justify-between">
+          <div className="w-6" />
           <Caption variant="2" className="text-neutral-gray-200 text-center">
             {formattedTime}
           </Caption>
+          {onDelete ? (
+            <button
+              type="button"
+              onClick={onDelete}
+              className="
+                p-1
+                rounded-full
+                hover:bg-feedback-error/10
+                transition-colors
+                group
+              "
+              aria-label="Delete result"
+            >
+              <Trash2 className="w-4 h-4 text-neutral-gray-200 group-hover:text-feedback-error transition-colors" />
+            </button>
+          ) : (
+            <div className="w-6" />
+          )}
         </div>
       </div>
     </div>
