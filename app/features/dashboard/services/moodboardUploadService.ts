@@ -2,7 +2,7 @@ import { supabase } from '~/shared/services/supabase';
 
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
-const STORAGE_BUCKET = 'moodboard-images';
+const STORAGE_BUCKET = 'moodboard_pictures';
 
 export interface SubcultureWithMoodboard {
   id: string;
