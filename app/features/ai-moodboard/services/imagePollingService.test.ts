@@ -12,6 +12,55 @@ describe('imagePollingService', () => {
     jest.clearAllMocks();
   });
 
+  describe('deleteGeneratedImages', () => {
+    it('should delete all generated images for a user result', async () => {
+      const mockDelete = jest.fn().mockReturnThis();
+      const mockEq = jest.fn().mockResolvedValue({
+        error: null,
+      });
+
+      (supabase.from as jest.Mock).mockReturnValue({
+        delete: mockDelete,
+        eq: mockEq,
+      } as any);
+
+      await imagePollingService.deleteGeneratedImages('user-123');
+
+      expect(supabase.from).toHaveBeenCalledWith('generated_images');
+      expect(mockDelete).toHaveBeenCalled();
+      expect(mockEq).toHaveBeenCalledWith('user_result_id', 'user-123');
+    });
+
+    it('should throw error when Supabase delete fails', async () => {
+      const mockError = new Error('Database connection failed');
+      const mockDelete = jest.fn().mockReturnThis();
+      const mockEq = jest.fn().mockResolvedValue({
+        error: mockError,
+      });
+
+      (supabase.from as jest.Mock).mockReturnValue({
+        delete: mockDelete,
+        eq: mockEq,
+      } as any);
+
+      await expect(
+        imagePollingService.deleteGeneratedImages('user-123')
+      ).rejects.toThrow('Failed to delete generated images: Database connection failed');
+    });
+
+    it('should validate userResultId is not empty', async () => {
+      await expect(
+        imagePollingService.deleteGeneratedImages('')
+      ).rejects.toThrow('userResultId cannot be empty');
+    });
+
+    it('should validate userResultId is not whitespace only', async () => {
+      await expect(
+        imagePollingService.deleteGeneratedImages('   ')
+      ).rejects.toThrow('userResultId cannot be empty');
+    });
+  });
+
   describe('pollGeneratedImages', () => {
     it('should return empty array when no images are generated yet', async () => {
       const mockSelect = jest.fn().mockReturnThis();

@@ -9,6 +9,21 @@ interface PollImagesResult {
 const EXPECTED_IMAGE_COUNT = 3;
 
 export const imagePollingService = {
+  async deleteGeneratedImages(userResultId: string): Promise<void> {
+    if (!userResultId || userResultId.trim() === '') {
+      throw new Error('userResultId cannot be empty');
+    }
+
+    const { error } = await supabase
+      .from('generated_images')
+      .delete()
+      .eq('user_result_id', userResultId);
+
+    if (error) {
+      throw new Error(`Failed to delete generated images: ${error.message}`);
+    }
+  },
+
   async pollGeneratedImages(userResultId: string): Promise<PollImagesResult> {
     if (!userResultId || userResultId.trim() === '') {
       throw new Error('userResultId cannot be empty');

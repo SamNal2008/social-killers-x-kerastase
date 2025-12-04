@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { toPng } from 'html-to-image';
 import type { AiMoodboardState, TribePromptData, GeneratedImage, UseAiMoodboardReturn, ImageSlot } from '../types';
 import { geminiImageService } from '../services/geminiImageService';
+import { imagePollingService } from '../services/imagePollingService';
 import { useImagePolling } from './useImagePolling';
 import { supabase } from '~/shared/services/supabase';
 
@@ -135,7 +136,7 @@ export const useAiMoodboard = ({
   /**
    * Start polling for images
    */
-  const { isPolling } = useImagePolling({
+  const { isPolling, resetPolling } = useImagePolling({
     userResultId,
     enabled: state.status === 'generating',
     onImagesUpdate: handleImagesUpdate,
@@ -145,6 +146,14 @@ export const useAiMoodboard = ({
   const startGeneration = useCallback(async () => {
     try {
       setState({ status: 'loading-tribe' });
+
+      // Delete old generated images before starting new generation
+      try {
+        await imagePollingService.deleteGeneratedImages(userResultId);
+      } catch (deleteError) {
+        console.warn('Failed to delete old images, continuing with generation:', deleteError);
+      }
+
       const tribeData = await fetchTribeData();
 
       setState({
@@ -177,8 +186,9 @@ export const useAiMoodboard = ({
     generationStartedRef.current = false;
     setCurrentImageIndex(0);
     setIsImageReady(false);
+    resetPolling();
     startGeneration();
-  }, [startGeneration]);
+  }, [startGeneration, resetPolling]);
 
   useEffect(() => {
     if (generationStartedRef.current) {

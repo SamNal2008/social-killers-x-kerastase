@@ -1,4 +1,4 @@
-import { renderHook, waitFor } from '@testing-library/react';
+import { renderHook, waitFor, act } from '@testing-library/react';
 import { useImagePolling } from './useImagePolling';
 import { imagePollingService } from '../services/imagePollingService';
 import type { GeneratedImage } from '../types';
@@ -33,7 +33,7 @@ describe('useImagePolling', () => {
     });
 
     // Mock FileReader with truly synchronous callback
-    global.FileReader = jest.fn().mockImplementation(function(this: any) {
+    global.FileReader = jest.fn().mockImplementation(function (this: any) {
       this.result = null;
       this.onloadend = null;
       this.onerror = null;
@@ -288,6 +288,58 @@ describe('useImagePolling', () => {
       unmount();
 
       expect(clearIntervalSpy).toHaveBeenCalled();
+    });
+  });
+
+  describe('resetPolling', () => {
+    it('should reset the polling state', async () => {
+      (imagePollingService.pollGeneratedImages as jest.Mock).mockResolvedValue({
+        images: [],
+        isComplete: false,
+      });
+
+      const onImagesUpdate = jest.fn();
+      const onComplete = jest.fn();
+
+      const { result } = renderHook(() =>
+        useImagePolling({
+          userResultId: 'user-123',
+          enabled: true,
+          onImagesUpdate,
+          onComplete,
+        })
+      );
+
+      expect(result.current.resetPolling).toBeDefined();
+      expect(typeof result.current.resetPolling).toBe('function');
+    });
+
+    it('should clear error when resetPolling is called', async () => {
+      const mockError = new Error('Polling failed');
+      (imagePollingService.pollGeneratedImages as jest.Mock).mockRejectedValueOnce(mockError);
+
+      const onImagesUpdate = jest.fn();
+      const onComplete = jest.fn();
+
+      const { result } = renderHook(() =>
+        useImagePolling({
+          userResultId: 'user-123',
+          enabled: true,
+          onImagesUpdate,
+          onComplete,
+        })
+      );
+
+      await waitFor(() => {
+        expect(result.current.error).toBeTruthy();
+      });
+
+      // Reset polling wrapped in act
+      act(() => {
+        result.current.resetPolling();
+      });
+
+      expect(result.current.error).toBeNull();
     });
   });
 
