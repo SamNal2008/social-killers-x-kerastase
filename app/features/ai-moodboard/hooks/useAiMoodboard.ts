@@ -142,49 +142,51 @@ export const useAiMoodboard = ({
     onComplete: handlePollingComplete,
   });
 
-  /**
-   * Generate images on mount and start polling
-   * Uses ref guard to prevent duplicate calls in React Strict Mode
-   */
+  const startGeneration = useCallback(async () => {
+    try {
+      setState({ status: 'loading-tribe' });
+      const tribeData = await fetchTribeData();
+
+      setState({
+        status: 'generating',
+        imageSlots: [
+          { status: 'pending' },
+          { status: 'pending' },
+          { status: 'pending' },
+        ],
+        tribe: tribeData,
+      });
+
+      geminiImageService.generateImages({
+        userPhoto,
+        userResultId,
+        numberOfImages: 3,
+      }).catch((error) => {
+        console.error('Error generating images:', error);
+        const errorObj = error instanceof Error ? error : new Error('Failed to generate images');
+        setState({ status: 'error', error: errorObj });
+      });
+    } catch (error) {
+      console.error('Error fetching tribe data:', error);
+      const errorObj = error instanceof Error ? error : new Error('Failed to fetch tribe data');
+      setState({ status: 'error', error: errorObj });
+    }
+  }, [fetchTribeData, userPhoto, userResultId]);
+
+  const retryGeneration = useCallback(() => {
+    generationStartedRef.current = false;
+    setCurrentImageIndex(0);
+    setIsImageReady(false);
+    startGeneration();
+  }, [startGeneration]);
+
   useEffect(() => {
     if (generationStartedRef.current) {
       return;
     }
     generationStartedRef.current = true;
-
-    const startGeneration = async () => {
-      try {
-        setState({ status: 'loading-tribe' });
-        const tribeData = await fetchTribeData();
-
-        setState({
-          status: 'generating',
-          imageSlots: [
-            { status: 'pending' },
-            { status: 'pending' },
-            { status: 'pending' },
-          ],
-          tribe: tribeData,
-        });
-
-        geminiImageService.generateImages({
-          userPhoto,
-          userResultId,
-          numberOfImages: 3,
-        }).catch((error) => {
-          console.error('Error generating images:', error);
-          const errorObj = error instanceof Error ? error : new Error('Failed to generate images');
-          setState({ status: 'error', error: errorObj });
-        });
-      } catch (error) {
-        console.error('Error fetching tribe data:', error);
-        const errorObj = error instanceof Error ? error : new Error('Failed to fetch tribe data');
-        setState({ status: 'error', error: errorObj });
-      }
-    };
-
     startGeneration();
-  }, [userResultId, userPhoto, fetchTribeData]);
+  }, [startGeneration]);
 
   /**
    * Navigation handlers - Reset image ready state when changing images
@@ -657,5 +659,6 @@ export const useAiMoodboard = ({
     handleImageReady,
     canGoNext,
     canGoPrevious,
+    retryGeneration,
   };
 };

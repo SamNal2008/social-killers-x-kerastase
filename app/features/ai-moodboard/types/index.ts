@@ -90,5 +90,6 @@ export interface UseAiMoodboardReturn {
   handleImageReady: () => void;
   canGoNext: boolean;
   canGoPrevious: boolean;
+  retryGeneration: () => void;
 }
 

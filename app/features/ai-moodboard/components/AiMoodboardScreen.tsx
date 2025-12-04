@@ -49,6 +49,7 @@ export const AiMoodboardScreen: FC = () => {
     handleImageReady,
     canGoNext,
     canGoPrevious,
+    retryGeneration,
   } = useAiMoodboard({ userResultId, userPhoto });
 
   const handleBack = () => {
@@ -104,10 +105,10 @@ export const AiMoodboardScreen: FC = () => {
             Oops!
           </Title>
           <Body variant="1" className="text-neutral-gray text-center">
-            {state.error.message}
+            Your unique style was too stunning for our AI to capture on the first try! Give it another go and we'll create something amazing.
           </Body>
-          <Button onClick={handleBack}>
-            Go Back
+          <Button onClick={retryGeneration}>
+            Try Again
           </Button>
         </div>
       </div>
