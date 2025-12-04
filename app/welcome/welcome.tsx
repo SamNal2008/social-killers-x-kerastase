@@ -4,7 +4,7 @@ import { Button } from '~/shared/components/Button/Button';
 import { Body } from '~/shared/components/Typography/Body';
 import { Caption } from '~/shared/components/Typography/Caption';
 import { Title } from '~/shared/components/Typography/Title';
-import heroImage from './hero-image.png';
+import heroImage from './Photo Ora.jpg';
 
 export interface WelcomeProps {
   onBeginExperience?: () => void;
