@@ -1,38 +1,163 @@
 import type { FC } from 'react';
-import { useState, useEffect } from 'react';
-import { Upload } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { PREMIUM_EASE } from '~/shared/animations/transitions';
+import { Upload, Trash2 } from 'lucide-react';
 import { Title, Body } from '~/shared/components/Typography';
 import { Button } from '~/shared/components/Button';
 import { DashboardPolaroid } from './DashboardPolaroid';
 import { MoodboardImportDialog } from './MoodboardImportDialog';
-import { dashboardService } from '../services/dashboardService';
+import { DeleteConfirmationDialog } from './DeleteConfirmationDialog';
+import { dashboardService, ResultNotFoundError } from '../services/dashboardService';
 import type { DashboardUserResult } from '../types';
+
+interface DeleteState {
+  isOpen: boolean;
+  resultId: string | null;
+  userName: string;
+  isDeleting: boolean;
+}
+
+interface ClearAllState {
+  isOpen: boolean;
+  isDeleting: boolean;
+}
 
 export const DashboardScreen: FC = () => {
   const [results, setResults] = useState<DashboardUserResult[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+  const [deleteState, setDeleteState] = useState<DeleteState>({
+    isOpen: false,
+    resultId: null,
+    userName: '',
+    isDeleting: false,
+  });
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [clearAllState, setClearAllState] = useState<ClearAllState>({
+    isOpen: false,
+    isDeleting: false,
+  });
 
-  useEffect(() => {
-    const fetchResults = async () => {
-      try {
+  const previousResultIdsRef = useRef<Set<string>>(new Set());
+  const [newResultIds, setNewResultIds] = useState<Set<string>>(new Set());
+
+  const fetchResults = useCallback(async (isInitialLoad = false) => {
+    try {
+      if (isInitialLoad) {
         setIsLoading(true);
-        const data = await dashboardService.getUserResults();
-        setResults(data);
-        setError(null);
-      } catch (err) {
-        setError(err instanceof Error ? err : new Error('Failed to fetch dashboard data'));
-      } finally {
+      }
+      const data = await dashboardService.getUserResults();
+
+      if (!isInitialLoad) {
+        const currentIds = new Set(data.map((r) => r.id));
+        const newIds = new Set<string>();
+        currentIds.forEach((id) => {
+          if (!previousResultIdsRef.current.has(id)) {
+            newIds.add(id);
+          }
+        });
+        setNewResultIds(newIds);
+
+        if (newIds.size > 0) {
+          setTimeout(() => setNewResultIds(new Set()), 500);
+        }
+      }
+
+      previousResultIdsRef.current = new Set(data.map((r) => r.id));
+      setResults(data);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('Failed to fetch dashboard data'));
+    } finally {
+      if (isInitialLoad) {
         setIsLoading(false);
       }
-    };
-
-    fetchResults();
+    }
   }, []);
+
+  useEffect(() => {
+    fetchResults(true);
+
+    const intervalId = setInterval(() => {
+      fetchResults(false);
+    }, 5000);
+
+    return () => clearInterval(intervalId);
+  }, [fetchResults]);
 
   const handleImportSuccess = () => {
     setIsImportDialogOpen(false);
+  };
+
+  const handleDeleteClick = (resultId: string, userName: string) => {
+    setDeleteError(null);
+    setDeleteState({
+      isOpen: true,
+      resultId,
+      userName,
+      isDeleting: false,
+    });
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteState({
+      isOpen: false,
+      resultId: null,
+      userName: '',
+      isDeleting: false,
+    });
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteState.resultId) return;
+
+    setDeleteState((prev) => ({ ...prev, isDeleting: true }));
+
+    try {
+      await dashboardService.deleteResult(deleteState.resultId);
+      setResults((prev) => prev.filter((r) => r.id !== deleteState.resultId));
+      setDeleteState({
+        isOpen: false,
+        resultId: null,
+        userName: '',
+        isDeleting: false,
+      });
+    } catch (err) {
+      if (err instanceof ResultNotFoundError) {
+        window.location.reload();
+        return;
+      }
+      setDeleteError('Failed to delete result. Please try again.');
+      setDeleteState((prev) => ({ ...prev, isDeleting: false }));
+    }
+  };
+
+  const handleClearAllClick = () => {
+    setDeleteError(null);
+    setClearAllState({ isOpen: true, isDeleting: false });
+  };
+
+  const handleClearAllCancel = () => {
+    setClearAllState({ isOpen: false, isDeleting: false });
+  };
+
+  const handleClearAllConfirm = async () => {
+    setClearAllState((prev) => ({ ...prev, isDeleting: true }));
+
+    try {
+      await Promise.all(results.map((result) => dashboardService.deleteResult(result.id)));
+      setResults([]);
+      setClearAllState({ isOpen: false, isDeleting: false });
+    } catch (err) {
+      if (err instanceof ResultNotFoundError) {
+        window.location.reload();
+        return;
+      }
+      setDeleteError('Failed to clear all results. Please try again.');
+      setClearAllState((prev) => ({ ...prev, isDeleting: false }));
+    }
   };
 
   if (isLoading) {
@@ -78,14 +203,24 @@ export const DashboardScreen: FC = () => {
             <Title variant="h0" className="text-neutral-dark">
               Kérastase collective
             </Title>
-            <Button
-              variant="secondary"
-              onClick={() => setIsImportDialogOpen(true)}
-              className="flex items-center gap-2"
-            >
-              <Upload className="w-4 h-4" />
-              Import Moodboards
-            </Button>
+            <div className="flex items-center gap-4">
+              <Button
+                variant="secondary"
+                onClick={handleClearAllClick}
+                className="flex items-center gap-2"
+              >
+                <Trash2 className="w-4 h-4" />
+                Clear All
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => setIsImportDialogOpen(true)}
+                className="flex items-center gap-2"
+              >
+                <Upload className="w-4 h-4" />
+                Import Moodboards
+              </Button>
+            </div>
           </div>
           <Body variant="1" className="text-neutral-dark">
             Live dashboard
@@ -94,22 +229,55 @@ export const DashboardScreen: FC = () => {
         </header>
 
         <section className="flex flex-wrap gap-16 items-center justify-center w-full">
-          {results.map((result) => (
-            <DashboardPolaroid
-              key={result.id}
-              userName={result.userName}
-              subcultureName={result.subcultureName}
-              imageUrls={result.imageUrls}
-              timestamp={result.createdAt}
-            />
-          ))}
+          <AnimatePresence mode="popLayout">
+            {results.map((result) => (
+              <motion.div
+                key={result.id}
+                initial={newResultIds.has(result.id) ? { opacity: 0, x: -100 } : false}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 100 }}
+                transition={{ duration: 0.35, ease: PREMIUM_EASE }}
+                layout
+              >
+                <DashboardPolaroid
+                  userName={result.userName}
+                  subcultureName={result.subcultureName}
+                  imageUrls={result.imageUrls}
+                  timestamp={result.createdAt}
+                  onDelete={() => handleDeleteClick(result.id, result.userName)}
+                />
+              </motion.div>
+            ))}
+          </AnimatePresence>
         </section>
+
+        {deleteError && (
+          <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-feedback-error text-white px-6 py-3 rounded-lg shadow-lg">
+            <Body variant="2">{deleteError}</Body>
+          </div>
+        )}
       </div>
 
       <MoodboardImportDialog
         isOpen={isImportDialogOpen}
         onClose={() => setIsImportDialogOpen(false)}
         onSuccess={handleImportSuccess}
+      />
+
+      <DeleteConfirmationDialog
+        isOpen={deleteState.isOpen}
+        userName={deleteState.userName}
+        isDeleting={deleteState.isDeleting}
+        onConfirm={handleDeleteConfirm}
+        onCancel={handleDeleteCancel}
+      />
+
+      <DeleteConfirmationDialog
+        isOpen={clearAllState.isOpen}
+        userName={`all ${results.length} results`}
+        isDeleting={clearAllState.isDeleting}
+        onConfirm={handleClearAllConfirm}
+        onCancel={handleClearAllCancel}
       />
     </main>
   );

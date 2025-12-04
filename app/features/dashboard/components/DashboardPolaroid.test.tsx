@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { DashboardPolaroid } from './DashboardPolaroid';
 
 describe('DashboardPolaroid', () => {
@@ -77,5 +77,29 @@ describe('DashboardPolaroid', () => {
     expect(screen.getByText('John Doe')).toBeInTheDocument();
     expect(screen.getByText('CREATIVES')).toBeInTheDocument();
     expect(screen.getByText('2:30 PM')).toBeInTheDocument();
+  });
+
+  describe('delete functionality', () => {
+    it('should render delete button when onDelete is provided', () => {
+      const onDelete = jest.fn();
+      render(<DashboardPolaroid {...defaultProps} onDelete={onDelete} />);
+
+      expect(screen.getByRole('button', { name: /delete/i })).toBeInTheDocument();
+    });
+
+    it('should not render delete button when onDelete is not provided', () => {
+      render(<DashboardPolaroid {...defaultProps} />);
+
+      expect(screen.queryByRole('button', { name: /delete/i })).not.toBeInTheDocument();
+    });
+
+    it('should call onDelete when delete button is clicked', () => {
+      const onDelete = jest.fn();
+      render(<DashboardPolaroid {...defaultProps} onDelete={onDelete} />);
+
+      fireEvent.click(screen.getByRole('button', { name: /delete/i }));
+
+      expect(onDelete).toHaveBeenCalledTimes(1);
+    });
   });
 });

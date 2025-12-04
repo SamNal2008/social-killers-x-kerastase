@@ -223,4 +223,107 @@ describe('dashboardService', () => {
       expect(results[0].userName).toBe('Unknown');
     });
   });
+
+  describe('deleteResult', () => {
+    it('should delete result successfully when it exists', async () => {
+      const resultId = 'result-1';
+
+      const mockSelect = jest.fn().mockReturnThis();
+      const mockEq = jest.fn().mockReturnThis();
+      const mockSingle = jest.fn().mockResolvedValue({ data: { id: resultId }, error: null });
+      const mockDelete = jest.fn().mockReturnThis();
+      const mockDeleteEq = jest.fn().mockResolvedValue({ error: null });
+
+      (supabase.from as jest.Mock)
+        .mockReturnValueOnce({
+          select: mockSelect,
+        })
+        .mockReturnValueOnce({
+          delete: mockDelete,
+        });
+
+      mockSelect.mockReturnValue({
+        eq: mockEq,
+      });
+
+      mockEq.mockReturnValue({
+        single: mockSingle,
+      });
+
+      mockDelete.mockReturnValue({
+        eq: mockDeleteEq,
+      });
+
+      await dashboardService.deleteResult(resultId);
+
+      expect(supabase.from).toHaveBeenCalledWith('user_results');
+      expect(mockSelect).toHaveBeenCalledWith('id');
+      expect(mockEq).toHaveBeenCalledWith('id', resultId);
+      expect(mockDelete).toHaveBeenCalled();
+      expect(mockDeleteEq).toHaveBeenCalledWith('id', resultId);
+    });
+
+    it('should throw ResultNotFoundError when result does not exist', async () => {
+      const resultId = 'non-existent-result';
+
+      const mockSelect = jest.fn().mockReturnThis();
+      const mockEq = jest.fn().mockReturnThis();
+      const mockSingle = jest.fn().mockResolvedValue({
+        data: null,
+        error: { code: 'PGRST116', message: 'No rows found' },
+      });
+
+      (supabase.from as jest.Mock).mockReturnValue({
+        select: mockSelect,
+      });
+
+      mockSelect.mockReturnValue({
+        eq: mockEq,
+      });
+
+      mockEq.mockReturnValue({
+        single: mockSingle,
+      });
+
+      await expect(dashboardService.deleteResult(resultId)).rejects.toThrow(
+        'Result not found'
+      );
+    });
+
+    it('should throw error when database query fails', async () => {
+      const resultId = 'result-1';
+
+      const mockSelect = jest.fn().mockReturnThis();
+      const mockEq = jest.fn().mockReturnThis();
+      const mockSingle = jest.fn().mockResolvedValue({ data: { id: resultId }, error: null });
+      const mockDelete = jest.fn().mockReturnThis();
+      const mockDeleteEq = jest.fn().mockResolvedValue({
+        error: { message: 'Database connection failed' },
+      });
+
+      (supabase.from as jest.Mock)
+        .mockReturnValueOnce({
+          select: mockSelect,
+        })
+        .mockReturnValueOnce({
+          delete: mockDelete,
+        });
+
+      mockSelect.mockReturnValue({
+        eq: mockEq,
+      });
+
+      mockEq.mockReturnValue({
+        single: mockSingle,
+      });
+
+      mockDelete.mockReturnValue({
+        eq: mockDeleteEq,
+      });
+
+      await expect(dashboardService.deleteResult(resultId)).rejects.toThrow(
+        'Failed to delete result: Database connection failed'
+      );
+    });
+  });
 });

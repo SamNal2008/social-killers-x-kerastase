@@ -1,6 +1,13 @@
 import { supabase } from '~/shared/services/supabase';
 import type { DashboardUserResult } from '../types';
 
+export class ResultNotFoundError extends Error {
+  constructor(message: string = 'Result not found') {
+    super(message);
+    this.name = 'ResultNotFoundError';
+  }
+}
+
 interface DatabaseUserResult {
   id: string;
   user_id: string;
@@ -74,5 +81,26 @@ export const dashboardService = {
         createdAt: result.created_at,
       };
     });
+  },
+
+  async deleteResult(resultId: string): Promise<void> {
+    const { data, error: selectError } = await supabase
+      .from('user_results')
+      .select('id')
+      .eq('id', resultId)
+      .single();
+
+    if (selectError || !data) {
+      throw new ResultNotFoundError();
+    }
+
+    const { error: deleteError } = await supabase
+      .from('user_results')
+      .delete()
+      .eq('id', resultId);
+
+    if (deleteError) {
+      throw new Error(`Failed to delete result: ${deleteError.message}`);
+    }
   },
 };

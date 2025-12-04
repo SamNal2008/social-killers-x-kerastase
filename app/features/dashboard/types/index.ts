@@ -12,7 +12,8 @@ export interface DashboardUserResult {
 export interface DashboardPolaroidProps {
   userName: string;
   subcultureName: string;
-  imageUrls: string[]; // Array of image URLs to rotate through
+  imageUrls: string[];
   timestamp: string;
   className?: string;
+  onDelete?: () => void;
 }
