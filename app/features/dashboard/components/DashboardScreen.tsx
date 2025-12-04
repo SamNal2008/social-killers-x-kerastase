@@ -1,6 +1,6 @@
 import type { FC } from 'react';
 import { useState, useEffect } from 'react';
-import { Upload } from 'lucide-react';
+import { Upload, Trash2 } from 'lucide-react';
 import { Title, Body } from '~/shared/components/Typography';
 import { Button } from '~/shared/components/Button';
 import { DashboardPolaroid } from './DashboardPolaroid';
@@ -16,6 +16,11 @@ interface DeleteState {
   isDeleting: boolean;
 }
 
+interface ClearAllState {
+  isOpen: boolean;
+  isDeleting: boolean;
+}
+
 export const DashboardScreen: FC = () => {
   const [results, setResults] = useState<DashboardUserResult[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -28,6 +33,10 @@ export const DashboardScreen: FC = () => {
     isDeleting: false,
   });
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [clearAllState, setClearAllState] = useState<ClearAllState>({
+    isOpen: false,
+    isDeleting: false,
+  });
 
   useEffect(() => {
     const fetchResults = async () => {
@@ -93,6 +102,32 @@ export const DashboardScreen: FC = () => {
     }
   };
 
+  const handleClearAllClick = () => {
+    setDeleteError(null);
+    setClearAllState({ isOpen: true, isDeleting: false });
+  };
+
+  const handleClearAllCancel = () => {
+    setClearAllState({ isOpen: false, isDeleting: false });
+  };
+
+  const handleClearAllConfirm = async () => {
+    setClearAllState((prev) => ({ ...prev, isDeleting: true }));
+
+    try {
+      await Promise.all(results.map((result) => dashboardService.deleteResult(result.id)));
+      setResults([]);
+      setClearAllState({ isOpen: false, isDeleting: false });
+    } catch (err) {
+      if (err instanceof ResultNotFoundError) {
+        window.location.reload();
+        return;
+      }
+      setDeleteError('Failed to clear all results. Please try again.');
+      setClearAllState((prev) => ({ ...prev, isDeleting: false }));
+    }
+  };
+
   if (isLoading) {
     return (
       <main className="bg-surface-light min-h-screen flex items-center justify-center">
@@ -136,14 +171,24 @@ export const DashboardScreen: FC = () => {
             <Title variant="h0" className="text-neutral-dark">
               Kérastase collective
             </Title>
-            <Button
-              variant="secondary"
-              onClick={() => setIsImportDialogOpen(true)}
-              className="flex items-center gap-2"
-            >
-              <Upload className="w-4 h-4" />
-              Import Moodboards
-            </Button>
+            <div className="flex items-center gap-4">
+              <Button
+                variant="secondary"
+                onClick={handleClearAllClick}
+                className="flex items-center gap-2"
+              >
+                <Trash2 className="w-4 h-4" />
+                Clear All
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => setIsImportDialogOpen(true)}
+                className="flex items-center gap-2"
+              >
+                <Upload className="w-4 h-4" />
+                Import Moodboards
+              </Button>
+            </div>
           </div>
           <Body variant="1" className="text-neutral-dark">
             Live dashboard
@@ -183,6 +228,14 @@ export const DashboardScreen: FC = () => {
         isDeleting={deleteState.isDeleting}
         onConfirm={handleDeleteConfirm}
         onCancel={handleDeleteCancel}
+      />
+
+      <DeleteConfirmationDialog
+        isOpen={clearAllState.isOpen}
+        userName={`all ${results.length} results`}
+        isDeleting={clearAllState.isDeleting}
+        onConfirm={handleClearAllConfirm}
+        onCancel={handleClearAllCancel}
       />
     </main>
   );
