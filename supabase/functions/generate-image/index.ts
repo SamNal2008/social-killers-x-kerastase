@@ -373,6 +373,27 @@ Deno.serve(async (req) => {
 
         console.log(`Image ${index + 1}/${numberOfImages} uploaded: ${publicUrl}`);
 
+        // Save image to database immediately after generation (enables progressive loading)
+        const { error: upsertError } = await supabase
+          .from('generated_images')
+          .upsert({
+            user_result_id: requestBody.userResultId,
+            image_url: publicUrl,
+            prompt: prompt,
+            image_index: index,
+            is_primary: index === 0,
+          }, {
+            onConflict: 'user_result_id,image_index',
+            ignoreDuplicates: false,
+          });
+
+        if (upsertError) {
+          console.error(`Error saving image ${index + 1} to database:`, upsertError);
+          throw new Error(`Failed to save image to database: ${upsertError.message}`);
+        }
+
+        console.log(`Image ${index + 1}/${numberOfImages} saved to database`);
+
         generatedImages.push({
           url: publicUrl,
           prompt,
@@ -383,32 +404,10 @@ Deno.serve(async (req) => {
       }
     }
 
-    console.log(`Successfully generated ${generatedImages.length} image(s)`);
-
-    // Save all generated images to the database
-    const imagesToInsert = generatedImages.map((image, index) => ({
-      user_result_id: requestBody.userResultId,
-      image_url: image.url,
-      prompt: image.prompt,
-      image_index: index,
-      is_primary: index === 0, // First image is the primary
-    }));
-
-    const { error: upsertError } = await supabase
-      .from('generated_images')
-      .upsert(imagesToInsert, {
-        onConflict: 'user_result_id,image_index',
-        ignoreDuplicates: false, // Update existing records if they exist
-      });
-
-    if (upsertError) {
-      console.error('Error saving images to database:', upsertError);
-      return buildErrorResponse('DATABASE_ERROR', `Failed to save images: ${upsertError.message}`, 500);
-    }
-
-    console.log(`Saved ${generatedImages.length} image(s) to database`);
+    console.log(`Successfully generated and saved ${generatedImages.length} image(s)`);
 
     // Update user_results with the first generated image URL for backward compatibility
+    // Note: This is done at the end since the first image is already saved to generated_images table
     const { error: updateError } = await supabase
       .from('user_results')
       .update({ generated_image_url: generatedImages[0].url })
