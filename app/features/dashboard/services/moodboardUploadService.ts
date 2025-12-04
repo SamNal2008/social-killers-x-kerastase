@@ -2,7 +2,6 @@ import { supabase } from '~/shared/services/supabase';
 
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
-const STORAGE_BUCKET = 'moodboard_pictures';
 
 export interface SubcultureWithMoodboard {
   id: string;
@@ -52,6 +51,7 @@ export const moodboardUploadService = {
   },
 
   async uploadMoodboardImage(file: File, subcultureId: string): Promise<UploadResult> {
+    // Client-side validation
     if (!ALLOWED_MIME_TYPES.includes(file.type)) {
       return {
         success: false,
@@ -66,15 +66,19 @@ export const moodboardUploadService = {
       };
     }
 
-    const timestamp = Date.now();
-    const filePath = `${subcultureId}/${timestamp}_${file.name}`;
+    // Convert file to base64
+    const fileData = await this.fileToBase64(file);
 
-    const { data, error } = await supabase.storage
-      .from(STORAGE_BUCKET)
-      .upload(filePath, file, {
-        cacheControl: '3600',
-        upsert: true,
-      });
+    // Call edge function to upload
+    const { data, error } = await supabase.functions.invoke('upload-moodboard-image', {
+      body: {
+        subcultureId,
+        fileName: file.name,
+        fileType: file.type,
+        fileSize: file.size,
+        fileData,
+      },
+    });
 
     if (error) {
       return {
@@ -83,14 +87,26 @@ export const moodboardUploadService = {
       };
     }
 
-    const { data: urlData } = supabase.storage
-      .from(STORAGE_BUCKET)
-      .getPublicUrl(data.path);
+    if (!data.success) {
+      return {
+        success: false,
+        error: data.error?.message || 'Upload failed',
+      };
+    }
 
     return {
       success: true,
-      imageUrl: urlData.publicUrl,
+      imageUrl: data.data.imageUrl,
     };
+  },
+
+  async fileToBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (error) => reject(error);
+    });
   },
 
   async updateMoodboardImageUrl(moodboardId: string, imageUrl: string): Promise<void> {

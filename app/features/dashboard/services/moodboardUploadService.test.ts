@@ -4,8 +4,8 @@ import { supabase } from '~/shared/services/supabase';
 jest.mock('~/shared/services/supabase', () => ({
   supabase: {
     from: jest.fn(),
-    storage: {
-      from: jest.fn(),
+    functions: {
+      invoke: jest.fn(),
     },
   },
 }));
@@ -83,51 +83,71 @@ describe('moodboardUploadService', () => {
   });
 
   describe('uploadMoodboardImage', () => {
-    it('should upload image to storage and return public URL', async () => {
+    it('should call edge function and return public URL on success', async () => {
       const mockFile = new File(['test'], 'test.jpg', { type: 'image/jpeg' });
       const subcultureId = 'sub-1';
-      const expectedPath = expect.stringMatching(new RegExp(`^${subcultureId}/\\d+_test\\.jpg$`));
+      const expectedImageUrl = 'https://storage.example.com/moodboard_pictures/sub-1/123_test.jpg';
 
-      const mockUpload = jest.fn().mockResolvedValue({ data: { path: 'sub-1/123_test.jpg' }, error: null });
-      const mockGetPublicUrl = jest.fn().mockReturnValue({
-        data: { publicUrl: 'https://storage.example.com/moodboard-images/sub-1/123_test.jpg' },
-      });
-
-      (supabase.storage.from as jest.Mock).mockReturnValue({
-        upload: mockUpload,
-        getPublicUrl: mockGetPublicUrl,
+      (supabase.functions.invoke as jest.Mock).mockResolvedValue({
+        data: {
+          success: true,
+          data: { imageUrl: expectedImageUrl },
+        },
+        error: null,
       });
 
       const result = await moodboardUploadService.uploadMoodboardImage(mockFile, subcultureId);
 
-      expect(supabase.storage.from).toHaveBeenCalledWith('moodboard-images');
-      expect(mockUpload).toHaveBeenCalledWith(expectedPath, mockFile, {
-        cacheControl: '3600',
-        upsert: true,
+      expect(supabase.functions.invoke).toHaveBeenCalledWith('upload-moodboard-image', {
+        body: expect.objectContaining({
+          subcultureId,
+          fileName: 'test.jpg',
+          fileType: 'image/jpeg',
+          fileSize: mockFile.size,
+        }),
       });
       expect(result).toEqual({
         success: true,
-        imageUrl: 'https://storage.example.com/moodboard-images/sub-1/123_test.jpg',
+        imageUrl: expectedImageUrl,
       });
     });
 
-    it('should return error when upload fails', async () => {
+    it('should return error when edge function invocation fails', async () => {
       const mockFile = new File(['test'], 'test.jpg', { type: 'image/jpeg' });
-      const mockUpload = jest.fn().mockResolvedValue({ data: null, error: { message: 'Upload failed' } });
 
-      (supabase.storage.from as jest.Mock).mockReturnValue({
-        upload: mockUpload,
+      (supabase.functions.invoke as jest.Mock).mockResolvedValue({
+        data: null,
+        error: { message: 'Edge function error' },
       });
 
       const result = await moodboardUploadService.uploadMoodboardImage(mockFile, 'sub-1');
 
       expect(result).toEqual({
         success: false,
-        error: 'Upload failed',
+        error: 'Edge function error',
       });
     });
 
-    it('should validate file type before upload', async () => {
+    it('should return error when edge function returns error response', async () => {
+      const mockFile = new File(['test'], 'test.jpg', { type: 'image/jpeg' });
+
+      (supabase.functions.invoke as jest.Mock).mockResolvedValue({
+        data: {
+          success: false,
+          error: { code: 'UPLOAD_ERROR', message: 'Storage upload failed' },
+        },
+        error: null,
+      });
+
+      const result = await moodboardUploadService.uploadMoodboardImage(mockFile, 'sub-1');
+
+      expect(result).toEqual({
+        success: false,
+        error: 'Storage upload failed',
+      });
+    });
+
+    it('should validate file type before calling edge function', async () => {
       const mockFile = new File(['test'], 'test.pdf', { type: 'application/pdf' });
 
       const result = await moodboardUploadService.uploadMoodboardImage(mockFile, 'sub-1');
@@ -136,10 +156,10 @@ describe('moodboardUploadService', () => {
         success: false,
         error: 'Invalid file type. Only JPEG, PNG, and WebP images are allowed.',
       });
-      expect(supabase.storage.from).not.toHaveBeenCalled();
+      expect(supabase.functions.invoke).not.toHaveBeenCalled();
     });
 
-    it('should validate file size before upload', async () => {
+    it('should validate file size before calling edge function', async () => {
       const largeContent = new Array(11 * 1024 * 1024).fill('a').join('');
       const mockFile = new File([largeContent], 'large.jpg', { type: 'image/jpeg' });
 
@@ -149,7 +169,7 @@ describe('moodboardUploadService', () => {
         success: false,
         error: 'File size exceeds 10MB limit.',
       });
-      expect(supabase.storage.from).not.toHaveBeenCalled();
+      expect(supabase.functions.invoke).not.toHaveBeenCalled();
     });
   });
 
