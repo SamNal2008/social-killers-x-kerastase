@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { toPng } from 'html-to-image';
 import type { AiMoodboardState, TribePromptData, GeneratedImage, UseAiMoodboardReturn, ImageSlot } from '../types';
 import { geminiImageService } from '../services/geminiImageService';
@@ -23,6 +23,7 @@ export const useAiMoodboard = ({
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isDownloading, setIsDownloading] = useState(false);
   const [isImageReady, setIsImageReady] = useState(false);
+  const generationStartedRef = useRef(false);
 
 
   /**
@@ -143,15 +144,19 @@ export const useAiMoodboard = ({
 
   /**
    * Generate images on mount and start polling
+   * Uses ref guard to prevent duplicate calls in React Strict Mode
    */
   useEffect(() => {
+    if (generationStartedRef.current) {
+      return;
+    }
+    generationStartedRef.current = true;
+
     const startGeneration = async () => {
       try {
-        // Fetch tribe data first
         setState({ status: 'loading-tribe' });
         const tribeData = await fetchTribeData();
 
-        // Initialize generating state with empty slots
         setState({
           status: 'generating',
           imageSlots: [
@@ -162,7 +167,6 @@ export const useAiMoodboard = ({
           tribe: tribeData,
         });
 
-        // Start image generation in background (non-blocking)
         geminiImageService.generateImages({
           userPhoto,
           userResultId,
