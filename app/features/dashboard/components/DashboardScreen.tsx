@@ -1,5 +1,7 @@
 import type { FC } from 'react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { PREMIUM_EASE } from '~/shared/animations/transitions';
 import { Upload, Trash2 } from 'lucide-react';
 import { Title, Body } from '~/shared/components/Typography';
 import { Button } from '~/shared/components/Button';
@@ -38,22 +40,52 @@ export const DashboardScreen: FC = () => {
     isDeleting: false,
   });
 
-  useEffect(() => {
-    const fetchResults = async () => {
-      try {
+  const previousResultIdsRef = useRef<Set<string>>(new Set());
+  const [newResultIds, setNewResultIds] = useState<Set<string>>(new Set());
+
+  const fetchResults = useCallback(async (isInitialLoad = false) => {
+    try {
+      if (isInitialLoad) {
         setIsLoading(true);
-        const data = await dashboardService.getUserResults();
-        setResults(data);
-        setError(null);
-      } catch (err) {
-        setError(err instanceof Error ? err : new Error('Failed to fetch dashboard data'));
-      } finally {
+      }
+      const data = await dashboardService.getUserResults();
+
+      if (!isInitialLoad) {
+        const currentIds = new Set(data.map((r) => r.id));
+        const newIds = new Set<string>();
+        currentIds.forEach((id) => {
+          if (!previousResultIdsRef.current.has(id)) {
+            newIds.add(id);
+          }
+        });
+        setNewResultIds(newIds);
+
+        if (newIds.size > 0) {
+          setTimeout(() => setNewResultIds(new Set()), 500);
+        }
+      }
+
+      previousResultIdsRef.current = new Set(data.map((r) => r.id));
+      setResults(data);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('Failed to fetch dashboard data'));
+    } finally {
+      if (isInitialLoad) {
         setIsLoading(false);
       }
-    };
-
-    fetchResults();
+    }
   }, []);
+
+  useEffect(() => {
+    fetchResults(true);
+
+    const intervalId = setInterval(() => {
+      fetchResults(false);
+    }, 5000);
+
+    return () => clearInterval(intervalId);
+  }, [fetchResults]);
 
   const handleImportSuccess = () => {
     setIsImportDialogOpen(false);
@@ -197,16 +229,26 @@ export const DashboardScreen: FC = () => {
         </header>
 
         <section className="flex flex-wrap gap-16 items-center justify-center w-full">
-          {results.map((result) => (
-            <DashboardPolaroid
-              key={result.id}
-              userName={result.userName}
-              subcultureName={result.subcultureName}
-              imageUrls={result.imageUrls}
-              timestamp={result.createdAt}
-              onDelete={() => handleDeleteClick(result.id, result.userName)}
-            />
-          ))}
+          <AnimatePresence mode="popLayout">
+            {results.map((result) => (
+              <motion.div
+                key={result.id}
+                initial={newResultIds.has(result.id) ? { opacity: 0, x: -100 } : false}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 100 }}
+                transition={{ duration: 0.35, ease: PREMIUM_EASE }}
+                layout
+              >
+                <DashboardPolaroid
+                  userName={result.userName}
+                  subcultureName={result.subcultureName}
+                  imageUrls={result.imageUrls}
+                  timestamp={result.createdAt}
+                  onDelete={() => handleDeleteClick(result.id, result.userName)}
+                />
+              </motion.div>
+            ))}
+          </AnimatePresence>
         </section>
 
         {deleteError && (
