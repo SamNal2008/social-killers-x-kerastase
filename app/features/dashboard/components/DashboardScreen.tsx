@@ -2,7 +2,7 @@ import type { FC } from 'react';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PREMIUM_EASE } from '~/shared/animations/transitions';
-import { Upload, Trash2 } from 'lucide-react';
+import { Upload, Trash2, Search, X } from 'lucide-react';
 import { Title, Body } from '~/shared/components/Typography';
 import { Button } from '~/shared/components/Button';
 import { DashboardPolaroid } from './DashboardPolaroid';
@@ -39,6 +39,7 @@ export const DashboardScreen: FC = () => {
     isOpen: false,
     isDeleting: false,
   });
+  const [searchQuery, setSearchQuery] = useState('');
 
   const previousResultIdsRef = useRef<Set<string>>(new Set());
   const [newResultIds, setNewResultIds] = useState<Set<string>>(new Set());
@@ -160,6 +161,16 @@ export const DashboardScreen: FC = () => {
     }
   };
 
+  const filteredResults = searchQuery.trim()
+    ? results.filter((result) =>
+      result.userName.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    : results;
+
+  const handleClearSearch = () => {
+    setSearchQuery('');
+  };
+
   if (isLoading) {
     return (
       <main className="bg-surface-light min-h-screen flex items-center justify-center">
@@ -225,12 +236,53 @@ export const DashboardScreen: FC = () => {
           <Body variant="1" className="text-neutral-dark">
             Live dashboard
           </Body>
+          <div className="relative w-full max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-gray-200" />
+            <input
+              type="text"
+              placeholder="Search by name..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="
+                w-full
+                pl-10
+                pr-10
+                py-3
+                border
+                border-neutral-gray-200
+                rounded-lg
+                bg-white
+                text-neutral-dark
+                placeholder:text-neutral-gray-200
+                focus:outline-none
+                focus:ring-2
+                focus:ring-primary
+                focus:border-transparent
+                transition-all
+              "
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={handleClearSearch}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-neutral-gray-100 rounded-full transition-colors"
+                aria-label="Clear search"
+              >
+                <X className="w-4 h-4 text-neutral-gray-200" />
+              </button>
+            )}
+          </div>
+          {searchQuery && (
+            <Body variant="2" className="text-neutral-gray-200">
+              {filteredResults.length} result{filteredResults.length !== 1 ? 's' : ''} found for "{searchQuery}"
+            </Body>
+          )}
           <div data-testid="header-divider" className="bg-primary h-px w-full" />
         </header>
 
         <section className="flex flex-wrap gap-16 items-center justify-center w-full">
           <AnimatePresence mode="popLayout">
-            {results.map((result) => (
+            {filteredResults.map((result) => (
               <motion.div
                 key={result.id}
                 initial={newResultIds.has(result.id) ? { opacity: 0, x: -100 } : false}

@@ -42,8 +42,7 @@ export const dashboardService = {
         generated_images(image_url, image_index)
       `)
       .not('generated_image_url', 'is', null)
-      .order('created_at', { ascending: false })
-      .limit(20);
+      .order('created_at', { ascending: false });
 
     if (error) {
       throw new Error(`Failed to fetch dashboard user results: ${error.message}`);
